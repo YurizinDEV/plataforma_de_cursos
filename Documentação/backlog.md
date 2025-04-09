@@ -1,2 +1,0 @@
-# BackLogs - Histórias de Usuário
-
