@@ -1,3 +1,40 @@
-# BackLogs - Histórias de Usuário
+# PROJETO DE SOFTWARE - Plataforma de Cursos
 
-Como Aluno, preciso...
+# BackLogs
+
+## TAREFAS 
+
+- Requisitos (revisão e adição)
+- Protótipo Figma (revisão e adição)
+- Modelagem do Banco (revisão e alteração para não relacional)
+- Documentação de cada rota (incluindo regras de negócio)
+
+
+
+# REQUISITOS DO SOFTWARE
+
+A especificação dos requisitos deste projeto segue as recomendações da norma IEEE Std-830-1998, considerando as boas práticas para definição de requisitos.  
+
+## REQUISITOS FUNCIONAIS
+
+A tabela a seguir contém a relação dos Requisitos Funcionais elicitados, com as colunas: identificador, nome e descrição:
+
+| IDENTIFICADOR | NOME                    | DESCRIÇÃO                                                                                                                                          |  
+|:-------------|:------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------|  
+| **RF-001**   | Manter Cursos        | Permite o administrador criar, atualizar e remover cursos, bem como incluir conteúdos extras para disponibilizar aos alunos.             |
+| **RF-002**   | Incorporar Vídeos     | Permite o administrador incorporar vídeos do Youtube.            |
+| **RF-003**   | Gerenciar Conteúdo Extra | O administrador pode gerenciar os conteúdos extras dos cursos, como PDFs. |
+| **RF-004**   | Manter Usuários |  Permite o administrador remover usuários e conceder permissão de administração. |
+| **RF-005**   | Acompanhar Progresso     | O administrador pode acompanhar o progresso dos alunos em cada curso. |
+| **RF-006**   | Acompanhar o Próprio Progresso       | Os usuários podem acompanhar o próprio progresso em cada curso. |
+
+
+## REQUISITOS NÃO FUNCIONAIS
+A tabela a seguir contém a relação com os Requisitos Não Funcionais identificados, contendo identificador, nome e descrição:
+
+| IDENTIFICADOR | NOME                           | DESCRIÇÃO                                                                                                |  
+|:-------------|:-------------------------------|:----------------------------------------------------------------------------------------------------------|  
+| **RNF-001**  | Desempenho e Escalabilidade                      | O sistema deve suportar simultaneamente pelo menos 100 usuários ativos sem degradação perceptível de desempenho, garantindo um tempo de resposta de no máximo 1 segundo. |  
+| **RNF-002**  | Usabilidade                     | A interface deve ser intuitiva e claras tanto para administradores quanto para usuários. |  
+| **RNF-003**  |Acessibilidade Multiplataforma             | O sistema será acessível via navegador, com design responsivo para dispositivos móveis, permitindo aos usuários acessarem os cursos de qualquer lugar. |
+| **RNF-004**  | Formato Markdown                  | O sistema possuirá campos de textos em formato Markdown para que seja realizada a formatação da maneira que desejar nos campos de texto. |
