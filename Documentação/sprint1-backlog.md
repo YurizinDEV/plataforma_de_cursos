@@ -13,5 +13,5 @@ Reunião com Cliente 28.03 (Aílton Vieira)
 
 ## Requisitos Funcionais/Não Funcionais
 - Revisão dos Requisitos (Aílton Vieira, André Lucas e Yuri Zetoles)
--- Conferir se as requisições são suficientes para o que será apresentado
+-- Conferir se os requisitos são suficientes para o que será apresentado
 - Criação de Novos Requisitos (Aílton Vieira, André Lucas e Yuri Zetoles)
