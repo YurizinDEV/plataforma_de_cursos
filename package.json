@@ -1,17 +1,16 @@
 {
-  "name": "projeto_novo",
+  "name": "meals-api",
   "version": "1.0.0",
-  "main": "index.js",
-  "type": "module",
-  "scripts": {
-    "dev": "nodemon --exec \"clear && node\" server.js",
-    "start": "node server.js",
-    "seed": "node src/seed/seed.js",
-    "test": "jest --coverage --detectOpenHandles"
-  },
-  "author": "Yuri",
-  "license": "ISC",
   "description": "",
+  "license": "MIT",
+  "author": "Vinícius Moraes",
+  "type": "module",
+  "main": "src/app.js",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "seed": "node src/seeds/seeds.js",
+    "start": "node server.js"
+  },
   "dependencies": {
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
