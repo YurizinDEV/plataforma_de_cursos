@@ -238,10 +238,10 @@ Adicionar nova aula a um curso.
 - Incluir ID da aula para edição posterior;  
 - Em caso de falha, retornar mensagem de erro específica.  
 
-## Considerações Gerais  
+## Considerações Finais  
 
 1. **Autenticação**: Todas as rotas (exceto /login) requerem autenticação válida;  
-2. **Autorização**: Controle de acesso baseado em tipo de usuário (aluno/professor);  
+2. **Autorização**: Controle de acesso baseado em tipo de usuário (usuário/administrador);  
 3. **Validação**: Todos os inputs devem ser validados conforme regras específicas;  
 4. **Erros**: Mensagens de erro claras e específicas para cada cenário de falha;  
 5. **Logs**: Registrar atividades importantes para auditoria e análise;  
