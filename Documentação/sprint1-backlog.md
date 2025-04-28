@@ -1,9 +1,9 @@
 # Sprint 1 01.04.2025 - 15.04.2025
 
 ## Reuniões
-Reunião com Cliente 28.03 (Aílton Vieira)
-Reunião Sprint Review Meeting 14.04 (Aílton Vieira, André Lucas e Yuri Zetoles)
-Reunião Sprint Retrospective 15.04 (Aílton Vieira, André Lucas e Yuri Zetoles)
+- Reunião com Cliente 28.03 (Aílton Vieira)
+- Reunião Sprint Review Meeting 14.04 (Aílton Vieira, André Lucas e Yuri Zetoles)
+- Reunião Sprint Retrospective 15.04 (Aílton Vieira, André Lucas e Yuri Zetoles)
 
 ## Figma - Protótipo (revisão, alteração e adição de páginas)
 - Revisão do Figma (Aílton Vieira, André Lucas e Yuri Zetoles)
