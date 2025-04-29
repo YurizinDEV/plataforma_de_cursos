@@ -12,8 +12,11 @@
 - Criação - Página com as aulas concluídas (Aílton Vieira)
 - Criação - Questões após conclusão das aulas (André Lucas)
 - Criação - Página adicionar questionário (Yuri Zetoles)
+- Criação - Duas Telas de Gabarito APROVADO/REPROVADO (André Lucas)
 
 ## Requisitos Funcionais/Não Funcionais
-- Revisão dos Requisitos (Aílton Vieira, André Lucas e Yuri Zetoles)
+- Revisão dos Requisitos Funcionais (Aílton Vieira, André Lucas e Yuri Zetoles)
+-- Conferir se os requisitos são suficientes para o que será apresentado
+- Revisão dos Requisitos Não Funcionais (Aílton Vieira, André Lucas e Yuri Zetoles)
 -- Conferir se os requisitos são suficientes para o que será apresentado
 - Criação de Novos Requisitos (Aílton Vieira, André Lucas e Yuri Zetoles)
