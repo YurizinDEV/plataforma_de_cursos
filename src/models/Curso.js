@@ -1,8 +1,56 @@
-import mongoose from "mongoose";  
-import mongoosePaginate from "mongoose-paginate-v2";  
+import mongoose from "mongoose";
+import mongoosePaginate from "mongoose-paginate-v2";
 
-// Cursos Class  
-class Curso {  
+// Curso Class  
+
+class Curso {
+    constructor() {
+        const cursoSchema = new mongoose.Schema({
+            titulo: {
+                type: String,
+                required: true,
+                maxlength: 100
+            },
+            descricao: {
+                type: String
+            },
+            criadoEm: {
+                type: Date,
+                default: Date.now
+            },
+            thumbnail: {
+                type: String,
+                maxlength: 250
+            },
+            cargaHorariaTotal: {
+                type: Number,
+                required: true,
+                min: 1
+            },
+            materialComplementar: {
+                type: [String]
+            },
+            professores: {
+                type: [String]
+            },
+            tags: {
+                type: [String]
+            },
+            criadoPorId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "Usuario",
+                required: true
+            }
+        }, {
+            versionKey: false
+        });
+
+        cursoSchema.plugin(mongoosePaginate);
+        this.model = mongoose.model("Curso", cursoSchema);
+    }
+}
+
+/*class Curso {  
     constructor() {  
         const cursoSchema = new mongoose.Schema({  
             curs_id_curso_pk: { type: Number, index: true, required: true },  
@@ -16,5 +64,4 @@ class Curso {
             curs_usua_id_usuario_admin_fk: { type: Number, required: true }  
         });  
     }  
-}  
-
+}  */

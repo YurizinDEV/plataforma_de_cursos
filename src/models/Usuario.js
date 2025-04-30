@@ -1,6 +1,50 @@
 import mongoose from "mongoose";  
 import mongoosePaginate from "mongoose-paginate-v2";  
 
+// Usuario Class
+
+class Usuario {
+    constructor() {
+        const usuarioSchema = new mongoose.Schema({
+            nome: {
+                type: String,
+                required: true,
+                maxlength: 100
+            },
+            senha: {
+                type: String,
+                required: true
+            },
+            email: {
+                type: String,
+                required: true,
+                unique: true,
+                lowercase: true
+            },
+            ehAdmin: {
+                type: Boolean,
+                default: false
+            },
+            criadoEm: {
+                type: Date,
+                default: Date.now
+            },
+            cursosIds: [{
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "Curso"
+            }]
+        }, {
+            versionKey: false
+        });
+
+        usuarioSchema.plugin(mongoosePaginate);
+        this.model = mongoose.model("Usuario", usuarioSchema);
+    }
+}
+
+
+
+/*
 class Usuario {  
     constructor() {  
         const usuarioSchema = new mongoose.Schema({  
@@ -13,3 +57,4 @@ class Usuario {
         });  
     }  
 }  
+*/
