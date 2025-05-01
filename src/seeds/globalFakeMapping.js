@@ -60,42 +60,7 @@ const fakeMappings = {
             cursosIds: [new mongoose.Types.ObjectId().toString()],
         }),
 
-        //Curso
-        curso: () => ({
-            nome: fakebr.name.firstName() + " " + fakebr.name.lastName(),
-            codigo: fakebr.random.number({
-                min: 1000,
-                max: 9999
-            }).toString(),
-            unidades: [new mongoose.Types.ObjectId().toString()],
-            grupos: [new mongoose.Types.ObjectId().toString()],
-        }),
-
-
-
-
-        // Permissões (objeto complexo)
-        permissoes: () => [{
-            rota: fakebr.lorem.word(),
-            dominio: fakebr.internet.url(),
-            ativo: fakebr.random.boolean(),
-            buscar: fakebr.random.boolean(),
-            enviar: fakebr.random.boolean(),
-            substituir: fakebr.random.boolean(),
-            modificar: fakebr.random.boolean(),
-            excluir: fakebr.random.boolean(),
-        }, ],
-        // Campos para versionamento e permissões simples
-        dataVersao: () => fakebr.date.past(),
-        historico: () => [],
-        buscar: () => fakebr.random.boolean(),
-        enviar: () => fakebr.random.boolean(),
-        substituir: () => fakebr.random.boolean(),
-        modificar: () => fakebr.random.boolean(),
-        excluir: () => fakebr.random.boolean(),
-    },
-
-    // Mapping específico para o model Curso
+         //Curso
     Curso: {
         titulo: () => fakebr.name.firstName() + " " + fakebr.name.lastName(),
         descricao: () => fakebr.lorem.sentence(),
@@ -121,6 +86,56 @@ const fakeMappings = {
         titulo: () => fakebr.lorem.sentence(),
         descricao: () => fakebr.lorem.paragraph(),
     },
+
+    // Alternativa
+    Alternativa: {
+    },
+
+    // Certificado
+    Certificado: {
+        
+    },
+
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        // Permissões (objeto complexo)
+        permissoes: () => [{
+            rota: fakebr.lorem.word(),
+            dominio: fakebr.internet.url(),
+            ativo: fakebr.random.boolean(),
+            buscar: fakebr.random.boolean(),
+            enviar: fakebr.random.boolean(),
+            substituir: fakebr.random.boolean(),
+            modificar: fakebr.random.boolean(),
+            excluir: fakebr.random.boolean(),
+        }, ],
+        // Campos para versionamento e permissões simples
+        dataVersao: () => fakebr.date.past(),
+        historico: () => [],
+        buscar: () => fakebr.random.boolean(),
+        enviar: () => fakebr.random.boolean(),
+        substituir: () => fakebr.random.boolean(),
+        modificar: () => fakebr.random.boolean(),
+        excluir: () => fakebr.random.boolean(),
+    },
+
+   
 
     //
 
