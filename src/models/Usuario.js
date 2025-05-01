@@ -25,15 +25,12 @@ class Usuario {
                 type: Boolean,
                 default: false
             },
-            criadoEm: {
-                type: Date,
-                default: Date.now
-            },
             cursosIds: [{
                 type: mongoose.Schema.Types.ObjectId,
                 ref: "Curso"
             }]
         }, {
+            timestamps: true,
             versionKey: false
         });
 
@@ -42,6 +39,7 @@ class Usuario {
     }
 }
 
+export default new Usuario().model;t
 
 
 /*

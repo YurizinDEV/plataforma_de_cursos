@@ -14,10 +14,6 @@ class Curso {
             descricao: {
                 type: String
             },
-            criadoEm: {
-                type: Date,
-                default: Date.now
-            },
             thumbnail: {
                 type: String,
                 maxlength: 250
@@ -42,6 +38,7 @@ class Curso {
                 required: true
             }
         }, {
+            timestamps: true,
             versionKey: false
         });
 
