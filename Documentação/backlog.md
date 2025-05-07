@@ -2,14 +2,21 @@
 
 # BackLogs
 
-## TAREFAS 
+## TAREFAS - MILESTONE I
 
 - Requisitos (revisão e adição)
 - Protótipo Figma (revisão e adição)
 - Modelagem do Banco (revisão e alteração para não relacional)
 - Documentação de cada rota (incluindo regras de negócio)
 
+## TAREFAS - MILESTONE II
 
+- Requisitos implementados na API (Explicar escolha e quantos ficarão para a Milestone III);
+- Documentação das rotas implementadas (incluindo regras de negócio);
+- Plano de Teste do projeto com cenários de teste implementados (explicar o fluxo principal ssociando a regra de negócio aos testes);
+- Teste unitário das funcionalidades implementadas (explicação do teste do fluxo principal, demonstrar a cobertura de testes unitários);
+- Fluxos de branches no git (mostrar gráfico de _commits_ e o painel de tarefa com uma tarefa);
+- Apresentação prática do produto (Postman).
 
 # REQUISITOS DO SOFTWARE
 
