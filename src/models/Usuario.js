@@ -6,19 +6,8 @@ import mongoosePaginate from "mongoose-paginate-v2";
 class Usuario {
     constructor() {
         // sub-documento de progresso ─ cada item terá seu próprio _id
-        const progressoSchema = new mongoose.Schema({
-            percentual_conclusao: {
-                type: String,
-                required: true
-            }, 
-            curso: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: "Curso",
-                required: true
-            }
-        });
-
         const usuarioSchema = new mongoose.Schema({
+
             nome: {
                 type: String,
                 required: true,
@@ -38,8 +27,18 @@ class Usuario {
                 type: Boolean,
                 default: false
             },
+            progresso: [{
 
-            progresso: [progressoSchema],
+                percentual_conclusao: {
+                    type: String,
+                    required: true
+                },
+                curso: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "Curso",
+                    required: true
+                }
+            }],
 
             cursosIds: [{
                 type: mongoose.Schema.Types.ObjectId,
@@ -51,7 +50,7 @@ class Usuario {
         });
 
         usuarioSchema.plugin(mongoosePaginate);
-        this.model = mongoose.model("Usuario", usuarioSchema);
+        this.model = mongoose.model("usuarios", usuarioSchema);
     }
 }
 

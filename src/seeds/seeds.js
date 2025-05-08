@@ -1,7 +1,7 @@
 import dontenv from 'dotenv';
 import faker from 'faker';
 import mongoose from 'mongoose';
-import DbConnect from '../config/dbConnect';
+import DbConnect from '../config/dbConnect.js';
 
 import Alternativa from '../models/Alternativa';
 import Curso from '../models/Curso';

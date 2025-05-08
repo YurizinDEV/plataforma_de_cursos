@@ -45,7 +45,7 @@ class Aula {
         });
 
         aulaSchema.plugin(mongoosePaginate);
-        this.model = mongoose.model("Aula", aulaSchema);
+        this.model = mongoose.model("aulas", aulaSchema);
     }
 }
 

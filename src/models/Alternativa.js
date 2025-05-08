@@ -25,7 +25,7 @@ class Alternativa {
         });
 
         alternativaSchema.plugin(mongoosePaginate);
-        this.model = mongoose.model("Alternativa", alternativaSchema);
+        this.model = mongoose.model("alternativas", alternativaSchema);
     }
 }
 

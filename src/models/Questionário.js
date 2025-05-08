@@ -29,7 +29,7 @@ class Questionario {
         });
 
         questionarioSchema.plugin(mongoosePaginate);
-        this.model = mongoose.model("Questionario", questionarioSchema);
+        this.model = mongoose.model("questionarios", questionarioSchema);
     }
 }
 

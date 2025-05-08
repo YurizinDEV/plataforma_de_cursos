@@ -1,18 +1,16 @@
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
-import { URL } from 'url';
-import SendMail from '../utils/SendMail.js'; 
 import logger from '../utils/logger.js';
 
-dotenv.config(); 
+dotenv.config();
 
-class DbConnect {
+class DbConnect{
     static async conectar() {
         try {
             const mongoUri = process.env.DB_URL;
 
             if (!mongoUri) {
-                throw new Error("A variável de ambiente DB_URL não está definida.");
+                throw new Error("A variável de ambiente DB_URL não foi definida.");
             }
 
             // Log seguro indicando que a URI está definida
@@ -44,7 +42,7 @@ class DbConnect {
             mongoose.connection.on('error', (err) => {
                 logger.error(`Mongoose erro: ${err}`);
                 if (process.env.NODE_ENV !== 'test') {
-                    SendMail.enviaEmailErrorDbConnect(err, new URL(import.meta.url).pathname, new Date());
+                    //SendMail.enviaEmailErrorDbConect(err, new URL(import.meta.url).pathname, new Date());
                 }
             });
 
@@ -73,12 +71,15 @@ class DbConnect {
         } catch (error) {
             logger.error(`Erro na conexão com o banco de dados em ${new Date().toISOString()}: ${error.message}`);
             if (process.env.NODE_ENV !== 'test') {
-                SendMail.enviaEmailErrorDbConnect(error, new URL(import.meta.url).pathname, new Date());
+                //SendMail.enviaEmailErrorDbConect(error, new URL(import.meta.url).pathname, new Date());
             }
-            throw error; 
+            throw error; // Re-lança o erro para permitir que o aplicativo lide com a falha de conexão
         }
     }
 
+    /**
+     * Desconecta do MongoDB.
+     */
     static async desconectar() {
         try {
             await mongoose.disconnect();
@@ -86,11 +87,13 @@ class DbConnect {
         } catch (error) {
             logger.error(`Erro ao desconectar do banco de dados em ${new Date().toISOString()}: ${error.message}`);
             if (process.env.NODE_ENV !== 'test') {
-                SendMail.enviaEmailErrorDbConnect(error, new URL(import.meta.url).pathname, new Date());
+                //SendMail.enviaEmailErrorDbConect(error, new URL(import.meta.url).pathname, new Date());
             }
-            throw error; 
+            throw error; // Re-lança o erro para permitir que o aplicativo lide com a falha de desconexão
         }
     }
 }
 
 export default DbConnect;
+
+

@@ -46,7 +46,7 @@ class Curso {
         });
 
         cursoSchema.plugin(mongoosePaginate);
-        this.model = mongoose.model("Curso", cursoSchema);
+        this.model = mongoose.model("cursos", cursoSchema);
     }
 }
 

@@ -38,6 +38,7 @@ export default async function alternativasSeed() {
     }
 
     console.log("Alternativas geradas com sucesso");
+    console.log("Alternativas inseridas:", inseridas);
 }
 
 alternativasSeed();
