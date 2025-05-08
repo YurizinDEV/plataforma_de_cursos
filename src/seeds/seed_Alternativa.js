@@ -2,7 +2,7 @@ import fakerbr from "faker-br";
 import {
     AlternativaModel,
     QuestionarioModel
-} from "../models/alternativa.js";
+} from "../models/Alternativa.js";
 
 export default async function alternativasSeed() {
     const questionarios = await QuestionarioModel.find({});

@@ -3,7 +3,7 @@ import {
     AulaModel,
     CursoModel,
     UsuarioModel
-} from "../models/aula.js";
+} from "../models/Aula.js";
 
 export default async function aulasSeed() {
     const cursos = await CursoModel.find({});
