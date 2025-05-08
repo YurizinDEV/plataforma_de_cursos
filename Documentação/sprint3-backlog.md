@@ -4,20 +4,20 @@
 - Reunião Sprint Planning Meeting 06.05 (Aílton Vieira, André Lucas e Yuri Zetoles)
 
 ## Models
-- Alternativa.js (Aílton Vieira)
-- Aula.js (Aílton Vieira)
-- Certificado.js (André Lucas)
-- Questionario.js (André Lucas)
-- Curso.js (Yuri Zetoles)
-- Usuario.js (Yuri Zetoles)
+- alternativa.js (Aílton Vieira)
+- aula.js (Aílton Vieira)
+- certificado.js (André Lucas)
+- questionario.js (André Lucas)
+- curso.js (Yuri Zetoles)
+- usuario.js (Yuri Zetoles)
 
 ## Seeds (das Models)
-- seed_Alternativa.js (Aílton Vieira)
-- seed_Aula.js (Aílton Vieira)
-- seed_Certificado.js (André Lucas)
-- seed_Questionario.js (André Lucas)
-- seed_Curso.js (Yuri Zetoles)
-- seed_Usuario.js (Yuri Zetoles)
+- seed_alternativa.js (Aílton Vieira)
+- seed_aula.js (Aílton Vieira)
+- seed_certificado.js (André Lucas)
+- seed_questionario.js (André Lucas)
+- seed_curso.js (Yuri Zetoles)
+- seed_usuario.js (Yuri Zetoles)
 
 ## Rotas (do Sistema)
 - POST /login
