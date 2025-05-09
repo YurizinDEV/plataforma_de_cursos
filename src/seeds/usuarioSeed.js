@@ -32,7 +32,6 @@ export default async function usuariosSeed() {
 
     await Usuario.insertMany(usuarios);
     console.log("Usuários gerados com sucesso");
-    console.log("Usuários inseridos:", usuarios);
 }
 
 usuariosSeed();
