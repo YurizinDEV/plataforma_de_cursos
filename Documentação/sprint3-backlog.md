@@ -18,3 +18,6 @@
 - questionarioSeed.js (André Lucas)
 - cursoSeed.js (Yuri Zetoles)
 - usuarioSeed.js (Yuri Zetoles)
+
+## Implementação
+- Seeds.js (Yuri Zetoles)
