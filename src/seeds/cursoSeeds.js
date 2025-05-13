@@ -1,7 +1,7 @@
 import fakerbr from "faker-br";
 import Curso from "../models/Curso.js";
 import Usuario from "../models/Usuario.js";
-import DbConnect from "../config/dbConnect.js";
+import DbConnect from "../config/DbConnect.js";
 
 DbConnect.conectar();
 
