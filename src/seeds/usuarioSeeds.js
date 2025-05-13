@@ -3,9 +3,9 @@ import
 Usuario
 from "../models/Usuario.js";
 import bcrypt from "bcryptjs";
-import DbConnect from "../config/dbConnect.js";
+import DbConnect from "../config/DbConnect.js";
 
-//DbConnect.conectar();
+DbConnect.conectar();
 
 const senhaPura = "123456";
 
