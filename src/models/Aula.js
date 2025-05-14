@@ -14,10 +14,6 @@ class Aula {
             descricao: {
                 type: String
             },
-            criadoEm: {
-                type: Date,
-                default: Date.now
-            },
             conteudoURL: {
                 type: String,
                 required: true
@@ -41,7 +37,8 @@ class Aula {
                 required: true
             }
         }, {
-            versionKey: false
+            versionKey: false,
+            timestamps: true
         });
 
         aulaSchema.plugin(mongoosePaginate);
