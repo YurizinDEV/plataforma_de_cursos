@@ -2,10 +2,10 @@ import fakerbr from "faker-br";
 import Aula from "../models/Aula.js";
 import Curso from "../models/Curso.js";
 import Usuario from "../models/Usuario.js";
-// import DbConnect from "../config/DbConnect.js";
+ import DbConnect from "../config/DbConnect.js";
 
 async function aulasSeed() {
-        // await DbConnect.conectar();
+        await DbConnect.conectar();
 
         const cursos = await Curso.find({});
         const usuarios = await Usuario.find({});
