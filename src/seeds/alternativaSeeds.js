@@ -36,7 +36,6 @@ export default async function alternativasSeed() {
 
     console.log("Alternativas geradas com sucesso!");
     console.log("Total inseridas:", inseridas.length);
-    process.exit(0);
 }
 
-alternativasSeed();
+// alternativasSeed();

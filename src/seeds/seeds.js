@@ -6,14 +6,20 @@ import questionariosSeed from "./questionarioSeeds.js";
 import alternativasSeed from "./alternativaSeeds.js";
 import certificadosSeed from "./certificadoSeeds.js";
 
-DbConnect.conectar();
+async function runSeeds() {
 
-await usuariosSeed();
-await cursosSeed();
-await aulasSeed();
-await questionariosSeed();
-await alternativasSeed();
-await certificadosSeed();
-console.log("Seeds executados com sucesso");
+    DbConnect.conectar();
 
-DbConnect.desconectar();
+    await usuariosSeed();
+    await cursosSeed();
+    await aulasSeed();
+    await questionariosSeed();
+    await alternativasSeed();
+    await certificadosSeed();
+    console.log("Seeds executados com sucesso");
+
+    DbConnect.desconectar();
+}
+
+
+await runSeeds();

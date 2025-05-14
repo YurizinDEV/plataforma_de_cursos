@@ -37,4 +37,4 @@ export default async function questionariosSeed() {
     console.log("Questionários gerados com sucesso!");
 }
 
-questionariosSeed();
+// questionariosSeed();

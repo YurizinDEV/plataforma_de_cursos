@@ -27,4 +27,4 @@ export default async function certificadosSeed() {
     console.log("Certificados gerados com sucesso");
 }
 
-certificadosSeed();
+// certificadosSeed();

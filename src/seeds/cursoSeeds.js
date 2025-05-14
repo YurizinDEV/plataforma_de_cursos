@@ -47,4 +47,4 @@ export default async function cursosSeed() {
     console.log("Cursos gerados com sucesso");
 }
 
-cursosSeed();
+// cursosSeed();

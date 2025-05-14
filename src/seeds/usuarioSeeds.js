@@ -33,4 +33,4 @@ export default async function usuariosSeed() {
     // console.log(usuarios);
 }
 
-usuariosSeed();
+// usuariosSeed();

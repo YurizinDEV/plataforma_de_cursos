@@ -40,4 +40,4 @@ export default async function aulasSeed() {
     // console.log(aulas)
 }
 
-aulasSeed();
+// aulasSeed();
