@@ -1,12 +1,11 @@
 import fakerbr from "faker-br";
 import Curso from "../models/Curso.js";
 import Usuario from "../models/Usuario.js";
-import DbConnect from "../config/DbConnect.js";
+// import DbConnect from "../config/DbConnect.js";
 
-DbConnect.conectar();
+// DbConnect.conectar();
 
 export default async function cursosSeed() {
-    try {
         const usuarios = await Usuario.find({});
         await Curso.deleteMany({});
 
@@ -46,11 +45,6 @@ export default async function cursosSeed() {
         }
 
         console.log("Cursos gerados com sucesso");
-        console.log(cursos)
-    } catch (err) {
-        console.error("Erro no seed de cursos:", err);
-        process.exit(1);
     }
-}
 
 cursosSeed();
