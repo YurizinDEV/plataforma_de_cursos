@@ -1,6 +1,7 @@
 # Sprint 4 15.05.2025 - 25.05.2025
 
 ## Reuniões
+Reunião - Sprint Planing Meeting 15.05
 
 ## Rotas (do Sistema)
 - POST /login
