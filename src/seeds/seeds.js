@@ -1,19 +1,19 @@
 import DbConnect from "../config/DbConnect.js";
-import usuarioSeed from "./usuarioSeeds.js";
-import cursoSeed from "./cursoSeeds.js";
-import aulaSeed from "./aulaSeeds.js";
-import questionarioSeed from "./questionarioSeeds.js";
-import alternativaSeed from "./alternativaSeeds.js";
-import certificadoSeed from "./certificadoSeeds.js";
+import usuariosSeed from "./usuarioSeeds.js";
+import cursosSeed from "./cursoSeeds.js";
+import aulasSeed from "./aulaSeeds.js";
+import questionariosSeed from "./questionarioSeeds.js";
+import alternativasSeed from "./alternativaSeeds.js";
+import certificadosSeed from "./certificadoSeeds.js";
 
 DbConnect.conectar();
 
-await usuarioSeed();
-await cursoSeed();
-await aulaSeed();
-await questionarioSeed();
-await alternativaSeed();
-await certificadoSeed();
+await usuariosSeed();
+await cursosSeed();
+await aulasSeed();
+await questionariosSeed();
+await alternativasSeed();
+await certificadosSeed();
 console.log("Seeds executados com sucesso");
 
 DbConnect.desconectar();

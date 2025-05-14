@@ -3,7 +3,7 @@ import Alternativa from "../models/Alternativa.js";
 import Questionario from "../models/Questionario.js";
 // import DbConnect from "../config/DbConnect.js";
 
-async function alternativasSeed() {
+export default async function alternativasSeed() {
         // await DbConnect.conectar();
 
         const questionarios = await Questionario.find({});

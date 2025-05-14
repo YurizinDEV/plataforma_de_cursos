@@ -5,7 +5,7 @@ from "../models/Usuario.js";
 import bcrypt from "bcryptjs";
 // import DbConnect from "../config/DbConnect.js";
 
-//DbConnect.conectar();
+// DbConnect.conectar();
 
 const senhaPura = "123456";
 
@@ -32,7 +32,7 @@ export default async function usuariosSeed() {
 
     await Usuario.insertMany(usuarios);
     console.log("Usuários gerados com sucesso");
-    //console.log(usuarios);
+    // console.log(usuarios);
 }
 
 usuariosSeed();

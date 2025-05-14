@@ -4,7 +4,7 @@ import Curso from "../models/Curso.js";
 import Usuario from "../models/Usuario.js";
 // import DbConnect from "../config/DbConnect.js";
 
-async function certificadosSeed() {
+export default async function certificadosSeed() {
         // await DbConnect.conectar();
 
         const usuarios = await Usuario.find({});
