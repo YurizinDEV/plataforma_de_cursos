@@ -1,4 +1,4 @@
-// src/app.js
+// src/routes/index.js
 
 // BIBLIOTECAS
 import express from "express";
@@ -11,13 +11,13 @@ import dotenv from "dotenv";
 import logRoutes from "./middlewares/LogRoutesMiddleware.js";
 
 // ROTAS
-import authRoutes from "./routes/authRoutes.js";
-import dashboardRoutes from "./routes/dashboardRoutes.js";
-import perfilRoutes from "./routes/perfilRoutes.js";
-import cursoRoutes from "./routes/cursoRoutes.js";
-import aulaRoutes from "./routes/aulaRoutes.js";
-import questionarioRoutes from "./routes/questionarioRoutes.js";
-import certificadoRoutes from "./routes/certificadoRoutes.js";
+import auth from "./authRoutes.js";
+import dashboard from "./dashboardRoutes.js";
+import perfil from "./perfilRoutes.js";
+import curso from "./cursoRoutes.js";
+import aula from "./aulaRoutes.js";
+import questionario from "./questionarioRoutes.js";
+import certificado from "./certificadoRoutes.js";
 
 // CONFIGURAÇÃO DO AMBIENTE
 dotenv.config();
@@ -49,17 +49,16 @@ const routes = (app) => {
     app.use(express.json());
 
     // Configurando as rotas
-    app.use("/api/auth", authRoutes); // Rotas de autenticação
-    app.use("/api/dashboard", dashboardRoutes); // Rotas do dashboard
-    app.use("/api/perfil", perfilRoutes); // Rotas de perfil
-    app.use("/api/cursos", cursoRoutes); // Rotas de cursos
-    app.use("/api/aulas", aulaRoutes); // Rotas de aulas
-    app.use("/api/questionarios", questionarioRoutes); // Rotas de questionários
-    app.use("/api/certificados", certificadoRoutes); // Rotas de certificados
+    app.use("/api/auth", auth); // Rotas de autenticação
+    app.use("/api/dashboard", dashboard); // Rotas do dashboard
+    app.use("/api/perfil", perfil); // Rotas de perfil
+    app.use("/api/cursos", curso); // Rotas de cursos
+    app.use("/api/aulas", aula); // Rotas de aulas
+    app.use("/api/questionarios", questionario); // Rotas de questionários
+    app.use("/api/certificados", certificado); // Rotas de certificados
 };
 
 // Chama a função para definir as rotas
-routes(app);
+routes(index);
 
-// Exporta a aplicação para ser usada em outros módulos
-export default app;
+export default routes;
