@@ -16,7 +16,7 @@ export default async function questionariosSeed() {
 
     const questionarios = [];
 
-    for (let i = 0; i < 200; i++) {
+    for (let i = 0; i < aulas; i++) {
         const aula = aulas[Math.floor(Math.random() * aulas.length)];
         const alternativasTexto = fakerbr.random.arrayElements(
             ["Verdadeiro", "Falso", "Talvez", "Nenhuma"], 4
