@@ -4,7 +4,7 @@
 import express from "express";
 import swaggerJsDoc from "swagger-jsdoc";
 import swaggerUI from "swagger-ui-express";
-import getSwaggerOptions from "./docs/config/head.js"; // Altere conforme sua estrutura de diretórios
+import getSwaggerOptions from "./docs/config/head.js"; 
 import dotenv from "dotenv";
 
 // MIDDLEWARES
