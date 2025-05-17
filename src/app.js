@@ -28,7 +28,9 @@ app.use(compression());
 app.use(express.json());
 
 // Habilitando o uso de urlencoded pelo express
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({
+    extended: true
+}));
 
 // // Passando para o arquivo de rotas o app
 // routes(app);
@@ -40,7 +42,9 @@ app.use((req, res, next) => {
         404,
         'resourceNotFound',
         null,
-        [{ message: 'Rota não encontrada.' }]
+        [{
+            message: 'Rota não encontrada.'
+        }]
     );
 });
 
