@@ -1,97 +1,77 @@
-import mongoose from 'mongoose';
-import UsuarioFilterBuilder from './filters/UsuarioFilterBuilder.js';
 import UsuarioModel from '../models/Usuario.js';
-import { CommonResponse, CustomError, HttpStatusCodes, errorHandler, messages, StatusService, asyncWrapper } from '../utils/helpers/index.js';
+import UsuarioFilterBuilder from './filters/UsuarioFilterBuilder.js';
+import {
+    CustomError,
+    messages
+} from '../utils/helpers/index.js';
 
 class UsuarioRepository {
     constructor({
-        usuarioModel = UsuarioModel, 
+        usuarioModel = UsuarioModel
     } = {}) {
         this.model = usuarioModel;
     }
 
-    // Obter combinações únicas de rota e domínio a partir das permissões.
-
-    async obterParesRotaDominioUnicos(permissoes) {
-        const combinacoes = permissoes.map(p => `${p.rota}_${p.dominio || 'undefined'}`);
-        const combinacoesUnicas = [...new Set(combinacoes)];
-        return combinacoesUnicas.map(combinacao => {
-            const [rota, dominio] = combinacao.split('_');
-            return { rota, dominio: dominio === 'undefined' ? null : dominio };
-        });
-    }
-
-    // Buscar usuário por email e, opcionalmente, por um ID diferente.
-
     async buscarPorEmail(email, idIgnorado = null) {
-        const filtro = { email };
-
+        const filtro = {
+            email
+        };
         if (idIgnorado) {
-            filtro._id = { $ne: idIgnorado };
+            filtro._id = {
+                $ne: idIgnorado
+            };
         }
-
-        const documento = await this.model.findOne(filtro, '+senha')
-
-        return documento;
+        return await this.model.findOne(filtro, '+senha');
     }
 
-    async buscarPorId(id, includeTokens = false) {
-        let query = this.model.findById(id);
+    async buscarPorId(id) {
+        let query = await this.model.findById(id);
+        const usuario = await query;
 
-        if (includeTokens) {
-            query = query.select('+refreshtoken +accesstoken');
-        }
-
-        const user = await query;
-
-        if (!user) {
+        if (!usuario) {
             throw new CustomError({
                 statusCode: 404,
                 errorType: 'resourceNotFound',
                 field: 'Usuário',
                 details: [],
-                customMessage: messages.error.resourceNotFound('Usuário')
+                customMessage: messages.error.resourceNotFound('Usuário'),
             });
         }
-        return user;
+        return usuario;
     }
 
-    // Métodos CRUD.
-
     async listar(req) {
-        console.log('Estou no listar em UsuarioRepository');
         const id = req.params.id || null;
 
-        // Se um ID for fornecido, retorna o usuário enriquecido com estatísticas.
+        // Se um ID for fornecido, retorna o usuário enriquecido com estatísticas
         if (id) {
-            const data = await this.model.findById(id)
-
-            if (!data) {
+            const usuario = await this.model.findById(id);
+            if (!usuario) {
                 throw new CustomError({
                     statusCode: 404,
                     errorType: 'resourceNotFound',
                     field: 'Usuário',
                     details: [],
-                    customMessage: messages.error.resourceNotFound('Usuário')
+                    customMessage: messages.error.resourceNotFound('Usuário'),
                 });
             }
 
-            const dataWithStats = {
-                ...data.toObject()
-            }
-
-            return dataWithStats;
+            const dadosEnriquecidos = this.enriquecerUsuario(usuario);
+            return dadosEnriquecidos;
         }
 
         // Caso não haja ID, retorna todos os usuários com suporte a filtros e paginação
-        const { nome, email, page = 1 } = req.query;
-        const limite = Math.min(parseInt(req.query.limite, 20) || 20, 100);
-
+        const {
+            nome,
+            email,
+            page = 1
+        } = req.query;
+        const limite = Math.min(parseInt(req.query.limite, 10) || 20, 100);
         const filterBuilder = new UsuarioFilterBuilder()
             .comNome(nome || '')
-            .comEmail(email || '')
+            .comEmail(email || '');
 
-        if (typeof filterBuilder.build !== 'function') {
+                    if (typeof filterBuilder.build !== 'function') {
             throw new CustomError({
                 statusCode: 500,
                 errorType: 'internalServerError',
@@ -106,16 +86,27 @@ class UsuarioRepository {
             limit: limite,
         });
 
-        // Enriquecer cada usuário com estatísticas utilizando o length dos arrays.
-        resultado.docs = resultado.docs.map(doc => {
-            const usuarioObj = typeof doc.toObject === 'function' ? doc.toObject() : doc;
-
-            return {
-                ...usuarioObj,
-            };
+        // Enriquecer cada usuário com estatísticas
+        resultado.docs = resultado.docs.map(usuario => {
+            return this.enriquecerUsuario(usuario);
         });
 
         return resultado;
+    }
+
+    // Método auxiliar para enriquecer os dados do usuário com estatísticas
+    enriquecerUsuario(usuario) {
+        const usuarioObj = usuario.toObject(); // Converter para objeto simples
+        const totalCursos = usuarioObj.cursosIds.length; // Contar cursos
+        const percentualMedio = usuarioObj.progresso.length > 0 ?
+            usuarioObj.progresso.reduce((acc, prog) => acc + parseFloat(prog.percentual_conclusao), 0) / usuarioObj.progresso.length :
+            0; // Calcular média percentual de conclusão
+
+        return {
+            ...usuarioObj,
+            totalCursos,
+            percentualMedio: percentualMedio.toFixed(2), // Limitar a duas casas decimais
+        };
     }
 
     async criar(dadosUsuario) {
@@ -124,18 +115,18 @@ class UsuarioRepository {
     }
 
     async atualizar(id, parsedData) {
-        const usuario = await this.model.findByIdAndUpdate(id, parsedData, { new: true }).exec();
-
+        const usuario = await this.model.findByIdAndUpdate(id, parsedData, {
+            new: true
+        });
         if (!usuario) {
             throw new CustomError({
                 statusCode: 404,
                 errorType: 'resourceNotFound',
                 field: 'Usuário',
                 details: [],
-                customMessage: messages.error.resourceNotFound('Usuário')
+                customMessage: messages.error.resourceNotFound('Usuário'),
             });
         }
-
         return usuario;
     }
 
