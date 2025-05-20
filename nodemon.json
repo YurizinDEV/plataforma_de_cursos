@@ -1,6 +1,6 @@
 {
     "execMap": {
-        "js": "npx clear-cli && node"
+        "js": "clear && node"
     },
     "watch": ["server.js", "src/"]
 }
