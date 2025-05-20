@@ -1,7 +1,7 @@
 import UsuarioService from '../services/UsuarioService.js';
 import { UsuarioQuerySchema, UsuarioIdSchema } from '../utils/validators/schemas/zod/querys/UsuarioQuerySchema.js';
 import { UsuarioSchema, UsuarioUpdateSchema } from '../utils/validators/schemas/zod/UsuarioSchema.js';
-import { CommonResponse, CustomError, HttpStatusCodes } from '../utils/helpers/index.js';
+import { CommonResponse, CustomError, HttpStatusCodes, errorHandler, messages, StatusService, asyncWrapper } from '../utils/helpers/index.js';
 
 class UsuarioController {
     constructor() {
@@ -11,13 +11,11 @@ class UsuarioController {
     async listar(req, res) {
         const { id } = req.params || {};
         if (id) {
-            // Validação do ID do usuário
             UsuarioIdSchema.parse(id);
         }
 
         const query = req.query || {};
         if (Object.keys(query).length !== 0) {
-            // Validação de query params como nome e email
             await UsuarioQuerySchema.parseAsync(query);
         }
 
@@ -26,34 +24,28 @@ class UsuarioController {
     }
 
     async criar(req, res) {
-        // Validação dos dados do novo usuário
         const parsedData = UsuarioSchema.parse(req.body);
-        
-        // Criação do usuário
-        const data = await this.service.criar(parsedData);
+        let data = await this.service.criar(parsedData);
 
-        // Limpeza de dados sensíveis antes de retornar
-        const usuarioLimpo = data.toObject();
-        delete usuarioLimpo.senha;  // Remover a senha do usuário
+        let usuarioLimpo = data.toObject();
+
+        delete usuarioLimpo.senha;
 
         return CommonResponse.created(res, usuarioLimpo);
     }
 
     async atualizar(req, res) {
         const { id } = req.params;
-        // Validação do ID do usuário
         UsuarioIdSchema.parse(id);
 
-        // Validação dos dados de atualização
         const parsedData = UsuarioUpdateSchema.parse(req.body);
         const data = await this.service.atualizar(id, parsedData);
 
-        // Limpeza de dados sensíveis antes de retornar
-        const usuarioLimpo = data.toObject();
-        delete usuarioLimpo.senha;  // Remover a senha do usuário
+        let usuarioLimpo = data.toObject();
 
-        return CommonResponse.success(res, usuarioLimpo, 200, 
-            'Usuário atualizado com sucesso. Porém, o e-mail é ignorado em tentativas de atualização, pois é operação proibida.');
+        delete usuarioLimpo.senha;
+
+        return CommonResponse.success(res, data, 200, 'Usuário atualizado com sucesso. Porém, o e-mail é ignorado em tentativas de atualização, pois é operação proibida.');
     }
 
     async deletar(req, res) {
@@ -69,6 +61,7 @@ class UsuarioController {
         }
 
         const data = await this.service.deletar(id);
+
         return CommonResponse.success(res, data, 200, 'Usuário excluído com sucesso.');
     }
 }
