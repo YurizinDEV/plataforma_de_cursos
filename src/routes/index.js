@@ -25,7 +25,7 @@ const routes = (app) => {
     // });
 
     app.use(express.json(),
-        usuarios
+        usuarios,
     );
 
     app.use((req, res) => {
