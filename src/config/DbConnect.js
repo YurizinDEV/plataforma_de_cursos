@@ -1,19 +1,19 @@
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import { URL } from 'url';
 import logger from '../utils/logger.js';
 
-dotenv.config();
+dotenv.config(); 
 
-class DbConnect{
+class DbConnect {
     static async conectar() {
         try {
-            const mongoUri = process.env.DB_URL;
+            const mongoURI = process.env.DB_URL;
 
-            if (!mongoUri) {
-                throw new Error("A variável de ambiente DB_URL não foi definida.");
+            if (!mongoURI) {
+                throw new Error("A variável de ambiente DB_URL não está definida.");
             }
 
-            // Log seguro indicando que a URI está definida
             logger.info('DB_URL está definida.');
 
             // Configuração de strictQuery baseada no ambiente
@@ -42,7 +42,7 @@ class DbConnect{
             mongoose.connection.on('error', (err) => {
                 logger.error(`Mongoose erro: ${err}`);
                 if (process.env.NODE_ENV !== 'test') {
-                    //SendMail.enviaEmailErrorDbConect(err, new URL(import.meta.url).pathname, new Date());
+                    SendMail.enviaEmailErrorDbConnect(err, new URL(import.meta.url).pathname, new Date());
                 }
             });
 
@@ -51,7 +51,7 @@ class DbConnect{
             });
 
             // Conexão com opções configuráveis via variáveis de ambiente
-            await mongoose.connect(mongoUri, {
+            await mongoose.connect(mongoURI, {
                 serverSelectionTimeoutMS: process.env.MONGO_SERVER_SELECTION_TIMEOUT_MS
                     ? parseInt(process.env.MONGO_SERVER_SELECTION_TIMEOUT_MS)
                     : 5000,
@@ -71,15 +71,12 @@ class DbConnect{
         } catch (error) {
             logger.error(`Erro na conexão com o banco de dados em ${new Date().toISOString()}: ${error.message}`);
             if (process.env.NODE_ENV !== 'test') {
-                //SendMail.enviaEmailErrorDbConect(error, new URL(import.meta.url).pathname, new Date());
+                SendMail.enviaEmailErrorDbConnect(error, new URL(import.meta.url).pathname, new Date());
             }
-            throw error; // Re-lança o erro para permitir que o aplicativo lide com a falha de conexão
+            throw error; 
         }
     }
 
-    /**
-     * Desconecta do MongoDB.
-     */
     static async desconectar() {
         try {
             await mongoose.disconnect();
@@ -87,12 +84,11 @@ class DbConnect{
         } catch (error) {
             logger.error(`Erro ao desconectar do banco de dados em ${new Date().toISOString()}: ${error.message}`);
             if (process.env.NODE_ENV !== 'test') {
-                //SendMail.enviaEmailErrorDbConect(error, new URL(import.meta.url).pathname, new Date());
+                SendMail.enviaEmailErrorDbConnect(error, new URL(import.meta.url).pathname, new Date());
             }
-            throw error; // Re-lança o erro para permitir que o aplicativo lide com a falha de desconexão
+            throw error; 
         }
     }
 }
 
 export default DbConnect;
-
