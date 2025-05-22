@@ -47,4 +47,3 @@ A tabela a seguir contém a relação com os Requisitos Não Funcionais identifi
 | **RNF-003**  |Acessibilidade Multiplataforma                   | O sistema será acessível via navegador, com design responsivo para dispositivos móveis, permitindo aos usuários acessarem os cursos de qualquer lugar. |
 | **RNF-004**  | Formato Markdown                  | O sistema possuirá campos de textos em formato Markdown para que seja realizada a formatação da maneira que desejar nos campos de texto. |
 | **RNF-005**  | Emissão de Certificados                 | O sistema deve emitir um certificado de conclusão após cada curso ser concluído por usuário. |
-

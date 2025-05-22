@@ -49,7 +49,11 @@ Consulta ao perfil de um usuário específico.
 
 Apenas o próprio usuário ou administradores podem acessar.
 
-Exibe progresso nos cursos matriculados.
+Apenas administradores podem remover ou tornar um usuário administrador.
+
+Exibe progresso nos cursos matriculados por um usuário para os administradores.
+
+Exibe progresso nos cursos matriculados para o usuário.
 
 **Resultado Esperado:**
 
@@ -65,7 +69,13 @@ Criação de novos cursos na plataforma.
 
 Acesso restrito a administradores.
 
-Carga horária mínima de 1 minuto.
+Apenas usuários administradores podem cadastrar, atualizar, remover e incluir conteúdos extras aos cursos.
+
+O sistema deve validar tamanho e formato de arquivos enviados antes de permitir a inserção (tal como PDF e menor que 15MB).
+
+O sistema deve incorporar url de vídeos "embeds" do youtube.
+
+Carga horária opcional.
 
 Relacionamento obrigatório com usuário criador.
 
