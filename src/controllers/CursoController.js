@@ -1,35 +1,34 @@
-// src/controllers/CursoController.js
-import CursoService from '../services/CursoService.js'; // Certifique-se de criar este serviço
+import CursoService from '../services/CursoServices.js';
+import { CursoSchema, CursoUpdateSchema } from '../utils/validators/schemas/zod/CursoSchema.js';
+import { CommonResponse } from '../utils/helpers/index.js';
 
 class CursoController {
-    async listarCursos(req, res) {
-        try {
-            const cursos = await CursoService.getAllCursos(req.user);
-            res.status(200).json(cursos);
-        } catch (err) {
-            res.status(500).json({ error: 'Erro ao listar cursos.' });
-        }
+    constructor() {
+        this.service = new CursoService();
     }
 
-    async visualizarCurso(req, res) {
-        const { id } = req.params;
-        try {
-            const cursoDetails = await CursoService.getCursoById(id, req.user);
-            res.status(200).json(cursoDetails);
-        } catch (err) {
-            res.status(403).json({ error: 'Acesso não autorizado.' });
-        }
+    async listar(req, res) {
+        const cursos = await this.service.listar(req);
+        return CommonResponse.success(res, cursos);
     }
 
-    async matricularAluno(req, res) {
+    async criar(req, res) {
+        const parsedData = CursoSchema.parse(req.body);
+        const curso = await this.service.criar(parsedData);
+        return CommonResponse.created(res, curso);
+    }
+
+    async atualizar(req, res) {
         const { id } = req.params;
-        const userId = req.user.id;
-        try {
-            const matricula = await CursoService.matricularUsuario(userId, id);
-            res.status(201).json({ message: 'Matrícula realizada com sucesso!', matricula });
-        } catch (err) {
-            res.status(400).json({ error: err.message }); // Mensagem de erro personalizada
-        }
+        const parsedData = CursoUpdateSchema.parse(req.body);
+        const cursoAtualizado = await this.service.atualizar(id, parsedData);
+        return CommonResponse.success(res, cursoAtualizado);
+    }
+
+    async deletar(req, res) {
+        const { id } = req.params;
+        await this.service.deletar(id);
+        return CommonResponse.success(res, null, 204);
     }
 }
 
