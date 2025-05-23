@@ -1,27 +1,54 @@
-// src/repositories/CursoRepository.js
+import CursoModel from '../models/Curso.js';
+import { CustomError, messages } from '../utils/helpers/index.js';
 
 class CursoRepository {
-    async getAllCursos(user) {
-        if (user.type === 'student') {
-            return await db('courses').where({ available: true }); // Apenas cursos disponíveis
+    async criar(dadosCurso) {
+        const curso = new CursoModel(dadosCurso);
+        return await curso.save();
+    }
+
+    async buscarPorId(id) {
+        const curso = await CursoModel.findById(id);
+        if (!curso) {
+            throw new CustomError({
+                statusCode: 404,
+                errorType: 'resourceNotFound',
+                field: 'Curso',
+                details: [],
+                customMessage: messages.error.resourceNotFound('Curso')
+            });
         }
-        return await db('courses'); // Para professores, retornar todos os cursos
+        return curso;
     }
 
-    async getCursoById(id, user) {
-        const [curso] = await db('courses').where({ id });
-        if (!curso) throw new Error('Curso não encontrado.');
-        return curso; // Adicione lógicas de autorização se necessário
+        async buscarPorTitulo(titulo) {
+        const curso = await CursoModel.findOne({ titulo });
+        return curso;
     }
 
-    async matricularUsuario(userId, cursoId) {
-        const [matricula] = await db('enrollments').insert({
-            user_id: userId,
-            course_id: cursoId,
-            created_at: new Date()
-        }).returning('*');
-        return matricula;
+
+    async listar(paginationOptions = {}) {
+        return await CursoModel.paginate({}, paginationOptions);
+    }
+
+    async atualizar(id, dadosAtualizados) {
+        const cursoAtualizado = await CursoModel.findByIdAndUpdate(id, dadosAtualizados, { new: true });
+        if (!cursoAtualizado) {
+            throw new CustomError({
+                statusCode: 404,
+                errorType: 'resourceNotFound',
+                field: 'Curso',
+                details: [],
+                customMessage: messages.error.resourceNotFound('Curso')
+            });
+        }
+        return cursoAtualizado;
+    }
+
+    async deletar(id) {
+        const curso = await CursoModel.findByIdAndDelete(id);
+        return curso;
     }
 }
 
-export default new CursoRepository();
+export default CursoRepository;
