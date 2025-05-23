@@ -1,3 +1,5 @@
+// ExampleUsuarioRepository.js
+
 import mongoose from 'mongoose';
 import UsuarioFilterBuilder from './filters/UsuarioFilterBuilder.js';
 import UsuarioModel from '../models/Usuario.js';
