@@ -1,18 +1,42 @@
-// src/services/CursoService.js
 import CursoRepository from '../repositories/CursoRepository.js';
+import { CustomError, messages } from '../utils/helpers/index.js';
 
 class CursoService {
-    async getAllCursos(user) {
-        return await CursoRepository.getAllCursos(user);
+    constructor() {
+        this.repository = new CursoRepository();
     }
 
-    async getCursoById(id, user) {
-        return await CursoRepository.getCursoById(id, user);
+    async listar(req) {
+        const pagina = parseInt(req.query.page) || 1; // Paginação padrão
+        const limite = parseInt(req.query.limit) || 10; // Limite padrão
+
+        const cursos = await this.repository.listar({ page: pagina, limit: limite });
+        return cursos;
     }
 
-    async matricularUsuario(userId, cursoId) {
-        return await CursoRepository.matricularUsuario(userId, cursoId);
+    async criar(dadosCurso) {
+        const cursoExistente = await this.repository.buscarPorTitulo(dadosCurso.titulo);
+        if (cursoExistente) {
+            throw new CustomError({
+                statusCode: 400,
+                errorType: 'validationError',
+                field: 'titulo',
+                details: [{ path: 'titulo', message: 'Título de curso já está em uso.' }],
+                customMessage: 'Título de curso já está em uso.',
+            });
+        }
+        return await this.repository.criar(dadosCurso);
+    }
+
+    async atualizar(id, dadosAtualizados) {
+        await this.repository.buscarPorId(id); // Verifica se o curso existe
+        return await this.repository.atualizar(id, dadosAtualizados);
+    }
+
+    async deletar(id) {
+        await this.repository.buscarPorId(id); // Verifica se o curso existe
+        return await this.repository.deletar(id);
     }
 }
 
-export default new CursoService();
+export default CursoService;
