@@ -1,6 +1,6 @@
 import fakerbr from "faker-br";
 import Usuario from "../models/Usuario.js";
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 // import DbConnect from "../config/DbConnect.js";
 
 // DbConnect.conectar();
