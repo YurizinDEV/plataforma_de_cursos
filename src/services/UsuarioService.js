@@ -1,7 +1,12 @@
 //UsuarioService.js
 
 import UsuarioRepository from '../repositories/UsuarioRepository.js';
-import { CustomError, HttpStatusCodes, messages } from '../utils/helpers/index.js';
+import {
+    CustomError,
+    HttpStatusCodes,
+    messages
+} from '../utils/helpers/index.js';
+import bcrypt from 'bcrypt';
 
 class UsuarioService {
     constructor() {
@@ -9,7 +14,17 @@ class UsuarioService {
     }
 
     async listar(req) {
-        const data = await this.repository.listar(req); 
+        const data = await this.repository.listar(req);
+        return data;
+    }
+
+    async criar(parsedData) {
+        await this.validateEmail(parsedData.email);
+        if (parsedData.senha) {
+            const saltRounds = 10;
+            parsedData.senha = await bcrypt.hash(parsedData.senha, saltRounds);
+        }
+        const data = await this.repository.criar(parsedData);
         return data;
     }
 
@@ -23,7 +38,10 @@ class UsuarioService {
                 statusCode: HttpStatusCodes.BAD_REQUEST.code,
                 errorType: 'validationError',
                 field: 'email',
-                details: [{ path: 'email', message: 'Email já está em uso.' }],
+                details: [{
+                    path: 'email',
+                    message: 'Email já está em uso.'
+                }],
                 customMessage: 'Email já está em uso.',
             });
         }
