@@ -14,6 +14,18 @@ class UsuarioRepository {
         this.model = usuarioModel;
     }
 
+    async buscarPorEmail(email, idIgnorado = null) {
+        const filtro = {
+            email
+        };
+        if (idIgnorado) {
+            filtro._id = {
+                $ne: idIgnorado
+            };
+        }
+        return await this.model.findOne(filtro, '+senha');
+    }
+
     async buscarPorId(id) {
         let query = await this.model.findById(id);
         const usuario = await query;
@@ -59,7 +71,7 @@ class UsuarioRepository {
             .comNome(nome || '')
             .comEmail(email || '');
 
-                    if (typeof filterBuilder.build !== 'function') {
+        if (typeof filterBuilder.build !== 'function') {
             throw new CustomError({
                 statusCode: 500,
                 errorType: 'internalServerError',
@@ -81,13 +93,18 @@ class UsuarioRepository {
         return resultado;
     }
 
+    async criar(dadosUsuario) {
+        const usuario = new this.model(dadosUsuario);
+        return await usuario.save();
+    }
+
     // Método auxiliar
     enriquecerUsuario(usuario) {
-        const usuarioObj = usuario.toObject(); 
+        const usuarioObj = usuario.toObject();
         const totalCursos = usuarioObj.cursosIds.length;
         const percentualMedio = usuarioObj.progresso.length > 0 ?
             usuarioObj.progresso.reduce((acc, prog) => acc + parseFloat(prog.percentual_conclusao), 0) / usuarioObj.progresso.length :
-            0; 
+            0;
 
         return {
             ...usuarioObj,
