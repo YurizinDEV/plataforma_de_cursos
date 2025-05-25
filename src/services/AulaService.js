@@ -1,67 +1,76 @@
-import AulaRepository from "../repositories/AulaRepository.js";
-import CursoRepository from "../repositories/CursoRepository.js";
-import { CustomError, HttpStatusCodes } from '../utils/helpers/index.js';
+import AulaRepository from '../repositories/AulaRepository.js';
+import CursoRepository from '../repositories/CursoRepository.js';
+import { CustomError, messages, HttpStatusCodes } from '../utils/helpers/index.js';
 
 class AulaService {
-  constructor() {
-    this.repository = new AulaRepository();
-  }
-
-  async listar({ params, query }) {
-    if (params?.id) {
-      return await this.repository.buscarPorId(params.id);
-    }
-    return await this.repository.listar(query);
-  }
-
-  async criar(aulaData) {
-    const curso = await CursoRepository.buscarPorId(aulaData.cursoId);
-    if (!curso) {
-      throw new CustomError(messages.NOT_FOUND, HttpStatusCodes.NOT_FOUND);
+    constructor() {
+        this.repository = new AulaRepository();
     }
 
-    const aulaExistente = await this.repository.verificarExistenciaPorCurso(
-      aulaData.cursoId,
-      aulaData.titulo
-    );
-    if (aulaExistente) {
-      throw new CustomError(messages.ALREADY_EXISTS, HttpStatusCodes.CONFLICT);
+    async listar(req) {
+        const { params, query } = req;
+        
+        if (params?.id) {
+            const aula = await this.repository.buscarPorId(params.id);
+            if (!aula) {
+                throw new CustomError(messages.NOT_FOUND, HttpStatusCodes.NOT_FOUND);
+            }
+            return aula;
+        }
+        
+        return await this.repository.listar(query);
     }
 
-    return await this.repository.criar(aulaData);
-  }
+    async criar(req) {
+        const { body } = req;
+        const curso = await CursoRepository.buscarPorId(body.cursoId);
+        
+        if (!curso) {
+            throw new CustomError('Curso não encontrado', HttpStatusCodes.NOT_FOUND);
+        }
 
-  async acessar(id) {
-    const aula = await this.repository.buscarPorId(id);
-    if (!aula) {
-      throw new CustomError(messages.NOT_FOUND, HttpStatusCodes.NOT_FOUND);
+        const aulaExistente = await this.repository.verificarExistenciaPorCurso(
+            body.cursoId, 
+            body.titulo
+        );
+        
+        if (aulaExistente) {
+            throw new CustomError('Esta aula já existe neste curso', HttpStatusCodes.CONFLICT);
+        }
+
+        return await this.repository.criar(body);
     }
-    return aula;
-  }
 
-  async atualizar(id, aulaData) {
-    const aula = await this.repository.buscarPorId(id);
-    if (!aula) {
-      throw new CustomError(messages.NOT_FOUND, HttpStatusCodes.NOT_FOUND);
+    async atualizar(req) {
+        const { params: { id }, body } = req;
+        const aula = await this.repository.buscarPorId(id);
+        
+        if (!aula) {
+            throw new CustomError(messages.NOT_FOUND, HttpStatusCodes.NOT_FOUND);
+        }
+        
+        return await this.repository.atualizar(id, body);
     }
-    return await this.repository.atualizar(id, aulaData);
-  }
 
-  async deletar(id) {
-    const aula = await this.repository.buscarPorId(id);
-    if (!aula) {
-      throw new CustomError(messages.NOT_FOUND, HttpStatusCodes.NOT_FOUND);
+    async deletar(req) {
+        const { params: { id } } = req;
+        const aula = await this.repository.buscarPorId(id);
+        
+        if (!aula) {
+            throw new CustomError(messages.NOT_FOUND, HttpStatusCodes.NOT_FOUND);
+        }
+        
+        return await this.repository.deletar(id);
     }
-    return await this.repository.deletar(id);
-  }
 
-  async listarPaginado({ query }) {
-    return await this.repository.listarPaginado({
-      page: query.page || 1,
-      limit: query.limit || 10,
-      ...query
-    });
-  }
+    async listarPaginado(req) {
+        const { query } = req;
+        return await this.repository.listarPaginado({
+            page: query.page || 1,
+            limit: query.limit || 10,
+            ...query
+        });
+    }
 }
 
 export default AulaService;
