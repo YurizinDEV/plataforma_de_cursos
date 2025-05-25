@@ -7,6 +7,10 @@ class AulaRepository {
         return await novaAula.save();
     }
 
+    async buscarPorId(id) {
+        return await Aula.findById(id);
+    }
+
     async verificarExistenciaPorCurso(cursoId, titulo) {
         return await Aula.findOne({ cursoId, titulo });
     }
@@ -15,9 +19,6 @@ class AulaRepository {
         const query = new AulaFilterBuilder()
             .porTitulo(filters.titulo)
             .porCursoId(filters.cursoId)
-            .porCriadorId(filters.criadorId)
-            .comCargaHorariaMinima(filters.cargaMinima)
-            .comCargaHorariaMaxima(filters.cargaMaxima)
             .build();
 
         return await Aula.find(query);
@@ -27,19 +28,13 @@ class AulaRepository {
         const query = new AulaFilterBuilder()
             .porTitulo(filters.titulo)
             .porCursoId(filters.cursoId)
-            .porCriadorId(filters.criadorId)
-            .comCargaHorariaMinima(filters.cargaMinima)
-            .comCargaHorariaMaxima(filters.cargaMaxima)
-            .comMaterialComplementar()
             .build();
 
-        const options = {
-            page: parseInt(page),
-            limit: parseInt(limit),
-            sort: { createdAt: -1 }
-        };
-
-        return await Aula.paginate(query, options);
+        return await Aula.paginate(query, { 
+            page, 
+            limit, 
+            sort: { createdAt: -1 } 
+        });
     }
 }
 
