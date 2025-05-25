@@ -1,39 +1,67 @@
 import AulaRepository from "../repositories/AulaRepository.js";
 import CursoRepository from "../repositories/CursoRepository.js";
+import { CustomError, HttpStatusCodes } from '../utils/helpers/index.js';
 
 class AulaService {
-    async criarAula(aulaData) {
-        // O curso já existe?
-        const curso = await CursoRepository.buscarPorId(aulaData.cursoId);
-        if (!curso) throw new Error("Curso não encontrado");
+  constructor() {
+    this.repository = new AulaRepository();
+  }
 
-        // A aula já existe?
-        const aulaExistente = await AulaRepository.verificarExistenciaPorCurso(
-            aulaData.cursoId, 
-            aulaData.titulo
-        );
-        if (aulaExistente) throw new Error("Esta aula já existe neste curso");
+  async listar({ params, query }) {
+    if (params?.id) {
+      return await this.repository.buscarPorId(params.id);
+    }
+    return await this.repository.listar(query);
+  }
 
-        return await AulaRepository.criar(aulaData);
+  async criar(aulaData) {
+    const curso = await CursoRepository.buscarPorId(aulaData.cursoId);
+    if (!curso) {
+      throw new CustomError(messages.NOT_FOUND, HttpStatusCodes.NOT_FOUND);
     }
 
-    async buscarPorId(id) {
-        const aula = await AulaRepository.buscarPorId(id);
-        if (!aula) throw new Error("Aula não encontrada");
-        return aula;
+    const aulaExistente = await this.repository.verificarExistenciaPorCurso(
+      aulaData.cursoId,
+      aulaData.titulo
+    );
+    if (aulaExistente) {
+      throw new CustomError(messages.ALREADY_EXISTS, HttpStatusCodes.CONFLICT);
     }
 
-    async listar(filters) {
-        return await AulaRepository.listar(filters);
-    }
+    return await this.repository.criar(aulaData);
+  }
 
-    async listarPaginado({ page = 1, limit = 10, ...filters }) {
-        return await AulaRepository.listarPaginado({ 
-            page: parseInt(page), 
-            limit: parseInt(limit), 
-            ...filters 
-        });
+  async acessar(id) {
+    const aula = await this.repository.buscarPorId(id);
+    if (!aula) {
+      throw new CustomError(messages.NOT_FOUND, HttpStatusCodes.NOT_FOUND);
     }
+    return aula;
+  }
+
+  async atualizar(id, aulaData) {
+    const aula = await this.repository.buscarPorId(id);
+    if (!aula) {
+      throw new CustomError(messages.NOT_FOUND, HttpStatusCodes.NOT_FOUND);
+    }
+    return await this.repository.atualizar(id, aulaData);
+  }
+
+  async deletar(id) {
+    const aula = await this.repository.buscarPorId(id);
+    if (!aula) {
+      throw new CustomError(messages.NOT_FOUND, HttpStatusCodes.NOT_FOUND);
+    }
+    return await this.repository.deletar(id);
+  }
+
+  async listarPaginado({ query }) {
+    return await this.repository.listarPaginado({
+      page: query.page || 1,
+      limit: query.limit || 10,
+      ...query
+    });
+  }
 }
 
-export default new AulaService();
+export default AulaService;
