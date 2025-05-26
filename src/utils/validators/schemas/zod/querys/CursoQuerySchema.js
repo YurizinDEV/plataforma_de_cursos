@@ -1,37 +1,25 @@
-import { z } from "zod";
-import mongoose from 'mongoose';
+// src/utils/validators/schemas/zod/CursoQuerySchema.js
 
-export const CursoIdSchema = z.string().refine((id) => mongoose.Types.ObjectId.isValid(id), {
-    message: "ID inválido",
+import { z } from 'zod';
+import objectIdSchema from '../ObjectIdSchema.js';
+
+const CursoIdSchema = objectIdSchema.describe('id do curso');
+
+const CursoQuerySchema = z.object({
+    titulo: z.string().optional(),
+    cargaHorariaMin: z.coerce.number().positive().optional(),
+    cargaHorariaMax: z.coerce.number().positive().optional(),
+    tags: z.union([
+        z.string().transform(val => val.split(',')),
+        z.array(z.string())
+    ]).optional(),
+    professores: z.union([
+        z.string().transform(val => val.split(',')),
+        z.array(z.string())
+    ]).optional(),
+    criadoPorId: objectIdSchema.optional(),
+    page: z.coerce.number().positive().optional(),
+    limit: z.coerce.number().positive().optional()
 });
 
-export const CursoQuerySchema = z.object({
-    nome: z
-        .string()
-        .optional()
-        .refine((val) => !val || val.trim().length > 0, {
-            message: "Nome não pode ser vazio",
-        })
-        .transform((val) => val?.trim()),
-    codigo: z
-        .string()
-        .optional()
-        .refine((val) => !val || val.trim().length > 0, {
-            message: "Código não pode ser vazio",
-        })
-        .transform((val) => val?.trim()),
-    page: z
-        .string()
-        .optional()
-        .transform((val) => (val ? parseInt(val, 10) : 1))
-        .refine((val) => Number.isInteger(val) && val > 0, {
-            message: "Page deve ser um número inteiro maior que 0",
-        }),
-    limite: z
-        .string()
-        .optional()
-        .transform((val) => (val ? parseInt(val, 10) : 10))
-        .refine((val) => Number.isInteger(val) && val > 0 && val <= 100, {
-            message: "Limite deve ser um número inteiro entre 1 e 100",
-        }),
-});
+export { CursoIdSchema, CursoQuerySchema };
