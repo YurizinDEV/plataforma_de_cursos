@@ -98,6 +98,22 @@ class UsuarioRepository {
         return await usuario.save();
     }
 
+    async atualizar(id, parsedData) {
+        const usuario = await this.model.findByIdAndUpdate(id, parsedData, {
+            new: true
+        });
+        if (!usuario) {
+            throw new CustomError({
+                statusCode: 404,
+                errorType: 'resourceNotFound',
+                field: 'Usuário',
+                details: [],
+                customMessage: messages.error.resourceNotFound('Usuário'),
+            });
+        }
+        return usuario;
+    }
+
     // Método auxiliar
     enriquecerUsuario(usuario) {
         const usuarioObj = usuario.toObject();
