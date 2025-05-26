@@ -47,6 +47,24 @@ class UsuarioController {
 
         return CommonResponse.created(res, usuarioLimpo);
     }
+
+    async atualizar(req, res) {
+        const {
+            id
+        } = req.params;
+        UsuarioIdSchema.parse(id);
+
+        const parsedData = UsuarioUpdateSchema.parse(req.body);
+        const data = await this.service.atualizar(id, parsedData);
+
+        const usuarioLimpo = data.toObject();
+        delete usuarioLimpo.senha;
+
+        return CommonResponse.success(res, usuarioLimpo, 200,
+            'Usuário atualizado com sucesso. Porém, o e-mail é ignorado em tentativas de atualização, pois é operação proibida.');
+    }
 }
+
+
 
 export default UsuarioController;
