@@ -28,6 +28,14 @@ class UsuarioService {
         return data;
     }
 
+    async atualizar(id, parsedData) {
+        delete parsedData.senha; // Não permite alterar a senha diretamente
+        delete parsedData.email;
+        await this.ensureUserExists(id);
+        const data = await this.repository.atualizar(id, parsedData);
+        return data;
+    }
+
 
     //Metódos auxiliares
 
