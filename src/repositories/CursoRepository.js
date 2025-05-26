@@ -58,10 +58,7 @@ class CursoRepository {
                 customMessage: messages.error.internalServerError('Curso')
             });
         }
-
-
         const filtro = filterBuilder.build();
-
         const resultado = await this.model.paginate(filtro, {
             page,
             limit: limite
@@ -74,6 +71,10 @@ class CursoRepository {
         return resultado;
     }
 
+    async criar(dadosCurso) {
+        const curso = new this.model(dadosCurso);
+        return await curso.save();
+    }
 
     // Método auxiliar para enriquecer os dados do curso com estatísticas
     enriquecerCurso(curso) {
@@ -91,6 +92,26 @@ class CursoRepository {
                 totalMaterialComplementar
             }
         };
+    }
+
+    async buscarPorId(id) {
+        const curso = await this.model.findById(id);
+        if (!curso) {
+            throw new CustomError({
+                statusCode: HttpStatusCodes.NOT_FOUND.code,
+                errorType: 'resourceNotFound',
+                field: 'Curso',
+                details: [],
+                customMessage: messages.error.resourceNotFound('Curso')
+            });
+        }
+        return curso;
+    }
+    async buscarPorTitulo(titulo) {
+        const curso = await this.model.findOne({
+            titulo
+        });
+        return curso;
     }
 }
 
