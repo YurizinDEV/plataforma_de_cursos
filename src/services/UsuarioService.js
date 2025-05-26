@@ -36,6 +36,11 @@ class UsuarioService {
         return data;
     }
 
+    async deletar(id) {
+        await this.ensureUserExists(id);
+        const data = await this.repository.deletar(id);
+        return data;
+    }
 
     //Metódos auxiliares
 
