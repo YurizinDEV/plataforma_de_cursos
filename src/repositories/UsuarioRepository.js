@@ -114,6 +114,11 @@ class UsuarioRepository {
         return usuario;
     }
 
+    async deletar(id) {
+        const usuario = await this.model.findByIdAndDelete(id);
+        return usuario;
+    }
+
     // Método auxiliar
     enriquecerUsuario(usuario) {
         const usuarioObj = usuario.toObject();

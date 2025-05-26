@@ -63,6 +63,24 @@ class UsuarioController {
         return CommonResponse.success(res, usuarioLimpo, 200,
             'Usuário atualizado com sucesso. Porém, o e-mail é ignorado em tentativas de atualização, pois é operação proibida.');
     }
+
+    async deletar(req, res) {
+        const {
+            id
+        } = req.params || {};
+        if (!id) {
+            throw new CustomError({
+                statusCode: HttpStatusCodes.BAD_REQUEST.code,
+                errorType: 'validationError',
+                field: 'id',
+                details: [],
+                customMessage: 'ID do usuário é obrigatório para deletar.'
+            });
+        }
+
+        const data = await this.service.deletar(id);
+        return CommonResponse.success(res, data, 200, 'Usuário excluído com sucesso.');
+    }
 }
 
 
