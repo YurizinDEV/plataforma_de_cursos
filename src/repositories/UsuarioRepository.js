@@ -32,7 +32,7 @@ class UsuarioRepository {
 
         if (!usuario) {
             throw new CustomError({
-                statusCode: 404,
+                statusCode: HttpStatusCodes.NOT_FOUND.code,
                 errorType: 'resourceNotFound',
                 field: 'Usuário',
                 details: [],
@@ -49,7 +49,7 @@ class UsuarioRepository {
             const usuario = await this.model.findById(id);
             if (!usuario) {
                 throw new CustomError({
-                    statusCode: 404,
+                    statusCode: HttpStatusCodes.NOT_FOUND.code,
                     errorType: 'resourceNotFound',
                     field: 'Usuário',
                     details: [],
@@ -73,7 +73,7 @@ class UsuarioRepository {
 
         if (typeof filterBuilder.build !== 'function') {
             throw new CustomError({
-                statusCode: 500,
+                statusCode: HttpStatusCodes.INTERNAL_SERVER_ERROR.code,
                 errorType: 'internalServerError',
                 field: 'Usuário',
                 details: [],
@@ -104,7 +104,7 @@ class UsuarioRepository {
         });
         if (!usuario) {
             throw new CustomError({
-                statusCode: 404,
+                statusCode: HttpStatusCodes.NOT_FOUND.code,
                 errorType: 'resourceNotFound',
                 field: 'Usuário',
                 details: [],
