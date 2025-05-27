@@ -63,6 +63,28 @@ class CursoController {
         const cursoAtualizado = await this.service.atualizar(id, parsedData);
         return CommonResponse.success(res, cursoAtualizado, 200, "Curso atualizado com sucesso.");
     }
+
+    async deletar(req, res) {
+        const {
+            id
+        } = req.params || {};
+        if (!id) {
+            throw new CustomError({
+                statusCode: HttpStatusCodes.BAD_REQUEST.code,
+                errorType: 'validationError',
+                field: 'id',
+                details: [{
+                    path: 'id',
+                    message: 'ID do curso não fornecido.'
+                }],
+                customMessage: 'ID do curso é obrigatório para realizar a exclusão.'
+            });
+        }
+        CursoIdSchema.parse(id);
+
+        const cursoRemovido = await this.service.deletar(id);
+        return CommonResponse.success(res, cursoRemovido, 200, "Curso removido com sucesso.");
+    }
 }
 
 export default CursoController;
