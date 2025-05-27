@@ -29,6 +29,11 @@ class CursoService {
         return await this.repository.atualizar(id, dadosAtualizados);
     }
 
+    async deletar(id) {
+        await this.ensureCursoExists(id);
+        return await this.repository.deletar(id);
+    }
+
     // Métodos auxiliares   
     async validateTitulo(titulo, id = null) {
         const cursoExistente = await this.repository.buscarPorTitulo(titulo);
