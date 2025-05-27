@@ -39,6 +39,30 @@ class CursoController {
         return CommonResponse.created(res, curso, "Curso criado com sucesso.");
     }
 
+    async atualizar(req, res) {
+        const {
+            id
+        } = req.params;
+
+        CursoIdSchema.parse(id);
+
+        const parsedData = CursoUpdateSchema.parse(req.body);
+
+        if (Object.keys(parsedData).length === 0) {
+            throw new CustomError({
+                statusCode: HttpStatusCodes.BAD_REQUEST.code,
+                errorType: 'validationError',
+                field: 'body',
+                details: [{
+                    path: 'body',
+                    message: 'Nenhum dado fornecido para atualização.'
+                }],
+                customMessage: 'É necessário fornecer pelo menos um campo válido para atualizar o curso.'
+            });
+        }
+        const cursoAtualizado = await this.service.atualizar(id, parsedData);
+        return CommonResponse.success(res, cursoAtualizado, 200, "Curso atualizado com sucesso.");
+    }
 }
 
 export default CursoController;
