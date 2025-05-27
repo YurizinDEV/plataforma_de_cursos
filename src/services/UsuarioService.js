@@ -64,7 +64,7 @@ class UsuarioService {
         const usuarioExistente = await this.repository.buscarPorId(id);
         if (!usuarioExistente) {
             throw new CustomError({
-                statusCode: 404,
+                statusCode: HttpStatusCodes.NOT_FOUND.code,
                 errorType: 'resourceNotFound',
                 field: 'Usuário',
                 details: [],
