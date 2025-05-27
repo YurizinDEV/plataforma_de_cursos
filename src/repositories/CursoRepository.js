@@ -76,6 +76,27 @@ class CursoRepository {
         return await curso.save();
     }
 
+    async atualizar(id, dadosAtualizados) {
+        const cursoAtualizado = await this.model.findByIdAndUpdate(
+            id,
+            dadosAtualizados, {
+                new: true,
+                runValidators: true
+            }
+        );
+
+        if (!cursoAtualizado) {
+            throw new CustomError({
+                statusCode: HttpStatusCodes.NOT_FOUND.code,
+                errorType: 'resourceNotFound',
+                field: 'Curso',
+                details: [],
+                customMessage: messages.error.resourceNotFound('Curso')
+            });
+        }
+        return cursoAtualizado;
+    }
+
     // Método auxiliar para enriquecer os dados do curso com estatísticas
     enriquecerCurso(curso) {
         const cursoObj = curso.toObject();
