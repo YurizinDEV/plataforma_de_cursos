@@ -20,7 +20,16 @@ class CursoService {
         return await this.repository.criar(dadosCurso);
     }
 
-     // Métodos auxiliares   
+    async atualizar(id, dadosAtualizados) {
+        await this.ensureCursoExists(id);
+
+        if (dadosAtualizados.titulo) {
+            await this.validateTitulo(dadosAtualizados.titulo, id);
+        }
+        return await this.repository.atualizar(id, dadosAtualizados);
+    }
+
+    // Métodos auxiliares   
     async validateTitulo(titulo, id = null) {
         const cursoExistente = await this.repository.buscarPorTitulo(titulo);
         if (cursoExistente && (!id || cursoExistente._id.toString() !== id)) {
