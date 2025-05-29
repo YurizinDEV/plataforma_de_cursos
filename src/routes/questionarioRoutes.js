@@ -7,7 +7,6 @@ const questionarioController = new QuestionarioController();
 
 router
   .get("/questionarios", asyncWrapper(questionarioController.listar.bind(questionarioController)))
-  .get("/questionarios/paginado", asyncWrapper(questionarioController.listarPaginado.bind(questionarioController)))
   .get("/questionarios/:id", asyncWrapper(questionarioController.buscar.bind(questionarioController)))
   .post("/questionarios", asyncWrapper(questionarioController.criar.bind(questionarioController)))
   .put("/questionarios/:id", asyncWrapper(questionarioController.atualizar.bind(questionarioController)))

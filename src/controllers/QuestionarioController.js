@@ -37,16 +37,6 @@ class QuestionarioController {
     return CommonResponse.success(res, data);
   }
 
-  async listarPaginado(req, res) {
-    const query = req.query || {};
-    if (Object.keys(query).length !== 0) {
-      await QuestionarioQuerySchema.parseAsync(query);
-    }
-
-    const data = await this.service.listarPaginado({ query });
-    return CommonResponse.success(res, data);
-  }
-
   async atualizar(req, res) {
     const { id } = req.params;
     QuestionarioIdSchema.parse(id);

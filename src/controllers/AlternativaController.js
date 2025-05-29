@@ -38,16 +38,6 @@ class AlternativaController {
     return CommonResponse.success(res, data);
   }
 
-  async listarPaginado(req, res) {
-    const query = req.query || {};
-    if (Object.keys(query).length !== 0) {
-      await AlternativaQuerySchema.parseAsync(query);
-    }
-
-    const data = await this.service.listarPaginado({ query });
-    return CommonResponse.success(res, data);
-  }
-
   async atualizar(req, res) {
     const { id } = req.params;
     AlternativaIdSchema.parse(id);

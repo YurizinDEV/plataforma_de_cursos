@@ -29,14 +29,6 @@ class AlternativaService {
     return await this.repository.listar(filters);
   }
 
-  async listarPaginado({ query }) {
-    return await this.repository.listarPaginado({
-      page: query.page || 1,
-      limit: query.limit || 10,
-      ...query
-    });
-  }
-
   async atualizar(id, dadosAtualizados) {
     const alternativa = await this.buscarPorId(id);
     return await this.repository.atualizar(id, dadosAtualizados);
@@ -48,4 +40,4 @@ class AlternativaService {
   }
 }
 
-export default new AlternativaService();
+export default AlternativaService;
