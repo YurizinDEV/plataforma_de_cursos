@@ -17,12 +17,11 @@ export default async function usuariosSeed() {
     const usuarios = [];
 
     for (let i = 0; i < 20; i++) {
-        const isAdmin = i < 2;
-        usuarios.push({
-            nome: fakerbr.name.firstName() + " " + fakerbr.name.lastName(),
+        const isAdmin = i < 2;        usuarios.push({            nome: fakerbr.name.firstName() + " " + fakerbr.name.lastName(),
             senha: gerarSenha(),
-            email: fakerbr.internet.email().toLowerCase(),
+            email: fakerbr.internet.email(),
             ehAdmin: isAdmin,
+            ativo: false,
             progresso: [],
             cursosIds: []
         });

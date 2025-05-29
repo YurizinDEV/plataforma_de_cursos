@@ -83,6 +83,4 @@ class UsuarioController {
     }
 }
 
-
-
 export default UsuarioController;

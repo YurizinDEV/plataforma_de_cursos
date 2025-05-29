@@ -5,7 +5,7 @@ import mongoosePaginate from "mongoose-paginate-v2";
 
 class Usuario {
     constructor() {
-        
+
         const usuarioSchema = new mongoose.Schema({
 
             nome: {
@@ -20,10 +20,13 @@ class Usuario {
             email: {
                 type: String,
                 required: true,
-                unique: true,
-                lowercase: true
+                unique: true
             },
             ehAdmin: {
+                type: Boolean,
+                default: false
+            },
+            ativo: {
                 type: Boolean,
                 default: false
             },

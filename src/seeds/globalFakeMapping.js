@@ -31,11 +31,10 @@ const fakeMappings = {
         materialComplementar: () => [],
     },
 
-    /* ---------- USUARIO ---------- */
-    Usuario: {
+    /* ---------- USUARIO ---------- */    Usuario: {
         nome: () => fakerbr.name.firstName() + " " + fakerbr.name.lastName(),
         senha: () => gerarSenha(),
-        email: () => fakerbr.internet.email().toLowerCase(),
+        email: () => fakerbr.internet.email(),
         ehAdmin: () => fakerbr.random.boolean(),
         cursosIds: () => [new mongoose.Types.ObjectId()],
         progresso: () => [{

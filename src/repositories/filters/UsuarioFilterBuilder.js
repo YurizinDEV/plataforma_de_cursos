@@ -20,16 +20,12 @@ class UsuarioFilterBuilder {
             this.filtros.email = { $regex: email, $options: 'i' };
         }
         return this;
-    }
-
-    comAtivo(ativo = 'true') {
+    }    comAtivo(ativo = null) {
         if (ativo === 'true') {
             this.filtros.ativo = true;
-        }
-        if (ativo === 'false') {
+        } else if (ativo === 'false') {
             this.filtros.ativo = false;
         }
-        this.filtros = {};
         return this;
     }
 
