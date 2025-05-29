@@ -4,6 +4,7 @@ import { CustomError, messages, HttpStatusCodes } from '../utils/helpers/index.j
 
 class AulaService {
     constructor() {
+        this.cursoRepository = new CursoRepository();
         this.repository = new AulaRepository();
     }
 
@@ -23,7 +24,7 @@ class AulaService {
 
     async criar(req) {
         const { body } = req;
-        const curso = await CursoRepository.buscarPorId(body.cursoId);
+        const curso = await this.cursoRepository.buscarPorId(body.cursoId);
         
         if (!curso) {
             throw new CustomError('Curso não encontrado', HttpStatusCodes.NOT_FOUND);
@@ -42,35 +43,26 @@ class AulaService {
     }
 
     async atualizar(req) {
-        const { params: { id }, body } = req;
-        const aula = await this.repository.buscarPorId(id);
-        
-        if (!aula) {
-            throw new CustomError(messages.NOT_FOUND, HttpStatusCodes.NOT_FOUND);
-        }
-        
-        return await this.repository.atualizar(id, body);
+    const { params: { id }, body } = req;
+    
+    const aulaExistente = await this.repository.buscarPorId(id);
+    if (!aulaExistente) {
+        throw new CustomError(messages.NOT_FOUND, HttpStatusCodes.NOT_FOUND);
     }
+
+    return await this.repository.atualizar(id, body);
+}
 
     async deletar(req) {
-        const { params: { id } } = req;
-        const aula = await this.repository.buscarPorId(id);
-        
-        if (!aula) {
-            throw new CustomError(messages.NOT_FOUND, HttpStatusCodes.NOT_FOUND);
-        }
-        
-        return await this.repository.deletar(id);
+    const { params: { id } } = req;
+    
+    const aulaExistente = await this.repository.buscarPorId(id);
+    if (!aulaExistente) {
+        throw new CustomError(messages.NOT_FOUND, HttpStatusCodes.NOT_FOUND);
     }
-
-    async listarPaginado(req) {
-        const { query } = req;
-        return await this.repository.listarPaginado({
-            page: query.page || 1,
-            limit: query.limit || 10,
-            ...query
-        });
-    }
+    
+    return await this.repository.deletar(id);
+}
 }
 
 export default AulaService;

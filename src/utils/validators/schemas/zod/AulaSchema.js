@@ -6,7 +6,8 @@ export const AulaSchema = z.object({
   conteudoURL: z.string().url(),
   cargaHoraria: z.number().int().positive(),
   materialComplementar: z.array(z.string()).optional(),
-  cursoId: z.string().regex(/^[0-9a-fA-F]{24}$/), // ObjectId do MongoDB
+  cursoId: z.string().regex(/^[0-9a-fA-F]{24}$/),
+  criadoPorId: z.string().regex(/^[0-9a-fA-F]{24}$/)
 });
 
 export const AulaUpdateSchema = AulaSchema.partial();

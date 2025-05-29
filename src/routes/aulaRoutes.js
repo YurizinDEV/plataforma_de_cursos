@@ -11,6 +11,5 @@ router
     .post("/aulas", asyncWrapper(aulaController.criar.bind(aulaController)))
     .put("/aulas/:id", asyncWrapper(aulaController.atualizar.bind(aulaController)))
     .delete("/aulas/:id", asyncWrapper(aulaController.deletar.bind(aulaController)))
-    .get("/aulas/paginado", asyncWrapper(aulaController.listarPaginado.bind(aulaController)));
 
 export default router;

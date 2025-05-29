@@ -5,6 +5,11 @@ import express from "express";
 import logRoutes from "../middlewares/LogRoutesMiddleware.js";
 import usuarios from './usuarioRoutes.js';
 import cursos from './cursoRoutes.js';
+import aulas from './aulaRoutes.js';
+import alternativas from './alternativaRoutes.js';
+import certificados from './certificadoRoutes.js';
+import questionarios from './questionarioRoutes.js';
+
 
 import dotenv from "dotenv";
 
@@ -28,6 +33,10 @@ const routes = (app) => {
     app.use(express.json(),
         usuarios,
         cursos,
+        aulas,
+        alternativas,
+        questionarios,
+        certificados,
     );
 
     app.use((req, res) => {

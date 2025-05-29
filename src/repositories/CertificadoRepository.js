@@ -23,23 +23,9 @@ class CertificadoRepository {
     return await this.model.find(query).populate('usuarioId cursoId');
   }
 
-  async listarPaginado({ page = 1, limit = 10, ...filters }) {
-    const query = new CertificadoFilterBuilder()
-      .porUsuarioId(filters.usuarioId)
-      .porCursoId(filters.cursoId)
-      .build();
-
-    return await this.model.paginate(query, {
-      page,
-      limit,
-      sort: { dataEmissao: -1 },
-      populate: ['usuarioId', 'cursoId']
-    });
-  }
-
   async verificarExistencia(usuarioId, cursoId) {
     return await this.model.findOne({ usuarioId, cursoId });
   }
 }
 
-export default new CertificadoRepository();
+export default CertificadoRepository;

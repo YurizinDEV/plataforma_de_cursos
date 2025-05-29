@@ -7,7 +7,6 @@ const alternativaController = new AlternativaController();
 
 router
   .get("/alternativas", asyncWrapper(alternativaController.listar.bind(alternativaController)))
-  .get("/alternativas/paginado", asyncWrapper(alternativaController.listarPaginado.bind(alternativaController)))
   .get("/alternativas/:id", asyncWrapper(alternativaController.buscar.bind(alternativaController)))
   .post("/alternativas", asyncWrapper(alternativaController.criar.bind(alternativaController)))
   .put("/alternativas/:id", asyncWrapper(alternativaController.atualizar.bind(alternativaController)))

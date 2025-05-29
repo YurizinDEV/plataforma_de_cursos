@@ -47,14 +47,6 @@ class CertificadoService {
     return await this.repository.listar(filters);
   }
 
-  async listarPaginado({ query }) {
-    return await this.repository.listarPaginado({
-      page: query.page || 1,
-      limit: query.limit || 10,
-      ...query
-    });
-  }
-
   async emitirParaUsuario(usuarioId, cursoId) {
     return await this.criar({
       usuarioId,
@@ -64,4 +56,4 @@ class CertificadoService {
   }
 }
 
-export default new CertificadoService();
+export default CertificadoService;

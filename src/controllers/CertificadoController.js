@@ -37,16 +37,6 @@ class CertificadoController {
     return CommonResponse.success(res, data);
   }
 
-  async listarPaginado(req, res) {
-    const query = req.query || {};
-    if (Object.keys(query).length !== 0) {
-      await CertificadoQuerySchema.parseAsync(query);
-    }
-
-    const data = await this.service.listarPaginado({ query });
-    return CommonResponse.success(res, data);
-  }
-
   async emitirParaUsuario(req, res) {
     const { usuarioId, cursoId } = req.params;
     CertificadoIdSchema.parse(usuarioId);

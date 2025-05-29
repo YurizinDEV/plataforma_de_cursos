@@ -35,14 +35,6 @@ class QuestionarioService {
     return await this.repository.listar(filters);
   }
 
-  async listarPaginado({ query }) {
-    return await this.repository.listarPaginado({
-      page: query.page || 1,
-      limit: query.limit || 10,
-      ...query
-    });
-  }
-
   async atualizar(id, dadosAtualizados) {
     await this.buscarPorId(id);
     return await this.repository.atualizar(id, dadosAtualizados);
@@ -71,4 +63,4 @@ class QuestionarioService {
   }
 }
 
-export default new QuestionarioService();
+export default QuestionarioService;

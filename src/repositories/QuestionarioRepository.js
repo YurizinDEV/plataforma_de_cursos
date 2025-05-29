@@ -22,19 +22,6 @@ class QuestionarioRepository {
     return await this.model.find(query).populate('alternativas');
   }
 
-  async listarPaginado({ page = 1, limit = 10, ...filters }) {
-    const query = new QuestionarioFilterBuilder()
-      .porAulaId(filters.aulaId)
-      .build();
-
-    return await this.model.paginate(query, {
-      page,
-      limit,
-      sort: { createdAt: -1 },
-      populate: 'alternativas'
-    });
-  }
-
   async atualizar(id, dadosAtualizados) {
     return await this.model.findByIdAndUpdate(
       id, 
@@ -56,4 +43,4 @@ class QuestionarioRepository {
   }
 }
 
-export default new QuestionarioRepository();
+export default QuestionarioRepository;
