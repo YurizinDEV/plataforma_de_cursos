@@ -2,9 +2,9 @@ import UsuarioFilterBuilder from '../../../../repositories/filters/UsuarioFilter
 import UsuarioRepository from '../../../../repositories/UsuarioRepository.js';
 import mongoose from 'mongoose';
 
-// Mock das dependências
+
 jest.mock('../../../../models/Usuario.js', () => ({
-    /* Um mock do modelo do mongoose */
+
 }));
 
 jest.mock('../../../../repositories/UsuarioRepository.js', () => {
@@ -17,9 +17,9 @@ describe('UsuarioFilterBuilder', () => {
     let builder;
 
     beforeEach(() => {
-        // Limpar todos os mocks antes de cada teste
+
         jest.clearAllMocks();
-        // Criar uma nova instância do builder para cada teste
+
         builder = new UsuarioFilterBuilder();
     });
 
@@ -34,7 +34,7 @@ describe('UsuarioFilterBuilder', () => {
     describe('Método comNome', () => {
         it('deve adicionar filtro por nome quando valor válido é fornecido', () => {
             const result = builder.comNome('João');
-            expect(result).toBe(builder); // Verifica encadeamento de métodos
+            expect(result).toBe(builder);
             expect(builder.filtros.nome).toEqual({
                 $regex: 'João',
                 $options: 'i'
@@ -53,7 +53,7 @@ describe('UsuarioFilterBuilder', () => {
     describe('Método comEmail', () => {
         it('deve adicionar filtro por email quando valor válido é fornecido', () => {
             const result = builder.comEmail('test@example.com');
-            expect(result).toBe(builder); // Verifica encadeamento de métodos
+            expect(result).toBe(builder);
             expect(builder.filtros.email).toEqual({
                 $regex: 'test@example.com',
                 $options: 'i'
@@ -72,7 +72,7 @@ describe('UsuarioFilterBuilder', () => {
     describe('Método comAtivo', () => {
         it('deve adicionar filtro para usuários ativos quando valor é "true"', () => {
             const result = builder.comAtivo('true');
-            expect(result).toBe(builder); // Verifica encadeamento de métodos
+            expect(result).toBe(builder);
             expect(builder.filtros.ativo).toBe(true);
         });
 
@@ -103,7 +103,7 @@ describe('UsuarioFilterBuilder', () => {
         });
 
         it('deve adicionar filtro por grupo quando valor válido é fornecido e grupos são encontrados', async () => {
-            // Mock do repositório de grupo
+
             const mockGrupoId = new mongoose.Types.ObjectId();
             builder.grupoRepository = {
                 buscarPorNome: jest.fn().mockResolvedValue({
@@ -120,7 +120,7 @@ describe('UsuarioFilterBuilder', () => {
         });
 
         it('deve adicionar filtro com múltiplos IDs quando vários grupos são encontrados', async () => {
-            // Mock do repositório de grupo
+
             const mockGrupoIds = [
                 new mongoose.Types.ObjectId(),
                 new mongoose.Types.ObjectId()
@@ -144,7 +144,7 @@ describe('UsuarioFilterBuilder', () => {
         });
 
         it('deve adicionar filtro com array vazio quando nenhum grupo é encontrado', async () => {
-            // Mock do repositório de grupo
+
             builder.grupoRepository = {
                 buscarPorNome: jest.fn().mockResolvedValue(null)
             };
@@ -170,7 +170,7 @@ describe('UsuarioFilterBuilder', () => {
         });
 
         it('deve adicionar filtro por unidade quando valor válido é fornecido e unidades são encontradas', async () => {
-            // Mock do repositório de unidade
+
             const mockUnidadeId = new mongoose.Types.ObjectId();
             builder.unidadeRepository = {
                 buscarPorNome: jest.fn().mockResolvedValue({
@@ -187,7 +187,7 @@ describe('UsuarioFilterBuilder', () => {
         });
 
         it('deve adicionar filtro com múltiplos IDs quando várias unidades são encontradas', async () => {
-            // Mock do repositório de unidade
+
             const mockUnidadeIds = [
                 new mongoose.Types.ObjectId(),
                 new mongoose.Types.ObjectId()
@@ -211,7 +211,7 @@ describe('UsuarioFilterBuilder', () => {
         });
 
         it('deve adicionar filtro com array vazio quando nenhuma unidade é encontrada', async () => {
-            // Mock do repositório de unidade
+
             builder.unidadeRepository = {
                 buscarPorNome: jest.fn().mockResolvedValue(null)
             };
@@ -284,7 +284,7 @@ describe('UsuarioFilterBuilder', () => {
 
     describe('Integração de métodos', () => {
         it('deve permitir encadeamento de todos os métodos e gerar filtro correto', async () => {
-            // Mocks dos repositórios
+
             const mockGrupoId = new mongoose.Types.ObjectId();
             builder.grupoRepository = {
                 buscarPorNome: jest.fn().mockResolvedValue({
@@ -299,17 +299,17 @@ describe('UsuarioFilterBuilder', () => {
                 })
             };
 
-            // Encadeia os métodos síncronos primeiro
+
             builder
                 .comNome('João')
                 .comEmail('joao@example.com')
                 .comAtivo('true');
 
-            // Chama os métodos assíncronos sequencialmente
+
             await builder.comGrupo('Administradores');
             await builder.comUnidade('Unidade Principal');
 
-            // Verifica o filtro final
+
             const filtroFinal = builder.build();
 
             expect(filtroFinal).toEqual({

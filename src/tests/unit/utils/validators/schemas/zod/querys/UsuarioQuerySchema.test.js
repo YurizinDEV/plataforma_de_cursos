@@ -8,7 +8,7 @@ import {
 } from '../../../../../../../utils/validators/schemas/zod/querys/UsuarioQuerySchema.js';
 
 describe('UsuarioQuerySchema', () => {
-    // Testes para validação campo a campo
+    
     describe('Validações de campo', () => {
         it('deve aceitar query vazia', async () => {
             const resultado = await UsuarioQuerySchema.parseAsync({});
@@ -181,7 +181,7 @@ describe('UsuarioQuerySchema', () => {
         });
     });
 
-    // Testes para múltiplos campos ao mesmo tempo
+    
     describe('Validações de múltiplos campos', () => {
         it('deve aceitar múltiplos campos válidos', async () => {
             const query = {
@@ -209,7 +209,7 @@ describe('UsuarioQuerySchema', () => {
             const query = {
                 nome: 'João',
                 email: 'joao@example.com',
-                ativo: 'invalido' // inválido
+                ativo: 'invalido' 
             };
 
             await expect(UsuarioQuerySchema.parseAsync(query))

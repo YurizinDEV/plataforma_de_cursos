@@ -13,13 +13,13 @@ import {
 let mongoServer;
 let usuarioRepository;
 
-// Configuração do banco de dados em memória para testes
+
 beforeAll(async () => {
     mongoServer = await MongoMemoryServer.create();
     const uri = mongoServer.getUri();
     await mongoose.connect(uri);
 
-    // Criar explicitamente o índice único para o email
+
     await mongoose.connection.collection('usuarios').createIndex({
         email: 1
     }, {
@@ -29,19 +29,19 @@ beforeAll(async () => {
     usuarioRepository = new UsuarioRepository();
 });
 
-// Limpar a coleção entre os testes
+
 beforeEach(async () => {
     await UsuarioModel.deleteMany({});
     jest.clearAllMocks();
 });
 
-// Desconectar e parar o servidor após todos os testes
+
 afterAll(async () => {
     await mongoose.disconnect();
     await mongoServer.stop();
 });
 
-// Dados de exemplo para testes
+
 const usuarioBase = {
     nome: 'Usuário Teste',
     email: 'usuario@teste.com',
@@ -49,7 +49,7 @@ const usuarioBase = {
 };
 
 describe('UsuarioRepository', () => {
-    // Teste de instância
+
     test('deve instanciar o repository corretamente', () => {
         const repository = new UsuarioRepository();
         expect(repository).toBeInstanceOf(UsuarioRepository);
@@ -58,7 +58,7 @@ describe('UsuarioRepository', () => {
 
     describe('Método buscarPorEmail', () => {
         test('deve retornar um usuário quando o email existir', async () => {
-            // Criar um usuário de teste
+
             const senhaHash = await bcrypt.hash(usuarioBase.senha, 10);
             const usuarioCriado = await UsuarioModel.create({
                 ...usuarioBase,
@@ -76,14 +76,14 @@ describe('UsuarioRepository', () => {
         });
 
         test('deve ignorar o usuário com ID fornecido', async () => {
-            // Criar um usuário de teste
+
             const senhaHash = await bcrypt.hash(usuarioBase.senha, 10);
             const usuarioCriado = await UsuarioModel.create({
                 ...usuarioBase,
                 senha: senhaHash
             });
 
-            // Buscar ignorando o próprio ID do usuário
+
             const resultado = await usuarioRepository.buscarPorEmail(usuarioBase.email, usuarioCriado._id);
             expect(resultado).toBeNull();
         });
@@ -105,7 +105,7 @@ describe('UsuarioRepository', () => {
 
     describe('Método buscarPorId', () => {
         test('deve retornar um usuário quando o ID existir', async () => {
-            // Criar um usuário de teste
+
             const senhaHash = await bcrypt.hash(usuarioBase.senha, 10);
             const usuarioCriado = await UsuarioModel.create({
                 ...usuarioBase,
@@ -134,7 +134,7 @@ describe('UsuarioRepository', () => {
     });
 
     describe('Método listar', () => {
-        beforeEach(async () => { // Criar vários usuários para os testes de listagem
+        beforeEach(async () => {
             const curso1Id = new mongoose.Types.ObjectId();
             const curso2Id = new mongoose.Types.ObjectId();
             const curso3Id = new mongoose.Types.ObjectId();
@@ -178,7 +178,7 @@ describe('UsuarioRepository', () => {
         });
 
         test('deve retornar um usuário específico quando o ID é fornecido', async () => {
-            // Buscar um usuário pelo ID
+
             const usuario = await UsuarioModel.findOne({
                 email: 'joao@teste.com'
             });
@@ -275,7 +275,7 @@ describe('UsuarioRepository', () => {
         });
 
         test('deve aplicar paginação corretamente', async () => {
-            // Adicionar mais usuários para teste de paginação
+
             const novosUsuarios = [];
             for (let i = 0; i < 5; i++) {
                 novosUsuarios.push({
@@ -287,7 +287,7 @@ describe('UsuarioRepository', () => {
             }
             await UsuarioModel.create(novosUsuarios);
 
-            // Página 1 com limite 3
+
             const req1 = {
                 params: {},
                 query: {
@@ -302,7 +302,7 @@ describe('UsuarioRepository', () => {
             expect(resultado1.totalDocs).toBe(8);
             expect(resultado1.totalPages).toBe(3);
 
-            // Página 2 com limite 3
+
             const req2 = {
                 params: {},
                 query: {
@@ -316,7 +316,7 @@ describe('UsuarioRepository', () => {
             expect(resultado2.page).toBe(2);
         });
         test('deve limitar a quantidade máxima de resultados', async () => {
-            // Adicionar alguns usuários para testar o limite - reduzido para evitar timeout
+
             const novosUsuarios = [];
             for (let i = 0; i < 20; i++) {
                 novosUsuarios.push({
@@ -328,7 +328,7 @@ describe('UsuarioRepository', () => {
             }
             await UsuarioModel.create(novosUsuarios);
 
-            // Tentar obter um limite acima do máximo permitido (100)
+
             const req = {
                 params: {},
                 query: {
@@ -337,8 +337,8 @@ describe('UsuarioRepository', () => {
             };
             const resultado = await usuarioRepository.listar(req);
 
-            // Como o número total de usuários é menor que 100, verificamos apenas
-            // se o limite aplicado foi igual ou menor que 100
+
+
             expect(resultado.limit).toBeLessThanOrEqual(100);
         });
 
@@ -350,17 +350,17 @@ describe('UsuarioRepository', () => {
 
             const resultado = await usuarioRepository.listar(req);
 
-            // Verificar usuário com cursos
+
             const joao = resultado.docs.find(u => u.email === 'joao@teste.com');
             expect(joao.totalCursos).toBe(2);
             expect(parseFloat(joao.percentualMedio)).toBe(62.50);
 
-            // Verificar usuário com 1 curso
+
             const maria = resultado.docs.find(u => u.email === 'maria@teste.com');
             expect(maria.totalCursos).toBe(1);
             expect(parseFloat(maria.percentualMedio)).toBe(30);
 
-            // Verificar usuário sem cursos
+
             const pedro = resultado.docs.find(u => u.email === 'pedro@teste.com');
             expect(pedro.totalCursos).toBe(0);
             expect(parseFloat(pedro.percentualMedio)).toBe(0);
@@ -382,21 +382,21 @@ describe('UsuarioRepository', () => {
             expect(resultado.nome).toBe(dadosUsuario.nome);
             expect(resultado.email).toBe(dadosUsuario.email);
 
-            // Verificar se foi salvo no banco
+
             const usuarioSalvo = await UsuarioModel.findById(resultado._id);
             expect(usuarioSalvo).not.toBeNull();
             expect(usuarioSalvo.nome).toBe(dadosUsuario.nome);
         });
 
         test('deve falhar ao criar um usuário com email duplicado', async () => {
-            // Primeiro, criar um usuário
+
             await UsuarioModel.create({
                 nome: 'Usuário Original',
                 email: 'duplicado@teste.com',
                 senha: await bcrypt.hash('Senha@123', 10)
             });
 
-            // Tentar criar outro com o mesmo email
+
             const dadosUsuario = {
                 nome: 'Usuário Duplicado',
                 email: 'duplicado@teste.com',
@@ -405,7 +405,7 @@ describe('UsuarioRepository', () => {
 
             await expect(usuarioRepository.criar(dadosUsuario)).rejects.toThrow();
 
-            // Verificar que apenas um usuário com esse email existe
+
             const usuariosEncontrados = await UsuarioModel.find({
                 email: 'duplicado@teste.com'
             });
@@ -446,7 +446,7 @@ describe('UsuarioRepository', () => {
         let usuarioExistente;
 
         beforeEach(async () => {
-            // Criar um usuário para os testes de atualização
+
             usuarioExistente = await UsuarioModel.create({
                 nome: 'Usuário para Atualizar',
                 email: 'atualizar@teste.com',
@@ -465,7 +465,7 @@ describe('UsuarioRepository', () => {
             expect(resultado).toBeDefined();
             expect(resultado.nome).toBe('Nome Atualizado');
 
-            // Verificar no banco
+
             const usuarioAtualizado = await UsuarioModel.findById(usuarioExistente._id);
             expect(usuarioAtualizado.nome).toBe('Nome Atualizado');
         });
@@ -479,7 +479,7 @@ describe('UsuarioRepository', () => {
 
             expect(resultado.ativo).toBe(true);
 
-            // Verificar no banco
+
             const usuarioAtualizado = await UsuarioModel.findById(usuarioExistente._id);
             expect(usuarioAtualizado.ativo).toBe(true);
         });
@@ -497,7 +497,7 @@ describe('UsuarioRepository', () => {
             expect(resultado.ativo).toBe(true);
             expect(resultado.ehAdmin).toBe(true);
 
-            // Verificar no banco
+
             const usuarioAtualizado = await UsuarioModel.findById(usuarioExistente._id);
             expect(usuarioAtualizado.nome).toBe('Nome Novo');
             expect(usuarioAtualizado.ativo).toBe(true);
@@ -528,7 +528,7 @@ describe('UsuarioRepository', () => {
         let usuarioExistente;
 
         beforeEach(async () => {
-            // Criar um usuário para os testes de exclusão
+
             usuarioExistente = await UsuarioModel.create({
                 nome: 'Usuário para Deletar',
                 email: 'deletar@teste.com',
@@ -542,7 +542,7 @@ describe('UsuarioRepository', () => {
             expect(resultado).toBeDefined();
             expect(resultado._id.toString()).toBe(usuarioExistente._id.toString());
 
-            // Verificar se foi removido do banco
+
             const usuarioDeletado = await UsuarioModel.findById(usuarioExistente._id);
             expect(usuarioDeletado).toBeNull();
         });
@@ -623,13 +623,13 @@ describe('UsuarioRepository', () => {
             expect(resultado.percentualMedio).toBe('0.00');
         });
         test('deve calcular percentualMedio como 0 quando não houver progresso', () => {
-            // Criar um mock de usuário sem progresso
+
             const mockUsuario = {
                 _id: new mongoose.Types.ObjectId(),
                 nome: 'Usuário Sem Progresso',
                 email: 'semprogresso@teste.com',
                 cursosIds: [new mongoose.Types.ObjectId(), new mongoose.Types.ObjectId()],
-                progresso: [], // Array vazio
+                progresso: [],
                 toObject: function () {
                     return {
                         _id: this._id,
@@ -650,7 +650,7 @@ describe('UsuarioRepository', () => {
         });
 
         test('deve calcular percentualMedio corretamente quando houver progresso', () => {
-            // Criar um mock de usuário com progresso
+
             const mockUsuario = {
                 _id: new mongoose.Types.ObjectId(),
                 nome: 'Usuário Com Progresso',
@@ -701,16 +701,16 @@ describe('UsuarioRepository', () => {
     describe('Métodos auxiliares e casos especiais', () => {
         describe('Tratamento de erro no método listar', () => {
             test('deve lançar erro quando filterBuilder.build não é função', async () => {
-                // Preparar - criar mock inválido para filterBuilder
+
                 const mockInvalidFilterBuilder = {
                     comNome: jest.fn().mockReturnThis(),
                     comEmail: jest.fn().mockReturnThis(),
                     comAtivo: jest.fn().mockReturnThis(),
-                    // build não é uma função, é um objeto
+
                     build: {}
                 };
 
-                // Criar um spy para o método find
+
                 jest.spyOn(usuarioRepository.model, 'find').mockImplementation(() => {
                     throw new CustomError({
                         statusCode: 500,
@@ -720,16 +720,16 @@ describe('UsuarioRepository', () => {
                     });
                 });
 
-                // Substituir o filtro real pelo mock
+
                 const originalFilterBuilder = usuarioRepository.usuarioFilterBuilder;
                 usuarioRepository.usuarioFilterBuilder = mockInvalidFilterBuilder;
 
-                // Verificar que um erro é lançado
+
                 await expect(usuarioRepository.listar({
                     query: {}
                 })).rejects.toThrow();
 
-                // Restaurar o UsuarioFilterBuilder real e o mock do find
+
                 usuarioRepository.usuarioFilterBuilder = originalFilterBuilder;
                 jest.restoreAllMocks();
             });
@@ -737,7 +737,7 @@ describe('UsuarioRepository', () => {
 
         describe('Método simularErroBanco', () => {
             test('deve lançar CustomError com detalhes específicos quando chamado', async () => {
-                // Espionar o método findOne
+
                 const findOneSpy = jest.spyOn(usuarioRepository.model, 'findOne');
 
                 try {
@@ -749,13 +749,13 @@ describe('UsuarioRepository', () => {
                     expect(error.errorType).toBe('databaseError');
                     expect(error.field).toBe('Database');
 
-                    // Verificar se o método findOne foi chamado com o ID inválido
+
                     expect(findOneSpy).toHaveBeenCalledWith({
                         _id: 'id-invalido-forcar-erro'
                     });
                 }
 
-                // Restaurar o método original
+
                 findOneSpy.mockRestore();
             });
         });
