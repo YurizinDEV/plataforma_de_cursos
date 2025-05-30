@@ -12,7 +12,7 @@ class CursoRepository {
     }
 
     async listar(req) {
-        const id = req.params.id || null;
+        const id = req?.params?.id || null;
 
         if (id) {
             const curso = await this.model.findById(id);
