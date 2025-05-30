@@ -1,8 +1,14 @@
-import { jest } from '@jest/globals';
-import { UsuarioSchema, UsuarioUpdateSchema } from '../../../../../../utils/validators/schemas/zod/UsuarioSchema.js';
+import {
+    jest
+} from '@jest/globals';
+import {
+    UsuarioSchema,
+    UsuarioUpdateSchema
+} from '../../../../../../utils/validators/schemas/zod/UsuarioSchema.js';
 import mongoose from 'mongoose';
 
-describe('UsuarioSchema', () => {    it('deve validar dados válidos corretamente', () => {
+describe('UsuarioSchema', () => {
+    it('deve validar dados válidos corretamente', () => {
         const dadosValidos = {
             nome: 'João Silva',
             email: 'joao@email.com',
@@ -14,7 +20,8 @@ describe('UsuarioSchema', () => {    it('deve validar dados válidos corretament
         expect(resultado.email).toBe(dadosValidos.email);
         expect(resultado.senha).toBe(dadosValidos.senha);
         expect(resultado.ativo).toBe(dadosValidos.ativo);
-    });    it('deve aplicar valor padrão para "ativo" quando não fornecido', () => {
+    });
+    it('deve aplicar valor padrão para "ativo" quando não fornecido', () => {
         const dadosValidos = {
             nome: 'Maria',
             email: 'maria@email.com',
@@ -150,12 +157,10 @@ describe('UsuarioSchema', () => {    it('deve validar dados válidos corretament
             nome: 'Usuário com Progresso',
             email: 'progress@email.com',
             senha: 'Senha@123',
-            progresso: [
-                {
-                    percentual_conclusao: '75',
-                    curso: objectId
-                }
-            ]
+            progresso: [{
+                percentual_conclusao: '75',
+                curso: objectId
+            }]
         };
         const resultado = UsuarioSchema.parse(dadosValidos);
         expect(resultado.progresso[0].percentual_conclusao).toBe('75');
@@ -168,12 +173,10 @@ describe('UsuarioSchema', () => {    it('deve validar dados válidos corretament
             nome: 'Usuário',
             email: 'user@email.com',
             senha: 'Senha@123',
-            progresso: [
-                {
-                    percentual_conclusao: '',
-                    curso: objectId
-                }
-            ]
+            progresso: [{
+                percentual_conclusao: '',
+                curso: objectId
+            }]
         };
         expect(() => UsuarioSchema.parse(dadosInvalidos)).toThrow(/Percentual de conclusão/);
     });
@@ -226,7 +229,9 @@ describe('UsuarioSchema', () => {    it('deve validar dados válidos corretament
 
 describe('UsuarioUpdateSchema', () => {
     it('deve validar dados parciais corretamente', () => {
-        const dadosParciais = { nome: 'Novo Nome' };
+        const dadosParciais = {
+            nome: 'Novo Nome'
+        };
         const resultado = UsuarioUpdateSchema.parse(dadosParciais);
         expect(resultado.nome).toBe('Novo Nome');
         expect(resultado.senha).toBeUndefined();
@@ -241,29 +246,39 @@ describe('UsuarioUpdateSchema', () => {
     });
 
     it('deve lançar erro quando "senha" é muito curta', () => {
-        const dadosInvalidos = { senha: 'S@1a' };
+        const dadosInvalidos = {
+            senha: 'S@1a'
+        };
         expect(() => UsuarioUpdateSchema.parse(dadosInvalidos)).toThrow(/senha.*8 caracteres/);
     });
 
     it('deve lançar erro quando "senha" não atende à complexidade', () => {
-        const dadosInvalidos = { senha: 'senhasimples' };
+        const dadosInvalidos = {
+            senha: 'senhasimples'
+        };
         expect(() => UsuarioUpdateSchema.parse(dadosInvalidos)).toThrow(/senha.*maiúscula.*minúscula.*número.*especial/);
     });
 
     it('deve lançar erro quando "senha" está vazia', () => {
-        const dadosInvalidos = { senha: '' };
+        const dadosInvalidos = {
+            senha: ''
+        };
         expect(() => UsuarioUpdateSchema.parse(dadosInvalidos)).toThrow(/8 caracteres/);
     });
 
     it('deve permitir atualizar apenas o campo "ehAdmin"', () => {
-        const dadosParciais = { ehAdmin: true };
+        const dadosParciais = {
+            ehAdmin: true
+        };
         const resultado = UsuarioUpdateSchema.parse(dadosParciais);
         expect(resultado.ehAdmin).toBe(true);
         expect(resultado.nome).toBeUndefined();
     });
 
     it('deve permitir atualizar apenas o campo "link_foto"', () => {
-        const dadosParciais = { link_foto: 'https://example.com/nova-foto.jpg' };
+        const dadosParciais = {
+            link_foto: 'https://example.com/nova-foto.jpg'
+        };
         const resultado = UsuarioUpdateSchema.parse(dadosParciais);
         expect(resultado.link_foto).toBe('https://example.com/nova-foto.jpg');
         expect(resultado.nome).toBeUndefined();
@@ -272,12 +287,10 @@ describe('UsuarioUpdateSchema', () => {
     it('deve validar corretamente quando atualiza apenas o array "progresso"', () => {
         const objectId = new mongoose.Types.ObjectId().toString();
         const dadosParciais = {
-            progresso: [
-                {
-                    percentual_conclusao: '90',
-                    curso: objectId
-                }
-            ]
+            progresso: [{
+                percentual_conclusao: '90',
+                curso: objectId
+            }]
         };
         const resultado = UsuarioUpdateSchema.parse(dadosParciais);
         expect(resultado.progresso[0].percentual_conclusao).toBe('90');

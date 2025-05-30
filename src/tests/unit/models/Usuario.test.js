@@ -1,4 +1,6 @@
-import { jest } from '@jest/globals';
+import {
+    jest
+} from '@jest/globals';
 import mongoose from 'mongoose';
 import {
     MongoMemoryServer
@@ -12,9 +14,13 @@ beforeAll(async () => {
     mongoServer = await MongoMemoryServer.create();
     const uri = mongoServer.getUri();
     await mongoose.connect(uri);
-    
+
     // Criar explicitamente o índice único para o email
-    await mongoose.connection.collection('usuarios').createIndex({ email: 1 }, { unique: true });
+    await mongoose.connection.collection('usuarios').createIndex({
+        email: 1
+    }, {
+        unique: true
+    });
 });
 
 // Limpar a coleção entre os testes
@@ -266,7 +272,7 @@ describe('Modelo de Usuário', () => {
         });
 
         await expect(usuarioNomeGrande.save()).rejects.toThrow();
-    });    // Teste: Email mantém case original
+    }); // Teste: Email mantém case original
     test('deve manter o case original do email ao salvar', async () => {
         const emailMisto = 'Teste@Email.com';
 

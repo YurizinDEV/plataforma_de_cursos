@@ -5,6 +5,7 @@ import {
 import bcrypt from 'bcrypt';
 import UsuarioRepository from '../../../repositories/UsuarioRepository.js';
 import UsuarioModel from '../../../models/Usuario.js';
+import UsuarioFilterBuilder from '../../../repositories/filters/UsuarioFilterBuilder.js';
 import {
     CustomError
 } from '../../../utils/helpers/index.js';
@@ -621,6 +622,67 @@ describe('UsuarioRepository', () => {
             expect(resultado.totalCursos).toBe(2);
             expect(resultado.percentualMedio).toBe('0.00');
         });
+        test('deve calcular percentualMedio como 0 quando não houver progresso', () => {
+            // Criar um mock de usuário sem progresso
+            const mockUsuario = {
+                _id: new mongoose.Types.ObjectId(),
+                nome: 'Usuário Sem Progresso',
+                email: 'semprogresso@teste.com',
+                cursosIds: [new mongoose.Types.ObjectId(), new mongoose.Types.ObjectId()],
+                progresso: [], // Array vazio
+                toObject: function () {
+                    return {
+                        _id: this._id,
+                        nome: this.nome,
+                        email: this.email,
+                        cursosIds: this.cursosIds,
+                        progresso: this.progresso
+                    };
+                }
+            };
+
+            const resultado = usuarioRepository.enriquecerUsuario(mockUsuario);
+
+            expect(resultado).toEqual(expect.objectContaining({
+                totalCursos: 2,
+                percentualMedio: '0.00'
+            }));
+        });
+
+        test('deve calcular percentualMedio corretamente quando houver progresso', () => {
+            // Criar um mock de usuário com progresso
+            const mockUsuario = {
+                _id: new mongoose.Types.ObjectId(),
+                nome: 'Usuário Com Progresso',
+                email: 'comprogresso@teste.com',
+                cursosIds: [new mongoose.Types.ObjectId(), new mongoose.Types.ObjectId()],
+                progresso: [{
+                        curso_id: new mongoose.Types.ObjectId(),
+                        percentual_conclusao: '25.00'
+                    },
+                    {
+                        curso_id: new mongoose.Types.ObjectId(),
+                        percentual_conclusao: '75.00'
+                    }
+                ],
+                toObject: function () {
+                    return {
+                        _id: this._id,
+                        nome: this.nome,
+                        email: this.email,
+                        cursosIds: this.cursosIds,
+                        progresso: this.progresso
+                    };
+                }
+            };
+
+            const resultado = usuarioRepository.enriquecerUsuario(mockUsuario);
+
+            expect(resultado).toEqual(expect.objectContaining({
+                totalCursos: 2,
+                percentualMedio: '50.00'
+            }));
+        });
     });
 
     describe('Simulação de erros de banco de dados', () => {
@@ -634,6 +696,68 @@ describe('UsuarioRepository', () => {
                 expect(error.errorType).toBe('databaseError');
                 expect(error.field).toBe('Database');
             }
+        });
+    });
+    describe('Métodos auxiliares e casos especiais', () => {
+        describe('Tratamento de erro no método listar', () => {
+            test('deve lançar erro quando filterBuilder.build não é função', async () => {
+                // Preparar - criar mock inválido para filterBuilder
+                const mockInvalidFilterBuilder = {
+                    comNome: jest.fn().mockReturnThis(),
+                    comEmail: jest.fn().mockReturnThis(),
+                    comAtivo: jest.fn().mockReturnThis(),
+                    // build não é uma função, é um objeto
+                    build: {}
+                };
+
+                // Criar um spy para o método find
+                jest.spyOn(usuarioRepository.model, 'find').mockImplementation(() => {
+                    throw new CustomError({
+                        statusCode: 500,
+                        errorType: 'internalServerError',
+                        field: 'Usuário',
+                        customMessage: 'Erro interno do servidor'
+                    });
+                });
+
+                // Substituir o filtro real pelo mock
+                const originalFilterBuilder = usuarioRepository.usuarioFilterBuilder;
+                usuarioRepository.usuarioFilterBuilder = mockInvalidFilterBuilder;
+
+                // Verificar que um erro é lançado
+                await expect(usuarioRepository.listar({
+                    query: {}
+                })).rejects.toThrow();
+
+                // Restaurar o UsuarioFilterBuilder real e o mock do find
+                usuarioRepository.usuarioFilterBuilder = originalFilterBuilder;
+                jest.restoreAllMocks();
+            });
+        });
+
+        describe('Método simularErroBanco', () => {
+            test('deve lançar CustomError com detalhes específicos quando chamado', async () => {
+                // Espionar o método findOne
+                const findOneSpy = jest.spyOn(usuarioRepository.model, 'findOne');
+
+                try {
+                    await usuarioRepository.simularErroBanco();
+                    fail('Deveria ter lançado um erro');
+                } catch (error) {
+                    expect(error).toBeInstanceOf(CustomError);
+                    expect(error.statusCode).toBe(500);
+                    expect(error.errorType).toBe('databaseError');
+                    expect(error.field).toBe('Database');
+
+                    // Verificar se o método findOne foi chamado com o ID inválido
+                    expect(findOneSpy).toHaveBeenCalledWith({
+                        _id: 'id-invalido-forcar-erro'
+                    });
+                }
+
+                // Restaurar o método original
+                findOneSpy.mockRestore();
+            });
         });
     });
 });

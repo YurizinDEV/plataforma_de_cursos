@@ -6,6 +6,12 @@ import bcrypt from 'bcrypt';
 import UsuarioController from '../../../controllers/UsuarioController.js';
 import UsuarioModel from '../../../models/Usuario.js';
 import {
+    UsuarioQuerySchema
+} from '../../../utils/validators/schemas/zod/querys/UsuarioQuerySchema.js';
+import {
+    ObjectIdSchema
+} from '../../../utils/validators/schemas/zod/ObjectIdSchema.js';
+import {
     CustomError
 } from '../../../utils/helpers/index.js';
 
@@ -71,7 +77,6 @@ describe('UsuarioController', () => {
         expect(controller).toBeInstanceOf(UsuarioController);
         expect(controller.service).toBeDefined();
     });
-
     describe('Método listar', () => {
         test('deve lidar com erro interno do serviço', async () => {
             // Mock para simular erro interno no serviço
@@ -88,6 +93,7 @@ describe('UsuarioController', () => {
             // Restaura a implementação original
             mockService.listar = originalListar;
         });
+
         test('deve listar todos os usuários quando não há filtros', async () => {
             // Criar alguns usuários de teste
             await UsuarioModel.create([{
@@ -114,6 +120,7 @@ describe('UsuarioController', () => {
             expect(res.data.data.docs.length).toBe(2);
             expect(res.data.data.totalDocs).toBe(2);
         });
+
         test('deve filtrar usuários por nome corretamente', async () => {
             // Criar alguns usuários de teste
             await UsuarioModel.create([{
@@ -142,6 +149,7 @@ describe('UsuarioController', () => {
             expect(res.data.data.docs.length).toBe(1);
             expect(res.data.data.docs[0].nome).toContain('João');
         });
+
         test('deve filtrar usuários por email corretamente', async () => {
             // Criar alguns usuários de teste
             await UsuarioModel.create([{
@@ -170,6 +178,7 @@ describe('UsuarioController', () => {
             expect(res.data.data.docs.length).toBe(1);
             expect(res.data.data.docs[0].email).toBe('maria@teste.com');
         });
+
         test('deve filtrar usuários por status ativo corretamente', async () => {
             // Criar alguns usuários de teste
             await UsuarioModel.create([{
@@ -211,6 +220,7 @@ describe('UsuarioController', () => {
             // Espera que lance um erro de validação
             await expect(usuarioController.listar(req, res)).rejects.toThrow();
         });
+
         test('deve buscar usuário por ID corretamente', async () => {
             // Criar um usuário de teste
             const usuario = await UsuarioModel.create({
@@ -237,6 +247,97 @@ describe('UsuarioController', () => {
             // então vamos apenas verificar que o ID e nome correspondem
             expect(res.data.data.nome).toBe(usuario.nome);
             expect(res.data.data.email).toBe(usuario.email);
+        });
+
+        test('deve validar e processar query params corretamente', async () => {
+            // Mock o método parseAsync no UsuarioQuerySchema
+            const originalParseAsync = UsuarioQuerySchema.parseAsync;
+            UsuarioQuerySchema.parseAsync = jest.fn().mockResolvedValue({
+                nome: 'João',
+                page: 1
+            });
+
+            const req = mockRequest();
+            req.query = {
+                nome: 'João',
+                page: 1
+            };
+            const res = mockResponse();
+
+            // Spy no service.listar
+            const listarSpy = jest.spyOn(usuarioController.service, 'listar')
+                .mockResolvedValue({
+                    docs: [],
+                    totalDocs: 0
+                });
+
+            await usuarioController.listar(req, res);
+
+            expect(UsuarioQuerySchema.parseAsync).toHaveBeenCalledWith(req.query);
+            expect(listarSpy).toHaveBeenCalledWith(req);
+            expect(res.status).toHaveBeenCalledWith(200);
+
+            UsuarioQuerySchema.parseAsync = originalParseAsync;
+            listarSpy.mockRestore();
+        });
+
+        test('deve pular validação quando query params estiverem vazios', async () => {
+            // Mock o método parseAsync
+            const originalParseAsync = UsuarioQuerySchema.parseAsync;
+            UsuarioQuerySchema.parseAsync = jest.fn().mockResolvedValue({});
+
+            const req = mockRequest();
+            req.query = {}; // Query vazia
+            const res = mockResponse();
+
+            // Spy no service.listar
+            const listarSpy = jest.spyOn(usuarioController.service, 'listar')
+                .mockResolvedValue({
+                    docs: [],
+                    totalDocs: 0
+                });
+
+            await usuarioController.listar(req, res);
+
+            expect(UsuarioQuerySchema.parseAsync).not.toHaveBeenCalled();
+            expect(listarSpy).toHaveBeenCalledWith(req);
+            expect(res.status).toHaveBeenCalledWith(200);
+
+            UsuarioQuerySchema.parseAsync = originalParseAsync;
+            listarSpy.mockRestore();
+        });
+
+        test('deve lançar erro quando ID na listagem é inválido', async () => {
+            const req = mockRequest();
+            const res = mockResponse();
+            req.params = {
+                id: 'id-invalido'
+            };
+
+            await expect(usuarioController.listar(req, res)).rejects.toThrow();
+
+            try {
+                await usuarioController.listar(req, res);
+                fail('Deveria ter lançado um erro');
+            } catch (error) {
+                expect(error.message).toContain("ID inválido");
+            }
+        });
+
+        test('deve lançar erro quando query tem campos inválidos', async () => {
+            const req = mockRequest();
+            const res = mockResponse();
+            req.query = {
+                ativo: 'nao-booleano' // Valor inválido para o campo ativo
+            };
+
+            await expect(usuarioController.listar(req, res)).rejects.toThrow();
+
+            try {
+                await usuarioController.listar(req, res);
+            } catch (error) {
+                expect(error.message).toContain("Ativo deve ser 'true' ou 'false'");
+            }
         });
     });
 
@@ -626,6 +727,23 @@ describe('UsuarioController', () => {
 
             // Espera que lance um erro
             await expect(usuarioController.deletar(req, res)).rejects.toThrow();
+        });
+
+        test('deve lançar erro quando ID não é fornecido', async () => {
+            const req = mockRequest();
+            req.params = {}; // Params vazios, sem ID
+            const res = mockResponse();
+
+            try {
+                await usuarioController.deletar(req, res);
+                fail('Deveria ter lançado um erro');
+            } catch (error) {
+                expect(error).toBeInstanceOf(CustomError);
+                expect(error.statusCode).toBe(400);
+                expect(error.errorType).toBe('validationError');
+                expect(error.field).toBe('id');
+                expect(error.customMessage).toContain('ID do usuário é obrigatório');
+            }
         });
     });
 });

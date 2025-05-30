@@ -258,4 +258,28 @@ describe('CommonResponse', () => {
             });
         });
     });
+
+    describe('Testes adicionais para melhorar cobertura de branches', () => {
+        // Teste para linha 54 do CommonResponse - getSwaggerSchema sem schemaRef
+        it('deve gerar schema Swagger corretamente quando schemaRef não é fornecido', () => {
+            const schema = CommonResponse.getSwaggerSchema();
+            
+            expect(schema).toBeDefined();
+            expect(schema.type).toBe("object");
+            expect(schema.properties.error).toEqual({ type: "boolean", example: false });
+            expect(schema.properties.code).toEqual({ type: "integer", example: 200 });
+            expect(schema.properties.data).toBeDefined();
+            expect(schema.properties.message).toEqual({ type: "string", example: "Operação realizada com sucesso" });
+        });
+        
+        // Teste para linha 54 do CommonResponse - getSwaggerSchema com schemaRef
+        it('deve gerar schema Swagger corretamente quando schemaRef é fornecido', () => {
+            const schemaRef = '#/components/schemas/Usuario';
+            
+            const schema = CommonResponse.getSwaggerSchema(schemaRef);
+            
+            expect(schema).toBeDefined();
+            expect(schema.properties.data).toEqual({ $ref: schemaRef });
+        });
+    });
 });

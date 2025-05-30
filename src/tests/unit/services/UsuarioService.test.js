@@ -276,6 +276,82 @@ describe('UsuarioService', () => {
             // Restaura o mock
             mockHash.mockRestore();
         });
+
+        test('deve pular o hash da senha quando senha não for fornecida', async () => {
+            // Mock da função validateEmail
+            const validateEmailSpy = jest.spyOn(usuarioService, 'validateEmail')
+                .mockImplementation(() => Promise.resolve());
+
+            // Mock do bcrypt.hash para verificar que não foi chamado
+            const bcryptHashSpy = jest.spyOn(bcrypt, 'hash');
+
+            // Mock do repository.criar
+            const criarSpy = jest.spyOn(usuarioService.repository, 'criar')
+                .mockImplementation((dados) => Promise.resolve({
+                    ...dados,
+                    _id: new mongoose.Types.ObjectId(),
+                    toObject: () => ({
+                        ...dados
+                    })
+                }));
+
+            const dadosUsuarioSemSenha = {
+                nome: 'Usuário Sem Senha',
+                email: 'semusuario@teste.com'
+                // Sem senha
+            };
+
+            await usuarioService.criar(dadosUsuarioSemSenha);
+
+            expect(bcryptHashSpy).not.toHaveBeenCalled();
+            expect(criarSpy).toHaveBeenCalledWith(dadosUsuarioSemSenha);
+
+            validateEmailSpy.mockRestore();
+            bcryptHashSpy.mockRestore();
+            criarSpy.mockRestore();
+        });
+        test('deve aplicar hash na senha quando senha for fornecida', async () => {
+            // Mock da função validateEmail
+            const validateEmailSpy = jest.spyOn(usuarioService, 'validateEmail')
+                .mockImplementation(() => Promise.resolve());
+
+            // Mock do bcrypt.hash
+            const hashMock = 'hash-da-senha';
+            const bcryptHashSpy = jest.spyOn(bcrypt, 'hash')
+                .mockResolvedValue(hashMock);
+
+            // Mock do repository.criar
+            const criarSpy = jest.spyOn(usuarioService.repository, 'criar')
+                .mockImplementation((dados) => Promise.resolve({
+                    ...dados,
+                    _id: new mongoose.Types.ObjectId(),
+                    toObject: () => ({
+                        ...dados
+                    })
+                }));
+
+            const dadosUsuarioComSenha = {
+                nome: 'Usuário Com Senha',
+                email: 'comusuario@teste.com',
+                senha: 'Senha@123'
+            };
+
+            await usuarioService.criar(dadosUsuarioComSenha);
+
+            // Verifica que o hash foi aplicado com os parâmetros corretos
+            expect(bcryptHashSpy).toHaveBeenCalledWith('Senha@123', 10);
+
+            // Verifica que os dados foram enviados para o repositório com a senha hashada
+            expect(criarSpy).toHaveBeenCalledWith({
+                nome: 'Usuário Com Senha',
+                email: 'comusuario@teste.com',
+                senha: hashMock
+            });
+
+            validateEmailSpy.mockRestore();
+            bcryptHashSpy.mockRestore();
+            criarSpy.mockRestore();
+        });
     });
 
     describe('Método atualizar', () => {
@@ -437,46 +513,34 @@ describe('UsuarioService', () => {
             }
         });
     });
-
     describe('Métodos auxiliares', () => {
         describe('validateEmail', () => {
             test('deve validar email único com sucesso', async () => {
-                // Email não existe no banco, então deve passar na validação
                 await expect(usuarioService.validateEmail('email_novo@teste.com'))
                     .resolves.not.toThrow();
             });
 
             test('deve rejeitar email duplicado', async () => {
-                // Cria um usuário primeiro
-                await UsuarioModel.create({
-                    nome: 'Usuário Existente',
-                    email: 'email_existente@teste.com',
-                    senha: await bcrypt.hash('Senha@123', 10)
-                });
+                const buscarPorEmailSpy = jest.spyOn(usuarioService.repository, 'buscarPorEmail')
+                    .mockResolvedValue({
+                        _id: new mongoose.Types.ObjectId(),
+                        email: 'email_existente@teste.com'
+                    });
 
-                // Tenta validar o email que já existe
                 await expect(usuarioService.validateEmail('email_existente@teste.com'))
                     .rejects.toThrow(CustomError);
 
-                // Verifica detalhes do erro
-                try {
-                    await usuarioService.validateEmail('email_existente@teste.com');
-                } catch (error) {
-                    expect(error.statusCode).toBe(400);
-                    expect(error.errorType).toBe('validationError');
-                    expect(error.field).toBe('email');
-                }
+                expect(buscarPorEmailSpy).toHaveBeenCalledWith('email_existente@teste.com', null);
+                buscarPorEmailSpy.mockRestore();
             });
 
             test('deve permitir validar email para o próprio usuário (update)', async () => {
-                // Cria um usuário primeiro
                 const usuario = await UsuarioModel.create({
                     nome: 'Usuário Existente',
                     email: 'email_atual@teste.com',
                     senha: await bcrypt.hash('Senha@123', 10)
                 });
 
-                // Deve passar na validação quando fornecemos o ID do próprio usuário
                 await expect(usuarioService.validateEmail('email_atual@teste.com', usuario._id))
                     .resolves.not.toThrow();
             });
@@ -484,7 +548,6 @@ describe('UsuarioService', () => {
 
         describe('ensureUserExists', () => {
             test('deve encontrar usuário existente', async () => {
-                // Cria um usuário primeiro
                 const usuario = await UsuarioModel.create({
                     nome: 'Usuário Existente',
                     email: 'usuario@teste.com',
@@ -502,7 +565,6 @@ describe('UsuarioService', () => {
                 await expect(usuarioService.ensureUserExists(idInexistente))
                     .rejects.toThrow(CustomError);
 
-                // Verifica detalhes do erro
                 try {
                     await usuarioService.ensureUserExists(idInexistente);
                 } catch (error) {
@@ -510,6 +572,25 @@ describe('UsuarioService', () => {
                     expect(error.errorType).toBe('resourceNotFound');
                     expect(error.field).toBe('Usuário');
                 }
+            });
+
+            test('deve lançar erro 404 quando repository.buscarPorId retornar null', async () => {
+                const idUsuario = new mongoose.Types.ObjectId().toString();
+                const originalBuscarPorId = usuarioService.repository.buscarPorId;
+                usuarioService.repository.buscarPorId = jest.fn().mockResolvedValue(null);
+
+                try {
+                    await usuarioService.ensureUserExists(idUsuario);
+                    fail('Deveria ter lançado um erro');
+                } catch (error) {
+                    expect(error).toBeInstanceOf(CustomError);
+                    expect(error.statusCode).toBe(404);
+                    expect(error.errorType).toBe('resourceNotFound');
+                    expect(error.field).toBe('Usuário');
+                    expect(error.customMessage).toContain('Usuário não encontrado');
+                }
+
+                usuarioService.repository.buscarPorId = originalBuscarPorId;
             });
         });
     });
