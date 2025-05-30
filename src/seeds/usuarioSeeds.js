@@ -21,8 +21,9 @@ export default async function usuariosSeed() {
         usuarios.push({
             nome: fakerbr.name.firstName() + " " + fakerbr.name.lastName(),
             senha: gerarSenha(),
-            email: fakerbr.internet.email().toLowerCase(),
+            email: fakerbr.internet.email(),
             ehAdmin: isAdmin,
+            ativo: false,
             progresso: [],
             cursosIds: []
         });
