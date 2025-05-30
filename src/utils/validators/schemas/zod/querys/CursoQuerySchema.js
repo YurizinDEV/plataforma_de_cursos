@@ -6,9 +6,8 @@ import objectIdSchema from '../ObjectIdSchema.js';
 const CursoIdSchema = objectIdSchema.describe('id do curso');
 
 const CursoQuerySchema = z.object({
-    titulo: z.string().optional(),
-    cargaHorariaMin: z.coerce.number().positive().optional(),
-    cargaHorariaMax: z.coerce.number().positive().optional(),
+    titulo: z.string().optional(),    cargaHorariaMin: z.coerce.number().min(0, 'Carga horária mínima não pode ser negativa').optional(),
+    cargaHorariaMax: z.coerce.number().min(0, 'Carga horária máxima não pode ser negativa').optional(),
     tags: z.union([
         z.string().transform(val => val.split(',')),
         z.array(z.string())
