@@ -4,6 +4,7 @@ import UsuarioModel from '../models/Usuario.js';
 import UsuarioFilterBuilder from './filters/UsuarioFilterBuilder.js';
 import {
     CustomError,
+    HttpStatusCodes,
     messages
 } from '../utils/helpers/index.js';
 
@@ -13,8 +14,7 @@ class UsuarioRepository {
     } = {}) {
         this.model = usuarioModel;
     }
-
-    async buscarPorEmail(email, idIgnorado = null) {
+    async buscarPorEmail(email, idIgnorado = null, throwErrorIfNotFound = false) {
         const filtro = {
             email
         };
@@ -23,7 +23,17 @@ class UsuarioRepository {
                 $ne: idIgnorado
             };
         }
-        return await this.model.findOne(filtro, '+senha');
+        const usuario = await this.model.findOne(filtro, '+senha');
+        if (throwErrorIfNotFound && !usuario) {
+            throw new CustomError({
+                statusCode: HttpStatusCodes.NOT_FOUND.code,
+                errorType: 'resourceNotFound',
+                field: 'Usuário',
+                details: [],
+                customMessage: `Usuário com email ${email} não encontrado.`,
+            });
+        }
+        return usuario;
     }
 
     async buscarPorId(id) {
@@ -60,16 +70,17 @@ class UsuarioRepository {
             const dadosEnriquecidos = this.enriquecerUsuario(usuario);
             return dadosEnriquecidos;
         }
-
         const {
             nome,
             email,
+            ativo,
             page = 1
         } = req.query;
         const limite = Math.min(parseInt(req.query.limite, 10) || 20, 100);
         const filterBuilder = new UsuarioFilterBuilder()
             .comNome(nome || '')
-            .comEmail(email || '');
+            .comEmail(email || '')
+            .comAtivo(ativo);
 
         if (typeof filterBuilder.build !== 'function') {
             throw new CustomError({
@@ -113,12 +124,21 @@ class UsuarioRepository {
         }
         return usuario;
     }
-
+    
     async deletar(id) {
         const usuario = await this.model.findByIdAndDelete(id);
+        if (!usuario) {
+            throw new CustomError({
+                statusCode: HttpStatusCodes.NOT_FOUND.code,
+                errorType: 'resourceNotFound',
+                field: 'Usuário',
+                details: [],
+                customMessage: messages.error.resourceNotFound('Usuário'),
+            });
+        }
         return usuario;
-    }
-
+    } 
+    
     // Método auxiliar
     enriquecerUsuario(usuario) {
         const usuarioObj = usuario.toObject();
@@ -132,6 +152,24 @@ class UsuarioRepository {
             totalCursos,
             percentualMedio: percentualMedio.toFixed(2),
         };
+    }
+
+    // Método para simulação de erro do banco (apenas para testes)
+    async simularErroBanco() {
+        try {
+            await this.model.findOne({
+                _id: 'id-invalido-forcar-erro'
+            });
+            return true;
+        } catch (error) {
+            throw new CustomError({
+                statusCode: HttpStatusCodes.INTERNAL_SERVER_ERROR.code,
+                errorType: 'databaseError',
+                field: 'Database',
+                details: [],
+                customMessage: 'Erro inesperado do banco de dados.',
+            });
+        }
     }
 }
 
