@@ -1,14 +1,14 @@
 import { jest } from '@jest/globals';
 import { ZodError } from 'zod';
 import mongoose from 'mongoose';
-import errorHandler from '../../../../src/utils/helpers/errorHandler.js';
-import CustomError from '../../../../src/utils/helpers/CustomError.js';
-import AuthenticationError from '../../../../src/utils/errors/AuthenticationError.js';
-import TokenExpiredError from '../../../../src/utils/errors/TokenExpiredError.js';
-import CommonResponse from '../../../../src/utils/helpers/CommonResponse.js';
-import logger from '../../../../src/utils/logger.js';
+import errorHandler from '../../../../utils/helpers/errorHandler.js';
+import CustomError from '../../../../utils/helpers/CustomError.js';
+import AuthenticationError from '../../../../utils/errors/AuthenticationError.js';
+import TokenExpiredError from '../../../../utils/errors/TokenExpiredError.js';
+import CommonResponse from '../../../../utils/helpers/CommonResponse.js';
+import logger from '../../../../utils/logger.js';
 
-jest.mock('../../../../src/utils/helpers/CommonResponse.js');
+jest.mock('../../../../utils/helpers/CommonResponse.js');
 
 describe('errorHandler', () => {
     let req;

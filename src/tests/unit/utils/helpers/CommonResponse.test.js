@@ -1,6 +1,7 @@
+import { jest } from '@jest/globals';
 import assert from 'assert';
-import CommonResponse from '../../../../src/utils/helpers/CommonResponse.js';
-import StatusService from '../../../../src/utils/helpers/StatusService.js';
+import CommonResponse from '../../../../utils/helpers/CommonResponse.js';
+import StatusService from '../../../../utils/helpers/StatusService.js';
 
 describe('CommonResponse', () => {
     let res;

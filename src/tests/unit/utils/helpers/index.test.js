@@ -1,5 +1,6 @@
+import { jest } from '@jest/globals';
 import assert from 'assert';
-import * as Helpers from '../../../../src/utils/helpers/index.js';
+import * as Helpers from '../../../../utils/helpers/index.js';
 
 describe('Módulo Helpers', () => {
     it('deve exportar CommonResponse', () => {

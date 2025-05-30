@@ -1,4 +1,5 @@
-import asyncWrapper from '../../../src/middlewares/asyncWrapper';
+import { jest } from '@jest/globals';
+import asyncWrapper from '../../../middlewares/asyncWrapper.js';
 
 describe('asyncWrapper', () => {
     let req, res, next;

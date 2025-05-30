@@ -3,7 +3,9 @@
 import StatusService from './StatusService.js';
 
 class CommonResponse {
-    constructor(message, data = null, errors = []) {
+    constructor(error = false, code = 200, message = "", data = null, errors = []) {
+        this.error = error;
+        this.code = code;
         this.message = message;
         this.data = data;
         this.errors = errors;
@@ -11,6 +13,8 @@ class CommonResponse {
 
     toJSON() {
         return {
+            error: this.error,
+            code: this.code,
             message: this.message,
             data: this.data,
             errors: this.errors
@@ -19,13 +23,13 @@ class CommonResponse {
 
     static success(res, data, code = 200, message = null) {
         const statusMessage = message || StatusService.getHttpCodeMessage(code);
-        const response = new CommonResponse(statusMessage, data, []);
+        const response = new CommonResponse(false, code, statusMessage, data, []);
         return res.status(code).json(response);
     }
 
     static error(res, code, errorType, field = null, errors = [], customMessage = null) {
         const errorMessage = customMessage || StatusService.getErrorMessage(errorType, field);
-        const response = new CommonResponse(errorMessage, null, errors);
+        const response = new CommonResponse(true, code, errorMessage, null, errors);
         return res.status(code).json(response);
     }
 
@@ -35,7 +39,7 @@ class CommonResponse {
 
     static serverError(res, message = null) {
         const errorMessage = message || StatusService.getErrorMessage('serverError');
-        const response = new CommonResponse(errorMessage, null, []);
+        const response = new CommonResponse(true, 500, errorMessage, null, []);
         return res.status(500).json(response);
     }
 
@@ -50,6 +54,8 @@ class CommonResponse {
         return {
             type: "object",
             properties: {
+                error: { type: "boolean", example: false },
+                code: { type: "integer", example: 200 },
                 data: schemaRef
                     ? { $ref: schemaRef }
                     : { type: "array", items: {}, example: [] },

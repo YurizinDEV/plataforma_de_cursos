@@ -1,4 +1,5 @@
-import { UsuarioSchema, UsuarioUpdateSchema } from '../../../../../../src/utils/validators/schemas/zod/UsuarioSchema.js';
+import { jest } from '@jest/globals';
+import { UsuarioSchema, UsuarioUpdateSchema } from '../../../../../../utils/validators/schemas/zod/UsuarioSchema.js';
 import mongoose from 'mongoose';
 
 describe('UsuarioSchema', () => {    it('deve validar dados válidos corretamente', () => {

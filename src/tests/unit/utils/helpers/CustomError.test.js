@@ -1,4 +1,5 @@
-import CustomError from '../../../../src/utils/helpers/CustomError.js';
+import { jest } from '@jest/globals';
+import CustomError from '../../../../utils/helpers/CustomError.js';
 
 describe('CustomError', () => {
     it('deve criar uma instância de CustomError com todas as propriedades', () => {

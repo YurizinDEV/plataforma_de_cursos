@@ -1,8 +1,9 @@
+import { jest } from '@jest/globals';
 import mongoose from 'mongoose';
 import {
     MongoMemoryServer
 } from 'mongodb-memory-server';
-import Usuario from '../../../src/models/Usuario.js';
+import Usuario from '../../../models/Usuario.js';
 
 let mongoServer;
 

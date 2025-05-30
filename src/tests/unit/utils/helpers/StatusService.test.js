@@ -1,7 +1,8 @@
+import { jest } from '@jest/globals';
 import assert from 'assert';
-import StatusService from '../../../../src/utils/helpers/StatusService.js';
-import HttpStatusCodes from '../../../../src/utils/helpers/HttpStatusCodes.js';
-import messages from '../../../../src/utils/helpers/messages.js';
+import StatusService from '../../../../utils/helpers/StatusService.js';
+import HttpStatusCodes from '../../../../utils/helpers/HttpStatusCodes.js';
+import messages from '../../../../utils/helpers/messages.js';
 
 describe('StatusService', () => {
     describe('getHttpCodeMessage', () => {

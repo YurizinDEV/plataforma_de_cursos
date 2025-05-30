@@ -3,11 +3,11 @@ import {
     MongoMemoryServer
 } from 'mongodb-memory-server';
 import bcrypt from 'bcrypt';
-import UsuarioController from '../../../src/controllers/UsuarioController.js';
-import UsuarioModel from '../../../src/models/Usuario.js';
+import UsuarioController from '../../../controllers/UsuarioController.js';
+import UsuarioModel from '../../../models/Usuario.js';
 import {
     CustomError
-} from '../../../src/utils/helpers/index.js';
+} from '../../../utils/helpers/index.js';
 
 let mongoServer;
 let usuarioController;
