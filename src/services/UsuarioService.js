@@ -42,6 +42,9 @@ class UsuarioService {
         return data;
     }
 
+
+
+
     //Metódos auxiliares
 
     async validateEmail(email, id = null) {
@@ -64,7 +67,7 @@ class UsuarioService {
         const usuarioExistente = await this.repository.buscarPorId(id);
         if (!usuarioExistente) {
             throw new CustomError({
-                statusCode: HttpStatusCodes.NOT_FOUND.code,
+                statusCode: 404,
                 errorType: 'resourceNotFound',
                 field: 'Usuário',
                 details: [],
