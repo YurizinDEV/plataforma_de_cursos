@@ -45,16 +45,26 @@ class AlternativaController {
     const validatedData = AlternativaUpdateSchema.parse(req.body);
     
     const data = await this.service.atualizar(id, validatedData);
-    return CommonResponse.success(res, data, HttpStatusCodes.OK, messages.UPDATE_SUCCESS);
-  }
+    return CommonResponse.success(
+        res, 
+        data, 
+        HttpStatusCodes.OK.code,
+        messages.UPDATE_SUCCESS
+    );
+}
 
   async deletar(req, res) {
     const { id } = req.params;
     AlternativaIdSchema.parse(id);
 
     const data = await this.service.deletar(id);
-    return CommonResponse.success(res, data, HttpStatusCodes.OK, messages.DELETE_SUCCESS);
-  }
+    return CommonResponse.success(
+        res,
+        data,
+        HttpStatusCodes.OK.code,
+        messages.DELETE_SUCCESS
+    );
+}
 }
 
 export default AlternativaController;

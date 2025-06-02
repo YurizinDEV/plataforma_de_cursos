@@ -12,4 +12,4 @@ router
   .post("/certificados/emitir/:usuarioId/:cursoId", 
     asyncWrapper(certificadoController.emitirParaUsuario.bind(certificadoController)));
 
-export default router;
+export default router;

@@ -4,8 +4,8 @@ import { CustomError, messages, HttpStatusCodes } from "../utils/helpers/index.j
 
 class AlternativaService {
   constructor() {
-    this.repository = AlternativaRepository;
-    this.questionarioRepo = QuestionarioRepository;
+    this.repository = new AlternativaRepository();
+    this.questionarioRepo = new QuestionarioRepository();
   }
 
   async criar(alternativaData) {
