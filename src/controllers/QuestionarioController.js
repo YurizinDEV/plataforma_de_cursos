@@ -44,16 +44,25 @@ class QuestionarioController {
     const validatedData = QuestionarioUpdateSchema.parse(req.body);
     
     const data = await this.service.atualizar(id, validatedData);
-    return CommonResponse.success(res, data, HttpStatusCodes.OK, messages.UPDATE_SUCCESS);
+    return CommonResponse.success(
+    res, 
+    data, 
+    200,
+    messages.UPDATE_SUCCESS);
   }
 
   async deletar(req, res) {
-    const { id } = req.params;
-    QuestionarioIdSchema.parse(id);
+  const { id } = req.params;
+  QuestionarioIdSchema.parse(id);
 
-    const data = await this.service.deletar(id);
-    return CommonResponse.success(res, data, HttpStatusCodes.OK, messages.DELETE_SUCCESS);
-  }
+  const data = await this.service.deletar(id);
+  return CommonResponse.success(
+    res, 
+    data, 
+    200,
+    messages.DELETE_SUCCESS
+  );
+}
 
   async adicionarAlternativa(req, res) {
     const { questionarioId, alternativaId } = req.params;
