@@ -5,9 +5,9 @@ import { CustomError, messages, HttpStatusCodes } from "../utils/helpers/index.j
 
 class CertificadoService {
   constructor() {
-    this.repository = CertificadoRepository;
-    this.usuarioRepo = UsuarioRepository;
-    this.cursoRepo = CursoRepository;
+    this.repository = new CertificadoRepository();
+    this.UsuarioRepo = new UsuarioRepository();
+    this.CursoRepo = new CursoRepository();
   }
 
   async criar(certificadoData) {
