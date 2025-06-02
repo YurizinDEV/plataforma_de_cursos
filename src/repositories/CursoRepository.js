@@ -12,7 +12,7 @@ class CursoRepository {
     }
 
     async listar(req) {
-        const id = req.params.id || null;
+        const id = req?.params?.id || null;
 
         if (id) {
             const curso = await this.model.findById(id);
@@ -144,10 +144,23 @@ class CursoRepository {
         }
         return curso;
     }
-    async buscarPorTitulo(titulo) {
+    async buscarPorTitulo(titulo, options = {
+        throwOnNotFound: true
+    }) {
         const curso = await this.model.findOne({
             titulo
         });
+
+        if (!curso && options.throwOnNotFound) {
+            throw new CustomError({
+                statusCode: HttpStatusCodes.NOT_FOUND.code,
+                errorType: 'resourceNotFound',
+                field: 'Curso',
+                details: [],
+                customMessage: messages.error.resourceNotFound('Curso com o título fornecido')
+            });
+        }
+
         return curso;
     }
 }

@@ -8,7 +8,9 @@ import {
     CursoUpdateSchema
 } from '../utils/validators/schemas/zod/CursoSchema.js';
 import {
-    CommonResponse
+    CommonResponse,
+    CustomError,
+    HttpStatusCodes
 } from '../utils/helpers/index.js';
 
 class CursoController {
@@ -17,18 +19,17 @@ class CursoController {
     }
 
     async listar(req, res) {
-        const {
-            id
-        } = req.params || {};
+        const { id } = req.params || {};
+        
         if (id) {
             CursoIdSchema.parse(id);
         }
-
+        
         const query = req.query || {};
         if (Object.keys(query).length !== 0) {
             await CursoQuerySchema.parseAsync(query);
         }
-
+        
         const data = await this.service.listar(req);
         return CommonResponse.success(res, data);
     }
@@ -40,14 +41,10 @@ class CursoController {
     }
 
     async atualizar(req, res) {
-        const {
-            id
-        } = req.params;
-
+        const { id } = req.params;
         CursoIdSchema.parse(id);
-
+        
         const parsedData = CursoUpdateSchema.parse(req.body);
-
         if (Object.keys(parsedData).length === 0) {
             throw new CustomError({
                 statusCode: HttpStatusCodes.BAD_REQUEST.code,
@@ -57,17 +54,17 @@ class CursoController {
                     path: 'body',
                     message: 'Nenhum dado fornecido para atualização.'
                 }],
-                customMessage: 'É necessário fornecer pelo menos um campo válido para atualizar o curso.'
+                customMessage: 'Nenhum dado fornecido para atualização.'
             });
         }
+        
         const cursoAtualizado = await this.service.atualizar(id, parsedData);
         return CommonResponse.success(res, cursoAtualizado, 200, "Curso atualizado com sucesso.");
     }
 
     async deletar(req, res) {
-        const {
-            id
-        } = req.params || {};
+        const { id } = req.params || {};
+        
         if (!id) {
             throw new CustomError({
                 statusCode: HttpStatusCodes.BAD_REQUEST.code,
@@ -77,11 +74,11 @@ class CursoController {
                     path: 'id',
                     message: 'ID do curso não fornecido.'
                 }],
-                customMessage: 'ID do curso é obrigatório para realizar a exclusão.'
+                customMessage: 'ID do curso não fornecido.'
             });
         }
+        
         CursoIdSchema.parse(id);
-
         const cursoRemovido = await this.service.deletar(id);
         return CommonResponse.success(res, cursoRemovido, 200, "Curso removido com sucesso.");
     }

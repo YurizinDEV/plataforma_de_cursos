@@ -34,10 +34,17 @@ class CursoService {
         return await this.repository.deletar(id);
     }
 
-    // Métodos auxiliares   
+    // Métodos auxiliares     
     async validateTitulo(titulo, id = null) {
-        const cursoExistente = await this.repository.buscarPorTitulo(titulo);
-        if (cursoExistente && (!id || cursoExistente._id.toString() !== id)) {
+        const cursoExistente = await this.repository.buscarPorTitulo(titulo, {
+            throwOnNotFound: false
+        });
+        
+        if (!cursoExistente) {
+            return;
+        }
+        
+        if (!id || cursoExistente._id.toString() !== id.toString()) {
             throw new CustomError({
                 statusCode: HttpStatusCodes.BAD_REQUEST.code,
                 errorType: 'validationError',
