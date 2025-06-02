@@ -1,7 +1,7 @@
 # Sprint 4 15.05.2025 - 25.05.2025
 
 ## Reuniões
-Reunião - Sprint Planning Meeting 20.05 (Aílton Vieira)
+- Reunião - Sprint Planning Meeting 20.05 (Aílton Vieira)
 
 ## Routes
 - alternativaRoutes.js (Aílton Vieira)
@@ -36,3 +36,7 @@ Reunião - Sprint Planning Meeting 20.05 (Aílton Vieira)
 - UsuarioService.js (Yuri Zetoles)
 
 ## Middleware
+- asyncWrapper.js
+- AuthMiddleware.js
+- AuthPermission.js
+- LogRoutesMiddleware.js

@@ -35,6 +35,7 @@ A tabela a seguir contém a relação dos Requisitos Funcionais elicitados, com 
 | **RF-005**   | Acompanhar Progresso           | O administrador pode acompanhar o progresso dos usuários em cada curso. |
 | **RF-006**   | Acompanhar o Próprio Progresso | Os usuários podem acompanhar o próprio progresso em cada curso. |
 | **RF-007**   | Obter Certificados             | Permite que os usuários tenham acesso ao certificado após a conclusão de cada curso. |
+| **RF-008**   | Manter Questionários           | O administrador pode adicionar questionários após cada aula (opcional) servindo como atividades. |
 
 
 ## REQUISITOS NÃO FUNCIONAIS
