@@ -25,7 +25,9 @@ class Certificado {
         });
 
         certificadoSchema.plugin(mongoosePaginate);
-        this.model = mongoose.model("certificados", certificadoSchema);
+        this.model = mongoose.model("Certificado", certificadoSchema);
+
+        
     }
 }
 
