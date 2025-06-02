@@ -1,18 +1,27 @@
 import Aula from "../models/Aula.js";
 import AulaFilterBuilder from "./filters/AulaFilterBuilder.js";
+import { CustomError, HttpStatusCodes, messages } from "../utils/helpers/index.js";
 
 class AulaRepository {
+    constructor() {
+        this.model = Aula;
+    }
+
     async criar(aulaData) {
-        const novaAula = new Aula(aulaData);
-        return await novaAula.save();
+            const novaAula = new this.model(aulaData);
+            return await novaAula.save();
     }
 
     async buscarPorId(id) {
-        return await Aula.findById(id);
+        const aula = await this.model.findById(id);
+        if (!aula) {
+            throw new CustomError('Aula não encontrada', HttpStatusCodes.NOT_FOUND);
+        }
+        return aula;
     }
 
     async verificarExistenciaPorCurso(cursoId, titulo) {
-        return await Aula.findOne({ cursoId, titulo });
+        return await this.model.findOne({ cursoId, titulo });
     }
 
     async listar(filters = {}) {
@@ -25,7 +34,6 @@ class AulaRepository {
     }
 
     async atualizar(id, dadosAtualizados) {
-        try {
             const aulaAtualizada = await Aula.findByIdAndUpdate(
                 id,
                 dadosAtualizados,
@@ -46,14 +54,9 @@ class AulaRepository {
             }
 
             return aulaAtualizada;
-        } catch (error) {
-            console.error('Erro ao atualizar aula:', error);
-            throw error;
-        }
     }
 
     async deletar(id) {
-    try {
         const aulaDeletada = await Aula.findByIdAndDelete(id);
         
         if (!aulaDeletada) {
@@ -67,10 +70,6 @@ class AulaRepository {
         }
         
         return aulaDeletada;
-    } catch (error) {
-        console.error('Erro ao deletar aula:', error);
-        throw error;
-    }
 }
 }
 
