@@ -5,10 +5,10 @@ import { CustomError, messages, HttpStatusCodes } from "../utils/helpers/index.j
 
 class QuestionarioService {
   constructor() {
-    this.repository = QuestionarioRepository;
-    this.aulaRepo = AulaRepository;
-    this.alternativaRepo = AlternativaRepository;
-  }
+  this.repository = new QuestionarioRepository();
+  this.aulaRepo = new AulaRepository();
+  this.alternativaRepo = new AlternativaRepository();
+}
 
   async criar(questionarioData) {
     const aula = await this.aulaRepo.buscarPorId(questionarioData.aulaId);
