@@ -5,64 +5,67 @@ import { CustomError, messages, HttpStatusCodes } from '../utils/helpers/index.j
 class AulaService {
     constructor() {
         this.cursoRepository = new CursoRepository();
-        this.repository = new AulaRepository();
+        this.repositoryAula = new AulaRepository();
     }
 
     async listar(req) {
         const { params, query } = req;
         
         if (params?.id) {
-            const aula = await this.repository.buscarPorId(params.id);
+            const aula = await this.repositoryAula.buscarPorId(params.id);
             if (!aula) {
                 throw new CustomError(messages.NOT_FOUND, HttpStatusCodes.NOT_FOUND);
             }
             return aula;
         }
         
-        return await this.repository.listar(query);
+        return await this.repositoryAula.listar(query);
     }
 
-    async criar(req) {
-        const { body } = req;
-        const curso = await this.cursoRepository.buscarPorId(body.cursoId);
-        
-        if (!curso) {
-            throw new CustomError('Curso não encontrado', HttpStatusCodes.NOT_FOUND);
+    async buscarPorId({ params }) {
+        const { id } = params;
+        const aula = await this.repositoryAula.buscarPorId(id);
+        if (!aula) {
+            throw new CustomError('Aula não encontrada', HttpStatusCodes.NOT_FOUND);
         }
+        return aula;
+    }
 
-        const aulaExistente = await this.repository.verificarExistenciaPorCurso(
-            body.cursoId, 
-            body.titulo
-        );
-        
-        if (aulaExistente) {
-            throw new CustomError('Esta aula já existe neste curso', HttpStatusCodes.CONFLICT);
+    async criar({ body }) {
+    const curso = await this.cursoRepository.buscarPorId(body.cursoId);
+    if (!curso) {
+      throw new CustomError({
+        customMessage: 'Curso não encontrado',
+        statusCode: HttpStatusCodes.NOT_FOUND
+      });
+    }
+
+        const aulaExistente = await this.repositoryAula.buscarPorTituloECursoId(body.titulo, body.cursoId);
+    if (aulaExistente) {
+      throw new CustomError({
+        customMessage: 'Esta aula já existe neste curso',
+        statusCode: HttpStatusCodes.CONFLICT
+      });
+    }
+
+    return await this.repositoryAula.criar(body);
+  }
+
+    async atualizar({ params: { id }, body }) {
+        const aulaExistente = await this.repositoryAula.buscarPorId(id);
+        if (!aulaExistente) {
+            throw new CustomError(messages.NOT_FOUND, HttpStatusCodes.NOT_FOUND);
         }
-
-        return await this.repository.criar(body);
+        return await this.repositoryAula.atualizar(id, body);
     }
 
-    async atualizar(req) {
-    const { params: { id }, body } = req;
-    
-    const aulaExistente = await this.repository.buscarPorId(id);
-    if (!aulaExistente) {
-        throw new CustomError(messages.NOT_FOUND, HttpStatusCodes.NOT_FOUND);
+    async deletar({ params: { id } }) {
+        const aulaExistente = await this.repositoryAula.buscarPorId(id);
+        if (!aulaExistente) {
+            throw new CustomError(messages.NOT_FOUND, HttpStatusCodes.NOT_FOUND);
+        }
+        return await this.repositoryAula.deletar(id);
     }
-
-    return await this.repository.atualizar(id, body);
-}
-
-    async deletar(req) {
-    const { params: { id } } = req;
-    
-    const aulaExistente = await this.repository.buscarPorId(id);
-    if (!aulaExistente) {
-        throw new CustomError(messages.NOT_FOUND, HttpStatusCodes.NOT_FOUND);
-    }
-    
-    return await this.repository.deletar(id);
-}
 }
 
 export default AulaService;
