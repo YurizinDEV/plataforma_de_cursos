@@ -36,17 +36,17 @@
 - Implementar DELETE
 
 ## Testes
-### Alternativas (Aílton Vieira)
-- Implementar Testes Alternativas
+<!-- ### Alternativas (Aílton Vieira)
+- Implementar Testes Alternativas -->
 
 ### Aulas (Aílton Vieira)
 - Implementar Testes Aulas
 
-### Certificados (André Lucas)
+<!-- ### Certificados (André Lucas)
 - Implementar Testes Certificados
 
 ### Questionários (André Lucas)
-- Implementar Testes Questionários
+- Implementar Testes Questionários -->
 
 ### Cursos (Yuri Zetoles)
 - Implementar Testes Cursos
