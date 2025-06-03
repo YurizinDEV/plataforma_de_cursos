@@ -23,13 +23,16 @@ class AulaService {
     }
 
     async buscarPorId({ params }) {
-        const { id } = params;
-        const aula = await this.repositoryAula.buscarPorId(id);
-        if (!aula) {
-            throw new CustomError('Aula não encontrada', HttpStatusCodes.NOT_FOUND);
-        }
-        return aula;
-    }
+  const { id } = params;
+  const aula = await this.repositoryAula.buscarPorId(id);
+  if (!aula) {
+    throw new CustomError({
+      customMessage: 'Aula não encontrada',
+      statusCode: HttpStatusCodes.NOT_FOUND
+    });
+  }
+  return aula;
+}
 
     async criar({ body }) {
     const curso = await this.cursoRepository.buscarPorId(body.cursoId);
@@ -40,7 +43,7 @@ class AulaService {
       });
     }
 
-        const aulaExistente = await this.repositoryAula.buscarPorTituloECursoId(body.titulo, body.cursoId);
+        const aulaExistente = await this.repositoryAula.buscarPorTitulo(body.titulo, body.cursoId);
     if (aulaExistente) {
       throw new CustomError({
         customMessage: 'Esta aula já existe neste curso',
