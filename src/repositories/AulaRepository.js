@@ -20,8 +20,8 @@ class AulaRepository {
         return aula;
     }
 
-    async verificarExistenciaPorCurso(cursoId, titulo) {
-        return await this.model.findOne({ cursoId, titulo });
+    async buscarPorTitulo(titulo, cursoId) {
+        return await this.model.findOne({ titulo, cursoId });
     }
 
     async listar(filters = {}) {
@@ -70,7 +70,7 @@ class AulaRepository {
         }
         
         return aulaDeletada;
-}
+    }
 }
 
 export default AulaRepository;

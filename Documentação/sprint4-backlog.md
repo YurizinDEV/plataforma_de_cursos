@@ -2,6 +2,7 @@
 
 ## Reuniões
 - Reunião - Sprint Planning Meeting 20.05 (Aílton Vieira)
+- Reunião - Plano de Testes 22.05 (Yuri Zetoles)
 
 ## Routes
 - alternativaRoutes.js (Aílton Vieira)
