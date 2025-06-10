@@ -1,39 +1,26 @@
-# Sprint 5 26.05.2025 - 03.06.2025
+# Sprint 6 04.06.2025 - 18.06.2025
 
-## Testes
+## Implementar Rotas Restantes
+
 ### Alternativas (Aílton Vieira)
-- Implementar Testes Alternativas
-
-### Aulas (Aílton Vieira)
-- Revisar e aprimorar Testes Aulas
+- Implementar Rotas Alternativas
 
 ### Certificados (André Lucas)
-- Implementar Testes Certificados
+- Implementar Rotas Certificados
 
 ### Questionários (André Lucas)
-- Implementar Testes Questionários
+- Implementar Rotas Questionários
 
-### Cursos (Yuri Zetoles)
-- Revisar e aprimorar Testes Cursos
-
-### Usuários (Yuri Zetoles)
-- Revisar e aprimorar Testes Usuários
-
-## Testes Endpoints
-### Alternativas (Aílton Vieira)
-- Implementar Testes Endpoints Alternativas
+## Refatoração e Ajustes das Rotas Implementadas
 
 ### Aulas (Aílton Vieira)
-- Implementar Testes Endpoints Aulas
-
-### Certificados (André Lucas)
-- Implementar Testes Endpoints Certificados
-
-### Questionários (André Lucas)
-- Implementar Testes Endpoints Questionários
+- Refatorar e Ajustar Aulas - Seguindo melhor as regras de negócios
 
 ### Cursos (Yuri Zetoles)
-- Implementar Testes Endpoints Cursos
+- Refatorar e Ajustar Cursos - Seguindo melhor as regras de negócios
 
 ### Usuários (Yuri Zetoles)
-- Implementar Testes Endpoints Usuários
+- Refatorar e Ajustar Usuários - Seguindo melhor as regras de negócios
+
+## Rota _Auth_ 
+- Implementar Rota _Auth_ (Rota de Login)
