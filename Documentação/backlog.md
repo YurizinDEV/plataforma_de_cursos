@@ -18,6 +18,15 @@
 - Fluxos de branches no git (mostrar gráfico de _commits_ e o painel de tarefa com uma tarefa);
 - Apresentação prática do produto (Postman).
 
+## TAREFAS - MILESTONE III
+
+- Requisitos implementados na API (Revisão dos anteriores e implementação dos que faltaram);
+- Documentação das rotas implementadas (incluindo regras de negócio);
+- Plano de Teste do projeto com cenários de teste implementados (explicar o fluxo principal ssociando a regra de negócio aos testes);
+- Teste unitário e de endpoints das funcionalidades implementadas (explicação do teste do fluxo principal, demonstrar a cobertura de testes unitários);
+- Fluxos de branches no git (mostrar gráfico de _commits_ e o painel de tarefa com uma tarefa);
+- Apresentação prática do produto (Postman).
+
 # REQUISITOS DO SOFTWARE
 
 A especificação dos requisitos deste projeto segue as recomendações da norma IEEE Std-830-1998, considerando as boas práticas para definição de requisitos.  
