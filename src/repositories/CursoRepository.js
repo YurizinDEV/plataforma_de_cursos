@@ -1,5 +1,8 @@
 import CursoModel from '../models/Curso.js';
 import CursoFilterBuilder from './filters/CursoFilterBuilder.js';
+import AulaRepository from './AulaRepository.js';
+import QuestionarioRepository from './QuestionarioRepository.js';
+import CertificadoRepository from './CertificadoRepository.js';
 import {
     CustomError,
     HttpStatusCodes,
@@ -9,6 +12,9 @@ import {
 class CursoRepository {
     constructor() {
         this.model = CursoModel;
+        this.aulaRepository = new AulaRepository();
+        this.questionarioRepository = new QuestionarioRepository();
+        this.certificadoRepository = new CertificadoRepository();
     }
 
     async listar(req) {
@@ -23,10 +29,9 @@ class CursoRepository {
                     field: 'Curso',
                     details: [],
                     customMessage: messages.error.resourceNotFound('Curso')
-                });
-            }
+                });            }
 
-            const dadosEnriquecidos = this.enriquecerCurso(curso);
+            const dadosEnriquecidos = await this.enriquecerCurso(curso);
             return dadosEnriquecidos;
         }
 
@@ -61,12 +66,14 @@ class CursoRepository {
         const filtro = filterBuilder.build();
         const resultado = await this.model.paginate(filtro, {
             page,
-            limit: limite
-        });
+            limit: limite        });
 
-        resultado.docs = resultado.docs.map(curso => {
-            return this.enriquecerCurso(curso);
-        });
+        // Enriquecer cada curso com estatísticas adicionais de forma assíncrona
+        const cursosEnriquecidos = await Promise.all(
+            resultado.docs.map(curso => this.enriquecerCurso(curso))
+        );
+        
+        resultado.docs = cursosEnriquecidos;
 
         return resultado;
     }
@@ -111,24 +118,72 @@ class CursoRepository {
         }
         return cursoRemovido;
     }
-
-
     // Método auxiliar para enriquecer os dados do curso com estatísticas
-    enriquecerCurso(curso) {
+    async enriquecerCurso(curso) {
         const cursoObj = curso.toObject();
+        const cursoId = cursoObj._id;
 
+        // Estatísticas básicas
         const totalProfessores = cursoObj.professores ? cursoObj.professores.length : 0;
         const totalTags = cursoObj.tags ? cursoObj.tags.length : 0;
         const totalMaterialComplementar = cursoObj.materialComplementar ? cursoObj.materialComplementar.length : 0;
-
+        
+        // Estatísticas avançadas
+        const totalAulas = await this.aulaRepository.contarPorCursoId(cursoId);
+        const totalCertificados = await this.certificadoRepository.contarPorCursoId(cursoId);
+        
+        // Estatísticas de questionários e alternativas
+        let totalQuestionarios = 0;
+        let totalAlternativas = 0;
+        
+        if (totalAulas > 0) {
+            // Buscar aulas para obter os IDs
+            const aulas = await this.aulaRepository.buscarPorCursoId(cursoId);
+            const aulaIds = aulas.map(a => a._id);
+            
+            if (aulaIds.length > 0) {
+                // Buscar questionários dessas aulas
+                const questionarios = await this.questionarioRepository.buscarPorAulaIds(aulaIds);
+                totalQuestionarios = questionarios.length;
+                
+                // Contar alternativas se houver questionários
+                if (totalQuestionarios > 0) {
+                    const questionarioIds = questionarios.map(q => q._id);
+                    totalAlternativas = await this.questionarioRepository.alternativaRepository.contarPorQuestionarioIds(questionarioIds);
+                }
+            }
+        }
+          // Usar o campo cargaHorariaTotal já existente no modelo
+        const duracaoTotalMinutos = cursoObj.cargaHorariaTotal || 0;
+        
         return {
             ...cursoObj,
             estatisticas: {
                 totalProfessores,
                 totalTags,
-                totalMaterialComplementar
+                totalMaterialComplementar,
+                totalAulas,
+                totalQuestionarios,
+                totalAlternativas,
+                totalCertificados,
+                duracaoTotalMinutos,
+                duracaoFormatada: this.formatarDuracao(duracaoTotalMinutos)
             }
         };
+    }
+    
+    // Método auxiliar para formatar a duração em horas e minutos
+    formatarDuracao(minutos) {
+        if (!minutos) return '0min';
+        
+        const horas = Math.floor(minutos / 60);
+        const minutosRestantes = minutos % 60;
+        
+        if (horas > 0) {
+            return `${horas}h${minutosRestantes > 0 ? ` ${minutosRestantes}min` : ''}`;
+        } else {
+            return `${minutosRestantes}min`;
+        }
     }
 
     async buscarPorId(id) {

@@ -26,6 +26,22 @@ class CertificadoRepository {
   async verificarExistencia(usuarioId, cursoId) {
     return await this.model.findOne({ usuarioId, cursoId });
   }
+
+  /**
+   * Conta o número de certificados associados a um curso específico
+   */
+  async contarPorCursoId(cursoId) {
+    return await this.model.countDocuments({ cursoId });
+  }    /**
+     * Delete todos os certificados associados a um curso específico
+     * @param {string} cursoId - ID do curso
+     * @param {Object} options - Opções como sessão de transação
+     * @returns {Promise<number>} Número de certificados excluídos
+     */
+    async deletarPorCursoId(cursoId, options = {}) {
+        const result = await this.model.deleteMany({ cursoId }, options);
+        return result.deletedCount;
+    }
 }
 
 export default CertificadoRepository;

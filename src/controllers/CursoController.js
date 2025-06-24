@@ -35,8 +35,12 @@ class CursoController {
     }
 
     async criar(req, res) {
+        // Validação do schema do curso
         const parsedData = CursoSchema.parse(req.body);
+        
+        // Criação do curso (o service agora valida se o usuário criador existe)
         const curso = await this.service.criar(parsedData);
+        
         return CommonResponse.created(res, curso, "Curso criado com sucesso.");
     }
 

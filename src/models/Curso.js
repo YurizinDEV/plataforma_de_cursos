@@ -31,8 +31,7 @@ class Curso {
             },
             tags: {
                 type: [String]
-            },
-            criadoPorId: {
+            },            criadoPorId: {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: "Usuario",
                 required: true
