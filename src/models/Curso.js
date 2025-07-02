@@ -31,7 +31,13 @@ class Curso {
             },
             tags: {
                 type: [String]
-            },            criadoPorId: {
+            },
+            status: {
+                type: String,
+                enum: ['ativo', 'inativo', 'rascunho', 'arquivado'],
+                default: 'ativo'
+            },
+            criadoPorId: {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: "Usuario",
                 required: true

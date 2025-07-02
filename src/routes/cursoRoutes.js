@@ -15,5 +15,8 @@ router.get('/cursos/:id', /*AuthMiddleware, authPermission,*/ asyncWrapper(curso
 router.put('/cursos/:id', /*AuthMiddleware, authPermission,*/ asyncWrapper(cursoController.atualizar.bind(cursoController)));
 router.patch('/cursos/:id', /*AuthMiddleware, authPermission,*/ asyncWrapper(cursoController.atualizar.bind(cursoController)));
 router.delete('/cursos/:id', /*AuthMiddleware, authPermission,*/ asyncWrapper(cursoController.deletar.bind(cursoController))); 
+// Novas rotas para gestão de status
+router.patch('/cursos/:id/restaurar', /*AuthMiddleware, authPermission,*/ asyncWrapper(cursoController.restaurar.bind(cursoController)));
+router.delete('/cursos/:id/permanente', /*AuthMiddleware, authPermission,*/ asyncWrapper(cursoController.deletarFisicamente.bind(cursoController))); 
 
 export default router;

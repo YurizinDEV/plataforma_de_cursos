@@ -47,6 +47,12 @@ class CursoService {
         }
         return await this.repository.atualizar(id, dadosAtualizados);
     }    async deletar(id) {
+        // Soft delete: apenas marcar como arquivado
+        const curso = await this.ensureCursoExists(id);
+        return await this.repository.deletar(id);
+    }
+
+    async deletarFisicamente(id) {
         // Verifica se o curso existe
         const curso = await this.ensureCursoExists(id);
         
@@ -78,12 +84,12 @@ class CursoService {
             // 5. Remover referências do curso nos usuários (progresso e cursosIds)
             const refsRemovidas = await this.usuarioRepository.removerReferenciaCurso(id, { session });
             
-            // 6. Finalmente deletar o curso
-            await this.repository.deletar(id, { session });
+            // 6. Finalmente deletar o curso fisicamente
+            await this.repository.deletarFisicamente(id, { session });
             
             // Commit da transação se tudo ocorreu bem
             await session.commitTransaction();            return { 
-                mensagem: 'Curso e todos os seus recursos relacionados foram excluídos com sucesso.',
+                mensagem: 'Curso e todos os seus recursos relacionados foram excluídos permanentemente.',
                 estatisticas: {                    curso: curso.titulo,
                     aulasExcluidas: aulasExcluidas || estatisticas.aulas,
                     questionariosExcluidos: resultadoQuestionarios.questionariosExcluidos,
@@ -117,6 +123,12 @@ class CursoService {
             // Encerrar a sessão
             session.endSession();
         }
+    }
+
+    async restaurar(id) {
+        // Verifica se o curso existe
+        await this.ensureCursoExists(id);
+        return await this.repository.restaurar(id);
     }
 
     // Métodos auxiliares     

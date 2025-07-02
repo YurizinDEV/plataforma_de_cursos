@@ -27,7 +27,7 @@ class CursoController {
         
         const query = req.query || {};
         if (Object.keys(query).length !== 0) {
-            await CursoQuerySchema.parseAsync(query);
+            CursoQuerySchema.parse(query);
         }
         
         const data = await this.service.listar(req);
@@ -49,6 +49,7 @@ class CursoController {
         CursoIdSchema.parse(id);
         
         const parsedData = CursoUpdateSchema.parse(req.body);
+        
         if (Object.keys(parsedData).length === 0) {
             throw new CustomError({
                 statusCode: HttpStatusCodes.BAD_REQUEST.code,
@@ -83,8 +84,50 @@ class CursoController {
         }
         
         CursoIdSchema.parse(id);
-        const cursoRemovido = await this.service.deletar(id);
-        return CommonResponse.success(res, cursoRemovido, 200, "Curso removido com sucesso.");
+        const cursoArquivado = await this.service.deletar(id);
+        return CommonResponse.success(res, cursoArquivado, 200, "Curso arquivado com sucesso.");
+    }
+
+    async restaurar(req, res) {
+        const { id } = req.params || {};
+        
+        if (!id) {
+            throw new CustomError({
+                statusCode: HttpStatusCodes.BAD_REQUEST.code,
+                errorType: 'validationError',
+                field: 'id',
+                details: [{
+                    path: 'id',
+                    message: 'ID do curso não fornecido.'
+                }],
+                customMessage: 'ID do curso não fornecido.'
+            });
+        }
+        
+        CursoIdSchema.parse(id);
+        const cursoRestaurado = await this.service.restaurar(id);
+        return CommonResponse.success(res, cursoRestaurado, 200, "Curso restaurado com sucesso.");
+    }
+
+    async deletarFisicamente(req, res) {
+        const { id } = req.params || {};
+        
+        if (!id) {
+            throw new CustomError({
+                statusCode: HttpStatusCodes.BAD_REQUEST.code,
+                errorType: 'validationError',
+                field: 'id',
+                details: [{
+                    path: 'id',
+                    message: 'ID do curso não fornecido.'
+                }],
+                customMessage: 'ID do curso não fornecido.'
+            });
+        }
+        
+        CursoIdSchema.parse(id);
+        const cursoRemovido = await this.service.deletarFisicamente(id);
+        return CommonResponse.success(res, cursoRemovido, 200, "Curso removido permanentemente.");
     }
 }
 
