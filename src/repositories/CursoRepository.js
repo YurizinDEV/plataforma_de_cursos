@@ -428,49 +428,47 @@ class CursoRepository {
     }
 
     async enriquecerCurso(curso) {
-        try {
-            const cursoObj = curso.toObject();
-            const cursoId = cursoObj._id;
-            const totalProfessores = cursoObj.professores ? cursoObj.professores.length : 0;
-            const totalTags = cursoObj.tags ? cursoObj.tags.length : 0;
-            const totalMaterialComplementar = cursoObj.materialComplementar ? cursoObj.materialComplementar.length : 0;
-            const totalAulas = await this.aulaRepository.contarPorCursoId(cursoId);
-            const totalCertificados = await this.certificadoRepository.contarPorCursoId(cursoId);
-            let totalQuestionarios = 0;
-            let totalAlternativas = 0;
-            if (totalAulas > 0) {
-                const aulas = await this.aulaRepository.buscarPorCursoId(cursoId);
-                const aulaIds = aulas.map(a => a._id);
-                if (aulaIds.length > 0) {
-                    const questionarios = await this.questionarioRepository.buscarPorAulaIds(aulaIds);
-                    totalQuestionarios = questionarios.length;
-                    if (totalQuestionarios > 0) {
-                        const questionarioIds = questionarios.map(q => q._id);
-                        totalAlternativas = await this.alternativaRepository.contarPorQuestionarioIds(questionarioIds);
-                    }
+        const cursoObj = curso.toObject();
+        const cursoId = cursoObj._id;
+        const totalProfessores = cursoObj.professores ? cursoObj.professores.length : 0;
+        const totalTags = cursoObj.tags ? cursoObj.tags.length : 0;
+        const totalMaterialComplementar = cursoObj.materialComplementar ? cursoObj.materialComplementar.length : 0;
+        const totalAulas = await this.aulaRepository.contarPorCursoId(cursoId);
+        const totalCertificados = await this.certificadoRepository.contarPorCursoId(cursoId);
+        
+        let totalQuestionarios = 0;
+        let totalAlternativas = 0;
+        
+        if (totalAulas > 0) {
+            const aulas = await this.aulaRepository.buscarPorCursoId(cursoId);
+            const aulaIds = aulas.map(a => a._id);
+            if (aulaIds.length > 0) {
+                const questionarios = await this.questionarioRepository.buscarPorAulaIds(aulaIds);
+                totalQuestionarios = questionarios.length;
+                if (totalQuestionarios > 0) {
+                    const questionarioIds = questionarios.map(q => q._id);
+                    totalAlternativas = await this.alternativaRepository.contarPorQuestionarioIds(questionarioIds);
                 }
             }
-            const duracaoTotalMinutos = cursoObj.cargaHorariaTotal || 0;
-            return {
-                ...cursoObj,
-                estatisticas: {
-                    totalProfessores,
-                    totalTags,
-                    totalMaterialComplementar,
-                    totalAulas,
-                    totalQuestionarios,
-                    totalAlternativas,
-                    totalCertificados,
-                    duracaoTotalMinutos,
-                    duracaoFormatada: this.formatarDuracao(duracaoTotalMinutos)
-                }
-            };
-        } catch (err) {
-
-            throw err;
         }
+        
+        const duracaoTotalMinutos = cursoObj.cargaHorariaTotal || 0;
+        
+        return {
+            ...cursoObj,
+            estatisticas: {
+                totalProfessores,
+                totalTags,
+                totalMaterialComplementar,
+                totalAulas,
+                totalQuestionarios,
+                totalAlternativas,
+                totalCertificados,
+                duracaoTotalMinutos,
+                duracaoFormatada: this.formatarDuracao(duracaoTotalMinutos)
+            }
+        };
     }
-
 
     formatarDuracao(minutos) {
         if (!minutos) return '0min';
