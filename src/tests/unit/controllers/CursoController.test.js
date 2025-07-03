@@ -1,31 +1,46 @@
-import mongoose from 'mongoose';
-import {
-    MongoMemoryServer
-} from 'mongodb-memory-server';
 import CursoController from '../../../controllers/CursoController.js';
-import CursoModel from '../../../models/Curso.js';
+import CursoService from '../../../services/CursoService.js';
 import {
-    CustomError,
-    HttpStatusCodes
-} from '../../../utils/helpers/index.js';
+    CursoSchema,
+    CursoUpdateSchema
+} from '../../../utils/validators/schemas/zod/CursoSchema.js';
 import {
+    CursoIdSchema,
     CursoQuerySchema
 } from '../../../utils/validators/schemas/zod/querys/CursoQuerySchema.js';
 import {
-    CursoSchema
-} from '../../../utils/validators/schemas/zod/CursoSchema.js';
+    CommonResponse,
+    CustomError
+} from '../../../utils/helpers/index.js';
 
-let mongoServer;
-let cursoController;
-
-const mockRequest = () => {
+jest.mock('../../../services/CursoService.js');
+jest.mock('../../../utils/validators/schemas/zod/CursoSchema.js');
+jest.mock('../../../utils/validators/schemas/zod/querys/CursoQuerySchema.js');
+jest.mock('../../../utils/helpers/index.js', () => {
+    const original = jest.requireActual('../../../utils/helpers/index.js');
+    class CustomError extends Error {
+        constructor({
+            customMessage
+        }) {
+            super(customMessage);
+            this.name = 'CustomError';
+        }
+    }
     return {
-        params: {},
-        query: {},
-        body: {}
+        ...original,
+        CustomError,
+        CommonResponse: {
+            success: jest.fn(),
+            created: jest.fn()
+        }
     };
-};
+});
 
+const mockRequest = () => ({
+    params: {},
+    query: {},
+    body: {}
+});
 const mockResponse = () => {
     const res = {};
     res.status = jest.fn().mockReturnValue(res);
@@ -36,312 +51,250 @@ const mockResponse = () => {
     return res;
 };
 
-beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const uri = mongoServer.getUri();
-    await mongoose.connect(uri);
-
-    await mongoose.connection.collection('cursos').createIndex({
-        titulo: 1
-    }, {
-        unique: true
+describe('CursoController', () => {
+    let controller;
+    let service;
+    beforeEach(() => {
+        CursoService.mockClear();
+        controller = new CursoController();
+        service = controller.service;
+        jest.clearAllMocks();
     });
 
-    cursoController = new CursoController();
-});
-
-beforeEach(async () => {
-    await CursoModel.deleteMany({});
-    jest.clearAllMocks();
-});
-
-afterAll(async () => {
-    await mongoose.disconnect();
-    await mongoServer.stop();
-});
-
-const cursoValido = {
-    titulo: 'Curso de Teste',
-    descricao: 'Descrição do curso de teste',
-    cargaHorariaTotal: 20,
-    criadoPorId: new mongoose.Types.ObjectId().toString()
-};
-
-describe('CursoController', () => {
-    describe('listar()', () => {
-        test('deve listar cursos com sucesso', async () => {
-
-            const cursos = await CursoModel.create([
-                cursoValido,
-                {
-                    ...cursoValido,
-                    titulo: 'Outro Curso'
-                },
-                {
-                    ...cursoValido,
-                    titulo: 'Mais Um Curso'
-                }
-            ]);
-
+    describe('listar', () => {
+        it('deve listar cursos com sucesso', async () => {
+            service.listar.mockResolvedValue({
+                docs: [{
+                    titulo: 'Curso'
+                }],
+                totalDocs: 1
+            });
+            CommonResponse.success.mockImplementation((res, data) => data);
+            CursoIdSchema.parse = jest.fn();
+            CursoQuerySchema.parse = jest.fn();
             const req = mockRequest();
             const res = mockResponse();
-
-            await cursoController.listar(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(200);
-            expect(res.data).toHaveProperty('error', false);
-            expect(res.data).toHaveProperty('data');
-            expect(res.data.data).toHaveProperty('docs');
-            expect(res.data.data.docs).toHaveLength(3);
+            req.query = {
+                titulo: 'Curso'
+            };
+            await controller.listar(req, res);
+            expect(service.listar).toHaveBeenCalledWith(req);
+            expect(CommonResponse.success).toHaveBeenCalled();
         });
-
-        test('deve buscar curso por ID com sucesso', async () => {
-            const cursoCriado = await CursoModel.create(cursoValido);
-
+        it('deve validar id se presente', async () => {
+            service.listar.mockResolvedValue({});
+            CursoIdSchema.parse = jest.fn();
             const req = mockRequest();
-            req.params.id = cursoCriado._id.toString();
+            req.params.id = 'idvalido';
             const res = mockResponse();
-
-            await cursoController.listar(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(200);
-            expect(res.data).toHaveProperty('error', false);
-            expect(res.data).toHaveProperty('data');
-            expect(res.data.data).toHaveProperty('_id');
-            expect(res.data.data._id.toString()).toBe(cursoCriado._id.toString());
+            await controller.listar(req, res);
+            expect(CursoIdSchema.parse).toHaveBeenCalledWith('idvalido');
         });
-
-        test('deve filtrar cursos por query params', async () => {
-            await CursoModel.create([
-                cursoValido,
-                {
-                    ...cursoValido,
-                    titulo: 'Curso de JavaScript',
-                    tags: ['javascript']
-                },
-                {
-                    ...cursoValido,
-                    titulo: 'Curso de Python',
-                    tags: ['python']
-                }
-            ]);
-
+        it('deve validar query se presente', async () => {
+            service.listar.mockResolvedValue({});
+            CursoQuerySchema.parse = jest.fn();
             const req = mockRequest();
             req.query = {
-                titulo: 'JavaScript'
+                titulo: 'Curso'
             };
             const res = mockResponse();
-
-            await cursoController.listar(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(200);
-            expect(res.data).toHaveProperty('error', false);
-            expect(res.data.data.docs).toHaveLength(1);
-            expect(res.data.data.docs[0].titulo).toBe('Curso de JavaScript');
+            await controller.listar(req, res);
+            expect(CursoQuerySchema.parse).toHaveBeenCalledWith(req.query);
         });
-
-        test('deve retornar 404 para ID inexistente', async () => {
+        it('deve lançar erro do service', async () => {
+            service.listar.mockRejectedValue(new Error('Erro interno'));
             const req = mockRequest();
-            req.params.id = new mongoose.Types.ObjectId().toString();
             const res = mockResponse();
-
-            await expect(cursoController.listar(req, res)).rejects.toThrow(CustomError);
+            await expect(controller.listar(req, res)).rejects.toThrow('Erro interno');
         });
+    });
 
-        test('deve validar query params antes de listar', async () => {
-
-            jest.spyOn(CursoQuerySchema, 'parseAsync').mockImplementationOnce(() => {
+    describe('criar', () => {
+        it('deve criar curso com sucesso', async () => {
+            CursoSchema.parse = jest.fn().mockReturnValue({
+                titulo: 'Curso',
+                criadoPorId: 'id'
+            });
+            service.criar.mockResolvedValue({
+                _id: 'id',
+                titulo: 'Curso'
+            });
+            CommonResponse.created.mockImplementation((res, data) => data);
+            const req = mockRequest();
+            req.body = {
+                titulo: 'Curso',
+                criadoPorId: 'id'
+            };
+            const res = mockResponse();
+            await controller.criar(req, res);
+            expect(CursoSchema.parse).toHaveBeenCalledWith(req.body);
+            expect(service.criar).toHaveBeenCalled();
+            expect(CommonResponse.created).toHaveBeenCalled();
+        });
+        it('deve lançar erro de validação do schema', async () => {
+            CursoSchema.parse = jest.fn(() => {
                 throw new Error('Erro de validação');
             });
-
             const req = mockRequest();
-            req.query = {
-                cargaHorariaMin: -5
-            };
-            const res = mockResponse();
-
-            await expect(cursoController.listar(req, res)).rejects.toThrow();
-        });
-    });
-
-    describe('criar()', () => {
-        test('deve criar um curso com sucesso', async () => {
-            const req = mockRequest();
-            req.body = cursoValido;
-            const res = mockResponse();
-
-            await cursoController.criar(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(201);
-            expect(res.data).toHaveProperty('error', false);
-            expect(res.data).toHaveProperty('data');
-            expect(res.data.data).toHaveProperty('titulo', cursoValido.titulo);
-            expect(res.data).toHaveProperty('message', "Curso criado com sucesso.");
-        });
-
-        test('deve criar um curso com cargaHorariaTotal zero', async () => {
-            const req = mockRequest();
-            req.body = {
-                ...cursoValido,
-                cargaHorariaTotal: 0
-            };
-            const res = mockResponse();
-
-            await cursoController.criar(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(201);
-            expect(res.data.data).toHaveProperty('cargaHorariaTotal', 0);
-        });
-
-        test('deve rejeitar curso sem título', async () => {
-
-            jest.spyOn(CursoSchema, 'parse').mockImplementationOnce(() => {
-                throw new Error('Título é obrigatório');
-            });
-
-            const req = mockRequest();
-            const cursoSemTitulo = {
-                ...cursoValido
-            };
-            delete cursoSemTitulo.titulo;
-            req.body = cursoSemTitulo;
-            const res = mockResponse();
-
-            await expect(cursoController.criar(req, res)).rejects.toThrow();
-        });
-
-        test('deve rejeitar curso com título já existente', async () => {
-
-            await CursoModel.create(cursoValido);
-
-
-            const req = mockRequest();
-            req.body = cursoValido;
-            const res = mockResponse();
-
-            await expect(cursoController.criar(req, res)).rejects.toThrow(CustomError);
-        });
-    });
-
-    describe('atualizar()', () => {
-        test('deve atualizar curso com sucesso', async () => {
-
-            const cursoCriado = await CursoModel.create(cursoValido);
-
-
-            const req = mockRequest();
-            req.params.id = cursoCriado._id.toString();
-            req.body = {
-                titulo: 'Curso Atualizado',
-                cargaHorariaTotal: 30
-            };
-            const res = mockResponse();
-
-            await cursoController.atualizar(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(200);
-            expect(res.data).toHaveProperty('error', false);
-            expect(res.data).toHaveProperty('data');
-            expect(res.data.data).toHaveProperty('titulo', 'Curso Atualizado');
-            expect(res.data.data).toHaveProperty('cargaHorariaTotal', 30);
-            expect(res.data).toHaveProperty('message', 'Curso atualizado com sucesso.');
-        });
-
-        test('deve rejeitar atualização sem dados', async () => {
-
-            const cursoCriado = await CursoModel.create(cursoValido);
-
-
-            const req = mockRequest();
-            req.params.id = cursoCriado._id.toString();
             req.body = {};
             const res = mockResponse();
-
-            await expect(cursoController.atualizar(req, res)).rejects.toThrow(CustomError);
-            await expect(cursoController.atualizar(req, res)).rejects.toThrow(/Nenhum dado fornecido/);
+            await expect(controller.criar(req, res)).rejects.toThrow('Erro de validação');
         });
-
-        test('deve rejeitar atualização de curso inexistente', async () => {
-            const req = mockRequest();
-            req.params.id = new mongoose.Types.ObjectId().toString();
-            req.body = {
-                titulo: 'Curso Atualizado'
-            };
-            const res = mockResponse();
-
-            await expect(cursoController.atualizar(req, res)).rejects.toThrow(CustomError);
-            await expect(cursoController.atualizar(req, res)).rejects.toThrow(/não encontrado/);
-        });
-
-        test('deve validar dados antes de atualizar', async () => {
-
-            const cursoCriado = await CursoModel.create(cursoValido);
-
-
-            const CursoUpdateSchemaMock = jest.requireMock('../../../utils/validators/schemas/zod/CursoSchema.js').CursoUpdateSchema;
-            jest.spyOn(CursoUpdateSchemaMock, 'parse').mockImplementationOnce(() => {
-                throw new Error('Erro de validação');
+        it('deve lançar erro do service', async () => {
+            CursoSchema.parse = jest.fn().mockReturnValue({
+                titulo: 'Curso',
+                criadoPorId: 'id'
             });
-
+            service.criar.mockRejectedValue(new Error('Erro interno'));
             const req = mockRequest();
-            req.params.id = cursoCriado._id.toString();
             req.body = {
-                cargaHorariaTotal: -5
+                titulo: 'Curso',
+                criadoPorId: 'id'
             };
             const res = mockResponse();
-
-            await expect(cursoController.atualizar(req, res)).rejects.toThrow();
+            await expect(controller.criar(req, res)).rejects.toThrow('Erro interno');
         });
     });
 
-    describe('deletar()', () => {
-        test('deve deletar curso com sucesso', async () => {
-
-            const cursoCriado = await CursoModel.create(cursoValido);
-
-
+    describe('atualizar', () => {
+        it('deve atualizar curso com sucesso', async () => {
+            CursoIdSchema.parse = jest.fn();
+            CursoUpdateSchema.parse = jest.fn().mockReturnValue({
+                descricao: 'Nova'
+            });
+            service.atualizar.mockResolvedValue({
+                _id: 'id',
+                descricao: 'Nova'
+            });
+            CommonResponse.success.mockImplementation((res, data) => data);
             const req = mockRequest();
-            req.params.id = cursoCriado._id.toString();
+            req.params.id = 'id';
+            req.body = {
+                descricao: 'Nova'
+            };
             const res = mockResponse();
-
-            await cursoController.deletar(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(200);
-            expect(res.data).toHaveProperty('error', false);
-            expect(res.data).toHaveProperty('data');
-            expect(res.data.data).toHaveProperty('_id');
-            expect(res.data.data._id.toString()).toBe(cursoCriado._id.toString());
-            expect(res.data).toHaveProperty('message', 'Curso removido com sucesso.');
-
-
-            const cursoRemovido = await CursoModel.findById(cursoCriado._id);
-            expect(cursoRemovido).toBeNull();
+            await controller.atualizar(req, res);
+            expect(CursoIdSchema.parse).toHaveBeenCalledWith('id');
+            expect(CursoUpdateSchema.parse).toHaveBeenCalledWith(req.body);
+            expect(service.atualizar).toHaveBeenCalledWith('id', {
+                descricao: 'Nova'
+            });
+            expect(CommonResponse.success).toHaveBeenCalled();
         });
-
-        test('deve rejeitar exclusão sem ID', async () => {
+        it('deve lançar erro se body vazio', async () => {
+            CursoIdSchema.parse = jest.fn();
+            CursoUpdateSchema.parse = jest.fn().mockReturnValue({});
             const req = mockRequest();
-            req.params = {};
+            req.params.id = 'id';
+            req.body = {};
             const res = mockResponse();
-
-            await expect(cursoController.deletar(req, res)).rejects.toThrow(CustomError);
-            await expect(cursoController.deletar(req, res)).rejects.toThrow(/ID do curso não fornecido/);
+            await expect(controller.atualizar(req, res)).rejects.toThrow('Nenhum dado fornecido para atualização.');
         });
-
-        test('deve rejeitar exclusão de curso inexistente', async () => {
+        it('deve lançar erro do service', async () => {
+            CursoIdSchema.parse = jest.fn();
+            CursoUpdateSchema.parse = jest.fn().mockReturnValue({
+                descricao: 'Nova'
+            });
+            service.atualizar.mockRejectedValue(new Error('Erro interno'));
             const req = mockRequest();
-            req.params.id = new mongoose.Types.ObjectId().toString();
+            req.params.id = 'id';
+            req.body = {
+                descricao: 'Nova'
+            };
             const res = mockResponse();
-
-            await expect(cursoController.deletar(req, res)).rejects.toThrow(CustomError);
-            await expect(cursoController.deletar(req, res)).rejects.toThrow(/não encontrado/);
+            await expect(controller.atualizar(req, res)).rejects.toThrow('Erro interno');
         });
+    });
 
-        test('deve validar ID antes de deletar', async () => {
+    describe('deletar', () => {
+        it('deve deletar curso com sucesso', async () => {
+            CursoIdSchema.parse = jest.fn();
+            service.deletar.mockResolvedValue({
+                _id: 'id',
+                status: 'arquivado'
+            });
+            CommonResponse.success.mockImplementation((res, data) => data);
             const req = mockRequest();
-            req.params.id = 'id-invalido';
+            req.params.id = 'id';
             const res = mockResponse();
+            await controller.deletar(req, res);
+            expect(CursoIdSchema.parse).toHaveBeenCalledWith('id');
+            expect(service.deletar).toHaveBeenCalledWith('id');
+            expect(CommonResponse.success).toHaveBeenCalled();
+        });
+        it('deve lançar erro se id não fornecido', async () => {
+            const req = mockRequest();
+            const res = mockResponse();
+            await expect(controller.deletar(req, res)).rejects.toThrow('ID do curso não fornecido.');
+        });
+        it('deve lançar erro do service', async () => {
+            CursoIdSchema.parse = jest.fn();
+            service.deletar.mockRejectedValue(new Error('Erro interno'));
+            const req = mockRequest();
+            req.params.id = 'id';
+            const res = mockResponse();
+            await expect(controller.deletar(req, res)).rejects.toThrow('Erro interno');
+        });
+    });
 
-            await expect(cursoController.deletar(req, res)).rejects.toThrow();
+    describe('restaurar', () => {
+        it('deve restaurar curso com sucesso', async () => {
+            CursoIdSchema.parse = jest.fn();
+            service.restaurar.mockResolvedValue({
+                _id: 'id',
+                status: 'ativo'
+            });
+            CommonResponse.success.mockImplementation((res, data) => data);
+            const req = mockRequest();
+            req.params.id = 'id';
+            const res = mockResponse();
+            await controller.restaurar(req, res);
+            expect(CursoIdSchema.parse).toHaveBeenCalledWith('id');
+            expect(service.restaurar).toHaveBeenCalledWith('id');
+            expect(CommonResponse.success).toHaveBeenCalled();
+        });
+        it('deve lançar erro se id não fornecido', async () => {
+            const req = mockRequest();
+            const res = mockResponse();
+            await expect(controller.restaurar(req, res)).rejects.toThrow('ID do curso não fornecido.');
+        });
+        it('deve lançar erro do service', async () => {
+            CursoIdSchema.parse = jest.fn();
+            service.restaurar.mockRejectedValue(new Error('Erro interno'));
+            const req = mockRequest();
+            req.params.id = 'id';
+            const res = mockResponse();
+            await expect(controller.restaurar(req, res)).rejects.toThrow('Erro interno');
+        });
+    });
+
+    describe('deletarFisicamente', () => {
+        it('deve deletar curso fisicamente com sucesso', async () => {
+            CursoIdSchema.parse = jest.fn();
+            service.deletarFisicamente.mockResolvedValue({
+                _id: 'id'
+            });
+            CommonResponse.success.mockImplementation((res, data) => data);
+            const req = mockRequest();
+            req.params.id = 'id';
+            const res = mockResponse();
+            await controller.deletarFisicamente(req, res);
+            expect(CursoIdSchema.parse).toHaveBeenCalledWith('id');
+            expect(service.deletarFisicamente).toHaveBeenCalledWith('id');
+            expect(CommonResponse.success).toHaveBeenCalled();
+        });
+        it('deve lançar erro se id não fornecido', async () => {
+            const req = mockRequest();
+            const res = mockResponse();
+            await expect(controller.deletarFisicamente(req, res)).rejects.toThrow('ID do curso não fornecido.');
+        });
+        it('deve lançar erro do service', async () => {
+            CursoIdSchema.parse = jest.fn();
+            service.deletarFisicamente.mockRejectedValue(new Error('Erro interno'));
+            const req = mockRequest();
+            req.params.id = 'id';
+            const res = mockResponse();
+            await expect(controller.deletarFisicamente(req, res)).rejects.toThrow('Erro interno');
         });
     });
 });

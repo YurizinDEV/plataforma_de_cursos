@@ -32,7 +32,7 @@ describe('CursoSchema', () => {
 
         const resultado = CursoSchema.safeParse(cursoMinimo);
         expect(resultado.success).toBe(true);
-        expect(resultado.data.cargaHorariaTotal).toBe(0); // Verifica valor padrão
+        expect(resultado.data.cargaHorariaTotal).toBe(0);
     });
 
     test('deve rejeitar um curso sem título', () => {

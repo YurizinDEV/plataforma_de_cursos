@@ -1,380 +1,307 @@
 // src / tests / unit / services / CursoService.test.js
 import mongoose from 'mongoose';
-import {
-    MongoMemoryServer
-} from 'mongodb-memory-server';
 import CursoService from '../../../services/CursoService.js';
-import CursoModel from '../../../models/Curso.js';
+import CursoRepository from '../../../repositories/CursoRepository.js';
+import UsuarioRepository from '../../../repositories/UsuarioRepository.js';
+import AulaRepository from '../../../repositories/AulaRepository.js';
+import QuestionarioRepository from '../../../repositories/QuestionarioRepository.js';
+import CertificadoRepository from '../../../repositories/CertificadoRepository.js';
 import {
     CustomError
 } from '../../../utils/helpers/index.js';
 
-let mongoServer;
-let cursoService;
+jest.mock('../../../repositories/CursoRepository.js');
+jest.mock('../../../repositories/UsuarioRepository.js');
+jest.mock('../../../repositories/AulaRepository.js');
+jest.mock('../../../repositories/QuestionarioRepository.js');
+jest.mock('../../../repositories/CertificadoRepository.js');
 
-beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const uri = mongoServer.getUri();
-    await mongoose.connect(uri);
-    await mongoose.connection.collection('cursos').createIndex({
-        titulo: 1
-    }, {
-        unique: true
-    });
-    cursoService = new CursoService();
-});
-
-beforeEach(async () => {
-    await CursoModel.deleteMany({});
-    jest.clearAllMocks();
-});
-
-afterAll(async () => {
-    await mongoose.disconnect();
-    await mongoServer.stop();
-});
-
-const cursoValido = {
-    titulo: 'Curso de Teste',
-    descricao: 'Descrição do curso de teste',
-    cargaHorariaTotal: 20,
-    criadoPorId: new mongoose.Types.ObjectId()
+const usuarioId = new mongoose.Types.ObjectId();
+const cursoId = new mongoose.Types.ObjectId();
+const cursoBase = {
+    _id: cursoId,
+    titulo: 'Curso Teste',
+    criadoPorId: usuarioId,
+    cargaHorariaTotal: 10,
+    status: 'ativo',
+    toObject: function () {
+        return this;
+    }
+};
+const usuarioBase = {
+    _id: usuarioId,
+    nome: 'Usuário',
+    email: 'teste@teste.com'
 };
 
+let service;
+let repository;
+let usuarioRepository;
+let aulaRepository;
+let questionarioRepository;
+let certificadoRepository;
 
-// ------------------------------------------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------------------------------------------
-// Testes para o CursoService Listar GET e GET/:id
+beforeEach(() => {
+    CursoRepository.mockClear();
+    UsuarioRepository.mockClear();
+    AulaRepository.mockClear();
+    QuestionarioRepository.mockClear();
+    CertificadoRepository.mockClear();
 
-describe('CursoService', () => {
-    // Testa o método listar() do serviço de cursos
-    describe('listar()', () => {
-        // Teste: Deve listar todos os cursos cadastrados
-        test('deve listar cursos com sucesso', async () => {
+    repository = new CursoRepository();
+    usuarioRepository = new UsuarioRepository();
+    aulaRepository = new AulaRepository();
+    questionarioRepository = new QuestionarioRepository();
+    certificadoRepository = new CertificadoRepository();
 
-            // Cria 3 cursos no banco de dados para o teste
-            await CursoModel.create([
-                cursoValido,
-                {
-                    ...cursoValido,
-                    titulo: 'Outro Curso',
-                    cargaHorariaTotal: 30
-                },
-                {
-                    ...cursoValido,
-                    titulo: 'Mais um Curso',
-                    cargaHorariaTotal: 40
-                }
-            ]);
-
-            // Simula uma requisição sem filtros
-            const req = {
-                query: {}
-            };
-            // Chama o método listar
-            const resultado = await cursoService.listar(req);
-
-            // Verifica se o resultado tem a propriedade 'docs' e se retornou 3 cursos
-            expect(resultado).toHaveProperty('docs');
-            expect(resultado.docs).toHaveLength(3);
-        });
-
-        // Teste: Deve buscar um curso específico pelo ID
-        test('deve buscar curso específico por ID', async () => {
-            // Cria um curso e pega o ID gerado
-            const cursoCriado = await CursoModel.create(cursoValido);
-
-            // Simula uma requisição com o ID do curso
-            const req = {
-                params: {
-                    id: cursoCriado._id.toString()
-                }
-            };
-            // Chama o método listar
-            const resultado = await cursoService.listar(req);
-
-            // Verifica se o curso retornado tem o mesmo ID
-            expect(resultado).toHaveProperty('_id');
-            expect(resultado._id.toString()).toBe(cursoCriado._id.toString());
-        });
-
-        // Teste: Deve aplicar filtros na consulta (exemplo: filtrar por título)
-        test('deve aplicar filtros nas consultas', async () => {
-            // Cria 3 cursos com títulos e tags diferentes
-            await CursoModel.create([
-                cursoValido,
-                {
-                    ...cursoValido,
-                    titulo: 'Curso de JavaScript',
-                    tags: ['javascript']
-                },
-                {
-                    ...cursoValido,
-                    titulo: 'Curso de Python',
-                    tags: ['python']
-                }
-            ]);
-
-            // Simula uma requisição filtrando pelo título "JavaScript"
-            const req = {
-                query: {
-                    titulo: 'JavaScript'
-                }
-            };
-            // Chama o método listar
-            const resultado = await cursoService.listar(req);
-
-            // Verifica se retornou apenas o curso filtrado
-            expect(resultado).toHaveProperty('docs');
-            expect(resultado.docs).toHaveLength(1);
-            expect(resultado.docs[0].titulo).toBe('Curso de JavaScript');
-        });
-
-        // Teste: Deve lançar erro ao buscar um curso com ID inexistente
-        test('deve lançar erro ao buscar curso com ID inexistente', async () => {
-            // Gera um ID aleatório que não existe no banco
-            const idInexistente = new mongoose.Types.ObjectId();
-            const req = {
-                params: {
-                    id: idInexistente.toString()
-                }
-            };
-
-            // Espera que o método listar lance um erro do tipo CustomError
-            await expect(cursoService.listar(req)).rejects.toThrow(CustomError);
-        });
-    });
-
-// ------------------------------------------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------------------------------------------
-// Testes para o CursoService Criar POST
-
-    // Testes para o método criar() do CursoService
-    describe('criar()', () => {
-        // Teste: Deve criar um curso com sucesso usando dados válidos
-        test('deve criar curso com sucesso', async () => {
-            const resultado = await cursoService.criar(cursoValido);
-
-            // Verifica se o curso foi criado e possui os dados esperados
-            expect(resultado).toHaveProperty('_id');
-            expect(resultado.titulo).toBe(cursoValido.titulo);
-            expect(resultado.cargaHorariaTotal).toBe(cursoValido.cargaHorariaTotal);
-        });
-
-        // Teste: Deve criar um curso mesmo que a carga horária não seja informada (deve ser zero)
-        test('deve criar curso com carga horária zero', async () => {
-            const cursoSemCarga = {
-                titulo: 'Curso Sem Carga',
-                descricao: 'Curso sem carga horária definida',
-                criadoPorId: new mongoose.Types.ObjectId()
-            };
-
-            const resultado = await cursoService.criar(cursoSemCarga);
-
-            // Verifica se a cargaHorariaTotal foi definida como 0
-            expect(resultado).toHaveProperty('_id');
-            expect(resultado.cargaHorariaTotal).toBe(0);
-        });
-
-        // Teste: Não deve permitir criar dois cursos com o mesmo título
-        test('deve rejeitar curso com título já existente', async () => {
-
-            // Cria o primeiro curso normalmente
-            await cursoService.criar(cursoValido);
-
-            // Tenta criar outro curso com o mesmo título e espera erro
-            await expect(cursoService.criar({
-                ...cursoValido,
-                descricao: 'Outra descrição'
-            })).rejects.toThrow(CustomError);
-            await expect(cursoService.criar({
-                ...cursoValido,
-                descricao: 'Outra descrição'
-            })).rejects.toThrow(/já está em uso/);
-        });
-    });
-
-
-// ------------------------------------------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------------------------------------------
-// Testes para o CursoService Atualizar PUT e PATCH
-
-// Testes para o método atualizar() do CursoService
-describe('atualizar()', () => {
-    // Teste: Deve atualizar um curso com sucesso
-    test('deve atualizar curso com sucesso', async () => {
-
-        // Cria um curso no banco de dados
-        const cursoCriado = await CursoModel.create(cursoValido);
-
-        // Dados que serão usados para atualizar o curso
-        const dadosAtualizados = {
-            titulo: 'Curso Atualizado',
-            cargaHorariaTotal: 30
-        };
-
-        // Chama o método atualizar do serviço
-        const resultado = await cursoService.atualizar(cursoCriado._id, dadosAtualizados);
-
-        // Verifica se os dados foram atualizados corretamente
-        expect(resultado).toHaveProperty('_id');
-        expect(resultado.titulo).toBe(dadosAtualizados.titulo);
-        expect(resultado.cargaHorariaTotal).toBe(dadosAtualizados.cargaHorariaTotal);
-        expect(resultado.descricao).toBe(cursoValido.descricao);
-    });
-
-    // Teste: Deve rejeitar atualização de curso inexistente
-    test('deve rejeitar atualização de curso inexistente', async () => {
-        // Gera um ID que não existe no banco
-        const idInexistente = new mongoose.Types.ObjectId();
-        const dadosAtualizados = {
-            titulo: 'Curso Atualizado'
-        };
-
-        // Espera que o método lançar erro ao tentar atualizar curso inexistente
-        await expect(cursoService.atualizar(idInexistente, dadosAtualizados))
-            .rejects.toThrow(CustomError);
-        await expect(cursoService.atualizar(idInexistente, dadosAtualizados))
-            .rejects.toThrow(/não encontrado/);
-    });
-
-    // Teste: Não deve permitir atualizar para um título já usado por outro curso
-    test('deve rejeitar atualização com título já utilizado por outro curso', async () => {
-
-        // Cria dois cursos diferentes
-        const curso1 = await CursoModel.create(cursoValido);
-        const curso2 = await CursoModel.create({
-            ...cursoValido,
-            titulo: 'Outro Curso'
-        });
-
-        // Tenta atualizar o segundo curso com o título do primeiro
-        await expect(cursoService.atualizar(curso2._id, {
-            titulo: cursoValido.titulo
-        })).rejects.toThrow(CustomError);
-        await expect(cursoService.atualizar(curso2._id, {
-            titulo: cursoValido.titulo
-        })).rejects.toThrow(/já está em uso/);
-    });
-
-    // Teste: Deve permitir atualizar mantendo o mesmo título do próprio curso
-    test('deve permitir atualização com mesmo título do próprio curso', async () => {
-
-        // Cria um curso
-        const cursoCriado = await CursoModel.create(cursoValido);
-
-        // Atualiza o curso mantendo o mesmo título, mas mudando a descrição
-        const dadosAtualizados = {
-            titulo: cursoValido.titulo,
-            descricao: 'Nova descrição'
-        };
-
-        // Chama o método atualizar
-        const resultado = await cursoService.atualizar(cursoCriado._id, dadosAtualizados);
-
-        // Verifica se a atualização foi feita corretamente
-        expect(resultado).toHaveProperty('_id');
-        expect(resultado.titulo).toBe(cursoValido.titulo);
-        expect(resultado.descricao).toBe(dadosAtualizados.descricao);
-    });
+    service = new CursoService();
+    service.repository = repository;
+    service.usuarioRepository = usuarioRepository;
+    service.aulaRepository = aulaRepository;
+    service.questionarioRepository = questionarioRepository;
+    service.certificadoRepository = certificadoRepository;
 });
 
-    
-// ------------------------------------------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------------------------------------------
-// Testes para o CursoService Deletar DELETE
-
-
-    describe('deletar()', () => {
-        // Testa se um curso pode ser deletado com sucesso
-        test('deve deletar curso com sucesso', async () => {
-
-            // Cria um curso válido no banco de dados
-            const cursoCriado = await CursoModel.create(cursoValido);
-
-            // Chama o método de deletar passando o ID do curso criado
-            const resultado = await cursoService.deletar(cursoCriado._id);
-
-            // Verifica se o resultado possui a propriedade _id
-            expect(resultado).toHaveProperty('_id');
-            // Verifica se o ID retornado é igual ao do curso criado
-            expect(resultado._id.toString()).toBe(cursoCriado._id.toString());
-
-            // Busca o curso no banco para garantir que foi removido
-            const cursoExcluido = await CursoModel.findById(cursoCriado._id);
-            // Espera que o curso não exista mais (null)
-            expect(cursoExcluido).toBeNull();
-        });
-
-        // Testa se tentar deletar um curso inexistente gera erro
-        test('deve rejeitar exclusão de curso inexistente', async () => {
-            // Gera um ID aleatório que não existe no banco
-            const idInexistente = new mongoose.Types.ObjectId();
-
-            // Espera que a tentativa de deletar lance um erro do tipo CustomError
-            await expect(cursoService.deletar(idInexistente))
-                .rejects.toThrow(CustomError);
-            // Espera que a mensagem do erro contenha "não encontrado"
-            await expect(cursoService.deletar(idInexistente))
-                .rejects.toThrow(/não encontrado/);
+describe('CursoService', () => {
+    describe('listar', () => {
+        it('deve listar cursos usando o repository', async () => {
+            repository.listar.mockResolvedValue({
+                docs: [cursoBase],
+                totalDocs: 1
+            });
+            const req = {
+                query: {},
+                params: {}
+            };
+            const result = await service.listar(req);
+            expect(repository.listar).toHaveBeenCalledWith(req);
+            expect(result.docs[0].titulo).toBe('Curso Teste');
         });
     });
 
-
-// ------------------------------------------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------------------------------------------
-
-
-    describe('validateTitulo()', () => {
-        test('deve validar título único com sucesso', async () => {
-
-            await cursoService.validateTitulo('Título Único');
-
+    describe('criar', () => {
+        it('deve criar curso válido', async () => {
+            usuarioRepository.buscarPorId.mockResolvedValue(usuarioBase);
+            repository.buscarPorTitulo.mockResolvedValue(null);
+            repository.criar.mockResolvedValue(cursoBase);
+            const result = await service.criar({
+                titulo: 'Curso Teste',
+                criadoPorId: usuarioId
+            });
+            expect(result).toBe(cursoBase);
         });
-
-        test('deve rejeitar título já utilizado', async () => {
-
-            await CursoModel.create(cursoValido);
-
-
-            await expect(cursoService.validateTitulo(cursoValido.titulo))
-                .rejects.toThrow(CustomError);
-            await expect(cursoService.validateTitulo(cursoValido.titulo))
-                .rejects.toThrow(/já está em uso/);
+        it('deve lançar erro se usuário criador não existe', async () => {
+            usuarioRepository.buscarPorId.mockRejectedValue(new Error('not found'));
+            await expect(service.criar({
+                    titulo: 'Curso Teste',
+                    criadoPorId: usuarioId
+                }))
+                .rejects.toThrow('O usuário especificado como criador não existe.');
         });
-
-        test('deve permitir mesmo título para o mesmo curso (atualização)', async () => {
-
-            const cursoCriado = await CursoModel.create(cursoValido);
-
-
-            await cursoService.validateTitulo(
-                cursoValido.titulo,
-                cursoCriado._id
-            );
-
+        it('deve lançar erro se título já existe', async () => {
+            usuarioRepository.buscarPorId.mockResolvedValue(usuarioBase);
+            repository.buscarPorTitulo.mockResolvedValue(cursoBase);
+            await expect(service.criar({
+                    titulo: 'Curso Teste',
+                    criadoPorId: usuarioId
+                }))
+                .rejects.toThrow('Título de curso já está em uso.');
         });
     });
 
-    describe('ensureCursoExists()', () => {
-        test('deve validar existência do curso com sucesso', async () => {
-
-            const cursoCriado = await CursoModel.create(cursoValido);
-
-
-            const resultado = await cursoService.ensureCursoExists(cursoCriado._id);
-
-            expect(resultado).toHaveProperty('_id');
-            expect(resultado._id.toString()).toBe(cursoCriado._id.toString());
+    describe('atualizar', () => {
+        it('deve atualizar curso existente', async () => {
+            repository.buscarPorId.mockResolvedValue(cursoBase);
+            repository.atualizar.mockResolvedValue({
+                ...cursoBase,
+                descricao: 'Nova'
+            });
+            const result = await service.atualizar(cursoId, {
+                descricao: 'Nova'
+            });
+            expect(result.descricao).toBe('Nova');
         });
+        it('deve lançar erro se curso não existe', async () => {
+            repository.buscarPorId.mockResolvedValue(null);
+            await expect(service.atualizar(cursoId, {
+                    descricao: 'Nova'
+                }))
+                .rejects.toThrow('Curso não encontrado');
+        });
+        it('deve validar usuário criador ao atualizar', async () => {
+            repository.buscarPorId.mockResolvedValue(cursoBase);
+            usuarioRepository.buscarPorId.mockRejectedValue(new Error('not found'));
+            await expect(service.atualizar(cursoId, {
+                    criadoPorId: usuarioId
+                }))
+                .rejects.toThrow('O usuário especificado como criador não existe.');
+        });
+        it('deve validar título ao atualizar', async () => {
+            repository.buscarPorId.mockResolvedValue(cursoBase);
+            usuarioRepository.buscarPorId.mockResolvedValue(usuarioBase);
+            repository.buscarPorTitulo.mockResolvedValue({
+                ...cursoBase,
+                _id: new mongoose.Types.ObjectId()
+            });
+            await expect(service.atualizar(cursoId, {
+                    titulo: 'Outro'
+                }))
+                .rejects.toThrow('Título de curso já está em uso.');
+        });
+    });
 
-        test('deve rejeitar curso inexistente', async () => {
-            const idInexistente = new mongoose.Types.ObjectId();
+    describe('deletar', () => {
+        it('deve deletar curso existente (soft delete)', async () => {
+            repository.buscarPorId.mockResolvedValue(cursoBase);
+            repository.deletar.mockResolvedValue({
+                ...cursoBase,
+                status: 'arquivado'
+            });
+            const result = await service.deletar(cursoId);
+            expect(result.status).toBe('arquivado');
+        });
+        it('deve lançar erro se curso não existe', async () => {
+            repository.buscarPorId.mockResolvedValue(null);
+            await expect(service.deletar(cursoId)).rejects.toThrow('Curso não encontrado');
+        });
+    });
 
-            await expect(cursoService.ensureCursoExists(idInexistente))
-                .rejects.toThrow(CustomError);
-            await expect(cursoService.ensureCursoExists(idInexistente))
-                .rejects.toThrow(/não encontrado/);
+    describe('deletarFisicamente', () => {
+        let session;
+        beforeEach(() => {
+            session = {
+                startTransaction: jest.fn(),
+                commitTransaction: jest.fn(),
+                abortTransaction: jest.fn(),
+                endSession: jest.fn()
+            };
+            jest.spyOn(mongoose, 'startSession').mockResolvedValue(session);
+        });
+        afterEach(() => {
+            jest.restoreAllMocks();
+        });
+        it('deve deletar curso e dependências com sucesso', async () => {
+            repository.buscarPorId.mockResolvedValue(cursoBase);
+            usuarioRepository.buscarUsuariosComProgressoSignificativo.mockResolvedValue([]);
+            repository.enriquecerCurso.mockResolvedValue({
+                estatisticas: {
+                    totalAulas: 1,
+                    totalQuestionarios: 2,
+                    totalAlternativas: 3,
+                    totalCertificados: 4
+                }
+            });
+            aulaRepository.buscarPorCursoId.mockResolvedValue([{
+                _id: 'aula1'
+            }]);
+            questionarioRepository.deletarPorAulaIds.mockResolvedValue({
+                questionariosExcluidos: 2,
+                alternativasExcluidas: 3
+            });
+            aulaRepository.deletarPorCursoId.mockResolvedValue(1);
+            certificadoRepository.deletarPorCursoId.mockResolvedValue(4);
+            usuarioRepository.removerReferenciaCurso.mockResolvedValue({
+                cursosRemovidos: 1,
+                progressosRemovidos: 1
+            });
+            repository.deletarFisicamente.mockResolvedValue();
+            const result = await service.deletarFisicamente(cursoId);
+            expect(result.mensagem).toMatch(/exclu/i);
+            expect(session.commitTransaction).toHaveBeenCalled();
+            expect(session.endSession).toHaveBeenCalled();
+        });
+        it('deve abortar transação e lançar CustomError em erro inesperado', async () => {
+            repository.buscarPorId.mockResolvedValue(cursoBase);
+            usuarioRepository.buscarUsuariosComProgressoSignificativo.mockResolvedValue([]);
+            repository.enriquecerCurso.mockResolvedValue({
+                estatisticas: {
+                    totalAulas: 1,
+                    totalQuestionarios: 2,
+                    totalAlternativas: 3,
+                    totalCertificados: 4
+                }
+            });
+            aulaRepository.buscarPorCursoId.mockRejectedValue(new Error('Falha aulas'));
+            await expect(service.deletarFisicamente(cursoId)).rejects.toThrow('Ocorreu um erro ao excluir o curso e suas dependências.');
+            expect(session.abortTransaction).toHaveBeenCalled();
+            expect(session.endSession).toHaveBeenCalled();
+        });
+        it('deve lançar erro de dependência se houver usuários com progresso', async () => {
+            repository.buscarPorId.mockResolvedValue(cursoBase);
+            usuarioRepository.buscarUsuariosComProgressoSignificativo.mockResolvedValue([usuarioBase]);
+            await expect(service.deletarFisicamente(cursoId)).rejects.toThrow('Não é possível excluir o curso pois existem usuários com progresso significativo');
+        });
+    });
+
+    describe('restaurar', () => {
+        it('deve restaurar curso existente', async () => {
+            repository.buscarPorId.mockResolvedValue(cursoBase);
+            repository.restaurar.mockResolvedValue({
+                ...cursoBase,
+                status: 'ativo'
+            });
+            const result = await service.restaurar(cursoId);
+            expect(result.status).toBe('ativo');
+        });
+        it('deve lançar erro se curso não existe', async () => {
+            repository.buscarPorId.mockResolvedValue(null);
+            await expect(service.restaurar(cursoId)).rejects.toThrow('Curso não encontrado');
+        });
+    });
+
+    describe('Métodos auxiliares', () => {
+        it('validateTitulo não lança erro se título não existe', async () => {
+            repository.buscarPorTitulo.mockResolvedValue(null);
+            await expect(service.validateTitulo('Novo')).resolves.toBeUndefined();
+        });
+        it('validateTitulo lança erro se título já existe', async () => {
+            repository.buscarPorTitulo.mockResolvedValue(cursoBase);
+            await expect(service.validateTitulo('Curso Teste')).rejects.toThrow('Título de curso já está em uso.');
+        });
+        it('validateTitulo não lança erro se id for igual ao curso existente', async () => {
+            repository.buscarPorTitulo.mockResolvedValue(cursoBase);
+            await expect(service.validateTitulo('Curso Teste', cursoId)).resolves.toBeUndefined();
+        });
+        it('ensureCursoExists retorna curso se existe', async () => {
+            repository.buscarPorId.mockResolvedValue(cursoBase);
+            const result = await service.ensureCursoExists(cursoId);
+            expect(result).toBe(cursoBase);
+        });
+        it('ensureCursoExists lança erro se não existe', async () => {
+            repository.buscarPorId.mockResolvedValue(null);
+            await expect(service.ensureCursoExists(cursoId)).rejects.toThrow('Curso não encontrado');
+        });
+        it('validateUsuarioCriador retorna usuário se existe', async () => {
+            usuarioRepository.buscarPorId.mockResolvedValue(usuarioBase);
+            const result = await service.validateUsuarioCriador(usuarioId);
+            expect(result).toBe(usuarioBase);
+        });
+        it('validateUsuarioCriador lança erro se não existe', async () => {
+            usuarioRepository.buscarPorId.mockRejectedValue(new Error('not found'));
+            await expect(service.validateUsuarioCriador(usuarioId)).rejects.toThrow('O usuário especificado como criador não existe.');
+        });
+        it('verificarDependenciasParaExclusao lança erro se houver usuários com progresso', async () => {
+            usuarioRepository.buscarUsuariosComProgressoSignificativo.mockResolvedValue([usuarioBase]);
+            await expect(service.verificarDependenciasParaExclusao(cursoId)).rejects.toThrow('Não é possível excluir o curso pois existem usuários com progresso significativo');
+        });
+        it('verificarDependenciasParaExclusao retorna estatísticas se não houver dependências', async () => {
+            usuarioRepository.buscarUsuariosComProgressoSignificativo.mockResolvedValue([]);
+            repository.buscarPorId.mockResolvedValue(cursoBase);
+            repository.enriquecerCurso.mockResolvedValue({
+                estatisticas: {
+                    totalAulas: 1,
+                    totalQuestionarios: 2,
+                    totalAlternativas: 3,
+                    totalCertificados: 4
+                }
+            });
+            const result = await service.verificarDependenciasParaExclusao(cursoId);
+            expect(result).toEqual({
+                aulas: 1,
+                questionarios: 2,
+                alternativas: 3,
+                certificados: 4
+            });
         });
     });
 });
