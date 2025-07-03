@@ -1,6 +1,8 @@
 // src/utils/validators/schemas/zod/CursoSchema.js
 
-import { z } from 'zod';
+import {
+    z
+} from 'zod';
 import objectIdSchema from './ObjectIdSchema.js';
 
 const CursoSchema = z.object({
@@ -11,9 +13,13 @@ const CursoSchema = z.object({
     materialComplementar: z.array(z.string().url('Cada material deve ser uma URL válida.')).optional(),
     professores: z.array(z.string().min(1, 'Nome do professor é obrigatório.')).optional(),
     tags: z.array(z.string()).optional(),
-    criadoPorId: objectIdSchema // ID do usuário que criou o curso, deve ser validado
+    status: z.enum(['ativo', 'inativo', 'rascunho', 'arquivado']).optional().default('ativo'),
+    criadoPorId: objectIdSchema
 });
 
-const CursoUpdateSchema = CursoSchema.partial(); // Todos os campos são opcionais para atualização
+const CursoUpdateSchema = CursoSchema.partial();
 
-export { CursoSchema, CursoUpdateSchema };
+export {
+    CursoSchema,
+    CursoUpdateSchema
+};
