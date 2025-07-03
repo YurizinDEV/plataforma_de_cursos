@@ -50,19 +50,59 @@ describe('Modelo de Curso', () => {
             await expect(cursoSemCriador.save()).rejects.toThrow();
         });
 
-        test('deve salvar curso com todos campos obrigatórios', async () => {
+        test('deve validar que curso só pode ser cadastrado se possuir título e criadoPorId', async () => {
+            const cursoSemTitulo = new Curso({
+                cargaHorariaTotal: 10,
+                criadoPorId: new mongoose.Types.ObjectId()
+            });
+            await expect(cursoSemTitulo.save()).rejects.toThrow(/required/);
+
+            const cursoSemCriador = new Curso({
+                titulo: 'Curso Teste',
+                cargaHorariaTotal: 10
+            });
+            await expect(cursoSemCriador.save()).rejects.toThrow(/required/);
+        });
+
+        test('deve salvar curso válido com título único, carga horária e criadoPorId', async () => {
             const cursoCompleto = new Curso({
                 titulo: 'Curso Teste Completo',
+                cargaHorariaTotal: 40,
                 criadoPorId: new mongoose.Types.ObjectId()
             });
 
             const cursoSalvo = await cursoCompleto.save();
             expect(cursoSalvo).toHaveProperty('_id');
             expect(cursoSalvo.titulo).toBe('Curso Teste Completo');
+            expect(cursoSalvo.cargaHorariaTotal).toBe(40);
+            expect(cursoSalvo.criadoPorId).toBeDefined();
+        });
+
+        test('não deve permitir cadastrar dois cursos com o mesmo título', async () => {
+            const curso1 = new Curso({
+                titulo: 'Curso com Título Duplicado',
+                criadoPorId: new mongoose.Types.ObjectId()
+            });
+            await curso1.save();
+
+            const curso2 = new Curso({
+                titulo: 'Curso com Título Duplicado',
+                criadoPorId: new mongoose.Types.ObjectId()
+            });
+            await expect(curso2.save()).rejects.toThrow();
+        });
+
+        test('deve validar carga horária - valor padrão 0 quando omitido', async () => {
+            const cursoSemCarga = new Curso({
+                titulo: 'Curso Sem Carga Horária Definida',
+                criadoPorId: new mongoose.Types.ObjectId()
+            });
+
+            const cursoSalvo = await cursoSemCarga.save();
             expect(cursoSalvo.cargaHorariaTotal).toBe(0);
         });
 
-        test('deve salvar curso com cargaHorariaTotal = 0', async () => {
+        test('deve validar carga horária - aceitar valor 0', async () => {
             const cursoComCargaZero = new Curso({
                 titulo: 'Curso Com Carga Zero',
                 cargaHorariaTotal: 0,
@@ -70,18 +110,42 @@ describe('Modelo de Curso', () => {
             });
 
             const cursoSalvo = await cursoComCargaZero.save();
-            expect(cursoSalvo).toHaveProperty('_id');
             expect(cursoSalvo.cargaHorariaTotal).toBe(0);
         });
 
-        test('deve falhar ao salvar curso com cargaHorariaTotal negativa', async () => {
+        test('deve falhar ao salvar curso com carga horária negativa', async () => {
             const cursoComCargaNegativa = new Curso({
                 titulo: 'Curso Com Carga Negativa',
                 cargaHorariaTotal: -1,
                 criadoPorId: new mongoose.Types.ObjectId()
             });
 
-            await expect(cursoComCargaNegativa.save()).rejects.toThrow();
+            await expect(cursoComCargaNegativa.save()).rejects.toThrow(/min/);
+        });
+
+        test('deve ter referência válida ao usuário que criou o curso', async () => {
+            const criadoPorId = new mongoose.Types.ObjectId();
+            const curso = new Curso({
+                titulo: 'Curso Com Criador',
+                criadoPorId: criadoPorId
+            });
+
+            const cursoSalvo = await curso.save();
+            expect(cursoSalvo.criadoPorId).toEqual(criadoPorId);
+            expect(mongoose.Types.ObjectId.isValid(cursoSalvo.criadoPorId)).toBe(true);
+        });
+
+        test('deve salvar curso sem campos opcionais', async () => {
+            const cursoMinimo = new Curso({
+                titulo: 'Curso Mínimo',
+                criadoPorId: new mongoose.Types.ObjectId()
+            });
+
+            const cursoSalvo = await cursoMinimo.save();
+            expect(cursoSalvo).toHaveProperty('_id');
+            expect(cursoSalvo.titulo).toBe('Curso Mínimo');
+            expect(cursoSalvo.descricao).toBeUndefined();
+            expect(cursoSalvo.thumbnail).toBeUndefined();
         });
 
         test('deve inicializar arrays como vazios quando não fornecidos', async () => {
@@ -99,27 +163,82 @@ describe('Modelo de Curso', () => {
             expect(cursoSalvo.tags).toHaveLength(0);
         });
 
-        test('deve falhar ao salvar dois cursos com o mesmo título', async () => {
-            const curso1 = new Curso({
-                titulo: 'Curso com Título Duplicado',
+        test('deve criar curso com status ativo por padrão', async () => {
+            const cursoSemStatus = new Curso({
+                titulo: 'Curso Sem Status Definido',
                 criadoPorId: new mongoose.Types.ObjectId()
             });
-            await curso1.save();
 
-            const curso2 = new Curso({
-                titulo: 'Curso com Título Duplicado',
+            const cursoSalvo = await cursoSemStatus.save();
+            expect(cursoSalvo.status).toBe('ativo');
+        });
+
+        test('deve aceitar status personalizado quando fornecido', async () => {
+            const cursoComStatus = new Curso({
+                titulo: 'Curso Com Status',
+                status: 'rascunho',
                 criadoPorId: new mongoose.Types.ObjectId()
             });
-            await expect(curso2.save()).rejects.toThrow();
+
+            const cursoSalvo = await cursoComStatus.save();
+            expect(cursoSalvo.status).toBe('rascunho');
+        });
+
+        test('deve tratar corretamente material complementar em diferentes estados', async () => {
+            const cursoArrayVazio = new Curso({
+                titulo: 'Curso Array Vazio',
+                materialComplementar: [],
+                criadoPorId: new mongoose.Types.ObjectId()
+            });
+            const salvo1 = await cursoArrayVazio.save();
+            expect(salvo1.materialComplementar).toHaveLength(0);
+
+            const cursoComMaterial = new Curso({
+                titulo: 'Curso Com Material',
+                materialComplementar: ['https://exemplo.com/material.pdf'],
+                criadoPorId: new mongoose.Types.ObjectId()
+            });
+            const salvo2 = await cursoComMaterial.save();
+            expect(salvo2.materialComplementar).toHaveLength(1);
         });
     });
 
-    describe('Leitura e atualização de curso', () => {
+    describe('Leitura de cursos', () => {
+        test('deve retornar todos os cursos cadastrados', async () => {
+            const curso1 = new Curso({
+                titulo: 'Curso 1',
+                criadoPorId: new mongoose.Types.ObjectId()
+            });
+            const curso2 = new Curso({
+                titulo: 'Curso 2',
+                criadoPorId: new mongoose.Types.ObjectId()
+            });
+            const curso3 = new Curso({
+                titulo: 'Curso 3',
+                criadoPorId: new mongoose.Types.ObjectId()
+            });
+
+            await curso1.save();
+            await curso2.save();
+            await curso3.save();
+
+            const cursosEncontrados = await Curso.find({});
+            expect(cursosEncontrados).toHaveLength(3);
+
+            const titulos = cursosEncontrados.map(curso => curso.titulo);
+            expect(titulos).toContain('Curso 1');
+            expect(titulos).toContain('Curso 2');
+            expect(titulos).toContain('Curso 3');
+        });
+
         test('deve ler curso cadastrado corretamente', async () => {
             const cursoOriginal = new Curso({
                 titulo: 'Curso para Leitura',
                 descricao: 'Descrição do curso',
                 cargaHorariaTotal: 20,
+                materialComplementar: ['Material 1', 'Material 2'],
+                professores: ['Professor A', 'Professor B'],
+                tags: ['tag1', 'tag2'],
                 criadoPorId: new mongoose.Types.ObjectId()
             });
             await cursoOriginal.save();
@@ -131,11 +250,17 @@ describe('Modelo de Curso', () => {
             expect(cursoLido.titulo).toBe('Curso para Leitura');
             expect(cursoLido.descricao).toBe('Descrição do curso');
             expect(cursoLido.cargaHorariaTotal).toBe(20);
+            expect(cursoLido.materialComplementar).toEqual(['Material 1', 'Material 2']);
+            expect(cursoLido.professores).toEqual(['Professor A', 'Professor B']);
+            expect(cursoLido.tags).toEqual(['tag1', 'tag2']);
         });
+    });
 
-        test('deve atualizar curso corretamente', async () => {
+    describe('Atualização de curso', () => {
+        test('deve atualizar informações de um curso válido', async () => {
             const cursoOriginal = new Curso({
                 titulo: 'Curso para Atualizar',
+                descricao: 'Descrição original',
                 cargaHorariaTotal: 10,
                 criadoPorId: new mongoose.Types.ObjectId()
             });
@@ -144,26 +269,150 @@ describe('Modelo de Curso', () => {
             const cursoAtualizado = await Curso.findByIdAndUpdate(
                 cursoSalvo._id, {
                     titulo: 'Curso Atualizado',
-                    cargaHorariaTotal: 15
+                    descricao: 'Nova descrição',
+                    cargaHorariaTotal: 15,
+                    materialComplementar: ['Novo material'],
+                    tags: ['nova-tag']
                 }, {
                     new: true
                 }
             );
 
             expect(cursoAtualizado.titulo).toBe('Curso Atualizado');
+            expect(cursoAtualizado.descricao).toBe('Nova descrição');
             expect(cursoAtualizado.cargaHorariaTotal).toBe(15);
+            expect(cursoAtualizado.materialComplementar).toEqual(['Novo material']);
+            expect(cursoAtualizado.tags).toEqual(['nova-tag']);
         });
 
-        test('deve remover curso corretamente', async () => {
+        test('deve refletir os dados alterados após atualização', async () => {
+            const curso = new Curso({
+                titulo: 'Curso Original',
+                cargaHorariaTotal: 20,
+                criadoPorId: new mongoose.Types.ObjectId()
+            });
+            const cursoSalvo = await curso.save();
+
+            await Curso.updateOne({
+                _id: cursoSalvo._id
+            }, {
+                titulo: 'Curso Modificado',
+                cargaHorariaTotal: 30
+            });
+
+            const cursoVerificado = await Curso.findById(cursoSalvo._id);
+            expect(cursoVerificado.titulo).toBe('Curso Modificado');
+            expect(cursoVerificado.cargaHorariaTotal).toBe(30);
+        });
+    });
+
+    describe('Remoção de curso', () => {
+        test('deve remover curso existente sem dependências', async () => {
             const cursoParaRemover = new Curso({
                 titulo: 'Curso para Remover',
                 criadoPorId: new mongoose.Types.ObjectId()
             });
             const cursoSalvo = await cursoParaRemover.save();
 
-            await Curso.findByIdAndDelete(cursoSalvo._id);
+            const resultado = await Curso.deleteOne({
+                _id: cursoSalvo._id
+            });
+            expect(resultado.deletedCount).toBe(1);
+
             const cursoBuscado = await Curso.findById(cursoSalvo._id);
             expect(cursoBuscado).toBeNull();
         });
+
+        test('deve não aparecer mais na listagem após remoção', async () => {
+            const curso1 = new Curso({
+                titulo: 'Curso 1',
+                criadoPorId: new mongoose.Types.ObjectId()
+            });
+            const curso2 = new Curso({
+                titulo: 'Curso 2',
+                criadoPorId: new mongoose.Types.ObjectId()
+            });
+
+            await curso1.save();
+            const curso2Salvo = await curso2.save();
+
+            await Curso.findByIdAndDelete(curso2Salvo._id);
+
+            const cursosRestantes = await Curso.find({});
+            expect(cursosRestantes).toHaveLength(1);
+            expect(cursosRestantes[0].titulo).toBe('Curso 1');
+        });
+    });
+
+    describe('Campos automáticos e timestamps', () => {
+        test('deve incluir timestamps createdAt e updatedAt', async () => {
+            const curso = new Curso({
+                titulo: 'Curso com Timestamps',
+                criadoPorId: new mongoose.Types.ObjectId()
+            });
+
+            const cursoSalvo = await curso.save();
+            expect(cursoSalvo.createdAt).toBeDefined();
+            expect(cursoSalvo.updatedAt).toBeDefined();
+            expect(cursoSalvo.createdAt).toBeInstanceOf(Date);
+            expect(cursoSalvo.updatedAt).toBeInstanceOf(Date);
+        });
+
+        test('deve atualizar updatedAt quando curso é modificado', async () => {
+            const curso = new Curso({
+                titulo: 'Curso para Testar Timestamp',
+                criadoPorId: new mongoose.Types.ObjectId()
+            });
+
+            const cursoSalvo = await curso.save();
+            const timestampOriginal = cursoSalvo.updatedAt;
+
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            await Curso.findByIdAndUpdate(cursoSalvo._id, {
+                titulo: 'Título Atualizado'
+            });
+
+            const cursoAtualizado = await Curso.findById(cursoSalvo._id);
+            expect(cursoAtualizado.updatedAt.getTime()).toBeGreaterThan(timestampOriginal.getTime());
+        });
+    });
+
+    describe('Validações de schema', () => {
+        test('deve validar limite máximo do título (100 caracteres)', async () => {
+            const tituloLongo = 'A'.repeat(101);
+            const curso = new Curso({
+                titulo: tituloLongo,
+                criadoPorId: new mongoose.Types.ObjectId()
+            });
+
+            await expect(curso.save()).rejects.toThrow();
+        });
+
+        test('deve validar limite máximo do thumbnail (250 caracteres)', async () => {
+            const thumbnailLongo = 'A'.repeat(251);
+            const curso = new Curso({
+                titulo: 'Curso Teste',
+                thumbnail: thumbnailLongo,
+                criadoPorId: new mongoose.Types.ObjectId()
+            });
+
+            await expect(curso.save()).rejects.toThrow();
+        });
+
+        test('deve aceitar título e thumbnail dentro dos limites', async () => {
+            const curso = new Curso({
+                titulo: 'A'.repeat(100),
+                thumbnail: 'A'.repeat(250),
+                criadoPorId: new mongoose.Types.ObjectId()
+            });
+
+            const cursoSalvo = await curso.save();
+            expect(cursoSalvo).toHaveProperty('_id');
+            expect(cursoSalvo.titulo).toHaveLength(100);
+            expect(cursoSalvo.thumbnail).toHaveLength(250);
+        });
     });
 });
+
+//npx jest src/tests/unit/models/Curso.test.js --coverage --detectOpenHandles

@@ -124,7 +124,7 @@ class UsuarioRepository {
         }
         return usuario;
     }
-    
+
     async deletar(id) {
         const usuario = await this.model.findByIdAndDelete(id);
         if (!usuario) {
@@ -137,9 +137,55 @@ class UsuarioRepository {
             });
         }
         return usuario;
-    } 
-    
-    // Método auxiliar
+    }
+
+    async buscarUsuariosComProgressoSignificativo(cursoId, limiteProgresso = 30) {
+        return await this.model.find({
+            'progresso': {
+                $elemMatch: {
+                    'curso': cursoId,
+                    'percentual_conclusao': {
+                        $gte: limiteProgresso.toString()
+                    }
+                }
+            }
+        }).select('_id nome email');
+    }
+
+    async removerReferenciaCurso(cursoId, options = {}) {
+        const operacoes = [
+            this.model.updateMany({
+                    cursosIds: cursoId
+                }, {
+                    $pull: {
+                        cursosIds: cursoId
+                    }
+                },
+                options
+            ),
+
+            this.model.updateMany({
+                    'progresso.curso': cursoId
+                }, {
+                    $pull: {
+                        progresso: {
+                            curso: cursoId
+                        }
+                    }
+                },
+                options
+            )
+        ];
+
+        const resultados = await Promise.all(operacoes);
+
+        return {
+            cursosRemovidos: resultados[0].modifiedCount,
+            progressosRemovidos: resultados[1].modifiedCount
+        };
+    }
+
+
     enriquecerUsuario(usuario) {
         const usuarioObj = usuario.toObject();
         const totalCursos = usuarioObj.cursosIds.length;
@@ -154,7 +200,7 @@ class UsuarioRepository {
         };
     }
 
-    // Método para simulação de erro do banco (apenas para testes)
+
     async simularErroBanco() {
         try {
             await this.model.findOne({

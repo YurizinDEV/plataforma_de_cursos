@@ -9,7 +9,8 @@ class Curso {
             titulo: {
                 type: String,
                 required: true,
-                maxlength: 100
+                maxlength: 100,
+                unique: true
             },
             descricao: {
                 type: String
@@ -31,6 +32,11 @@ class Curso {
             },
             tags: {
                 type: [String]
+            },
+            status: {
+                type: String,
+                enum: ['ativo', 'inativo', 'rascunho', 'arquivado'],
+                default: 'ativo'
             },
             criadoPorId: {
                 type: mongoose.Schema.Types.ObjectId,

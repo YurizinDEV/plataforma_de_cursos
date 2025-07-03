@@ -6,7 +6,7 @@
   "type": "module",
   "main": "src/app.js",
   "scripts": {
-    "dev": "nodemon server.js",
+    "dev": "node kill-port.js && nodemon server.js",
     "seed": "node src/seeds/seeds.js",
     "start": "node server.js",
     "test": "jest --coverage --detectOpenHandles"

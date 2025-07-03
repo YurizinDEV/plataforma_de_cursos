@@ -1,9 +1,6 @@
 import fakerbr from "faker-br";
 import Curso from "../models/Curso.js";
 import Usuario from "../models/Usuario.js";
-// import DbConnect from "../config/DbConnect.js";
-
-// DbConnect.conectar();
 
 export default async function cursosSeed() {
     const usuarios = await Usuario.find({});
@@ -11,27 +8,91 @@ export default async function cursosSeed() {
 
     const cursos = [];
 
-    for (let i = 0; i < 30; i++) {
+    const tags = ['js', 'react', 'node', 'python', 'mongodb', 'vue', 'angular', 'css',
+        'html', 'express', 'php', 'laravel', 'docker', 'aws', 'devops', 'data'
+    ];
+
+    const professores = [
+        'Prof. João Silva', 'Dra. Maria Oliveira', 'Prof. Pedro Lima',
+        'Dra. Ana Souza', 'Prof. Carlos Pereira', 'Dra. Juliana Alves'
+    ];
+
+    const statusOptions = ['ativo', 'inativo', 'rascunho', 'arquivado'];
+
+    for (let i = 0; i < 20; i++) {
         const criador = usuarios[Math.floor(Math.random() * usuarios.length)];
 
-        cursos.push({
-            titulo: fakerbr.lorem.words(3),
-            descricao: fakerbr.lorem.paragraph(),
-            thumbnail: fakerbr.image.imageUrl(640, 480, "education", true),
-            cargaHorariaTotal: fakerbr.random.number({
-                min: 5,
-                max: 40
-            }),
-            materialComplementar: [],
-            professores: [fakerbr.name.findName()],
-            tags: fakerbr.random.arrayElements(["js", "node", "db", "devops", "ux"], 3),
-            criadoPorId: criador._id
+        const numTags = fakerbr.random.number({
+            min: 1,
+            max: 3
         });
+        const tagsEscolhidas = fakerbr.random.arrayElements(tags, numTags);
+
+        const titulo = `Curso de ${fakerbr.company.catchPhraseNoun()}`;
+
+        let status;
+        if (i < 3) {
+            status = null;
+        } else {
+            const probabilidade = fakerbr.random.number({
+                min: 1,
+                max: 100
+            });
+            if (probabilidade <= 60) {
+                status = 'ativo';
+            } else {
+                status = fakerbr.random.arrayElement(['inativo', 'rascunho', 'arquivado']);
+            }
+        }
+
+        const cargaHoraria = fakerbr.random.number({
+            min: 10,
+            max: 480
+        });
+
+        let materialComplementar;
+        if (i % 3 === 0) {
+            materialComplementar = [];
+        } else if (i % 3 === 1) {
+            materialComplementar = undefined;
+        } else {
+            materialComplementar = [
+                `https://exemplo.com/material-${i}.pdf`
+            ];
+        }
+
+        const thumbnail = i % 5 === 0 ? "" : fakerbr.image.imageUrl();
+
+        const numProfessores = fakerbr.random.number({
+            min: 1,
+            max: 2
+        });
+        const professoresEscolhidos = fakerbr.random.arrayElements(professores, numProfessores);
+
+        const curso = {
+            titulo,
+            descricao: fakerbr.lorem.paragraph(),
+            thumbnail,
+            cargaHorariaTotal: cargaHoraria,
+            professores: professoresEscolhidos,
+            tags: tagsEscolhidas,
+            criadoPorId: criador._id
+        };
+
+        if (status !== null) {
+            curso.status = status;
+        }
+        if (materialComplementar !== undefined) {
+            curso.materialComplementar = materialComplementar;
+        }
+
+        cursos.push(curso);
     }
 
     const inserted = await Curso.insertMany(cursos);
 
-    for (const curso of inserted) {
+    for (let i = 0; i < Math.min(10, inserted.length); i++) {
+        const curso = inserted[i];
         const aluno = usuarios[Math.floor(Math.random() * usuarios.length)];
         aluno.cursosIds.push(curso._id);
         aluno.progresso.push({
@@ -44,7 +105,11 @@ export default async function cursosSeed() {
         await aluno.save();
     }
 
-    console.log("Cursos gerados com sucesso");
+    console.log(`Cursos gerados com sucesso!`);
+
+    return {
+        total: inserted.length
+    };
 }
 
 // cursosSeed();
