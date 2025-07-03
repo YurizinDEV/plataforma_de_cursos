@@ -19,12 +19,28 @@ class CertificadoRepository {
       .porUsuarioId(filters.usuarioId)
       .porCursoId(filters.cursoId)
       .build();
-    
+
     return await this.model.find(query).populate('usuarioId cursoId');
   }
 
   async verificarExistencia(usuarioId, cursoId) {
-    return await this.model.findOne({ usuarioId, cursoId });
+    return await this.model.findOne({
+      usuarioId,
+      cursoId
+    });
+  }
+
+  async contarPorCursoId(cursoId) {
+    return await this.model.countDocuments({
+      cursoId
+    });
+  }
+
+  async deletarPorCursoId(cursoId, options = {}) {
+    const result = await this.model.deleteMany({
+      cursoId
+    }, options);
+    return result.deletedCount;
   }
 }
 
