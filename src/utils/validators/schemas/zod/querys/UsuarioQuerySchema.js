@@ -24,6 +24,36 @@ export const UsuarioQuerySchema = z.object({
         .refine((value) => !value || value === "true" || value === "false", {
             message: "Ativo deve ser 'true' ou 'false'",
         }),
+    ehAdmin: z
+        .string()
+        .optional()
+        .refine((value) => !value || value === "true" || value === "false", {
+            message: "ehAdmin deve ser 'true' ou 'false'",
+        }),
+    dataInicio: z
+        .string()
+        .optional()
+        .refine((val) => !val || !isNaN(Date.parse(val)), {
+            message: "dataInicio deve ser uma data válida (YYYY-MM-DD)",
+        }),
+    dataFim: z
+        .string()
+        .optional()
+        .refine((val) => !val || !isNaN(Date.parse(val)), {
+            message: "dataFim deve ser uma data válida (YYYY-MM-DD)",
+        }),
+    ordenarPor: z
+        .string()
+        .optional()
+        .refine((value) => !value || ["nome", "email", "createdAt", "updatedAt"].includes(value), {
+            message: "ordenarPor deve ser um dos valores: nome, email, createdAt, updatedAt",
+        }),
+    direcao: z
+        .string()
+        .optional()
+        .refine((value) => !value || ["asc", "desc"].includes(value.toLowerCase()), {
+            message: "direcao deve ser 'asc' ou 'desc'",
+        }),
     grupo: z.string().optional().transform((val) => val?.trim()),
     unidade: z.string().optional().transform((val) => val?.trim()),
     page: z

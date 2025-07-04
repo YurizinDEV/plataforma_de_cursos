@@ -1,6 +1,8 @@
 //UsuarioService.js
-
 import UsuarioRepository from '../repositories/UsuarioRepository.js';
+import CursoRepository from '../repositories/CursoRepository.js';
+import CertificadoRepository from '../repositories/CertificadoRepository.js';
+import mongoose from 'mongoose';
 import {
     CustomError,
     HttpStatusCodes,
@@ -11,6 +13,8 @@ import bcrypt from 'bcrypt';
 class UsuarioService {
     constructor() {
         this.repository = new UsuarioRepository();
+        this.cursoRepository = new CursoRepository();
+        this.certificadoRepository = new CertificadoRepository();
     }
 
     async listar(req) {
@@ -29,7 +33,7 @@ class UsuarioService {
     }
 
     async atualizar(id, parsedData) {
-        delete parsedData.senha; // Não permite alterar a senha diretamente
+        delete parsedData.senha;
         delete parsedData.email;
         await this.ensureUserExists(id);
         const data = await this.repository.atualizar(id, parsedData);
@@ -37,15 +41,83 @@ class UsuarioService {
     }
 
     async deletar(id) {
+        const usuario = await this.ensureUserExists(id);
+        return await this.repository.deletar(id);
+    }
+
+    async deletarFisicamente(id) {
+        const usuario = await this.ensureUserExists(id);
+
+
+        const estatisticas = await this.verificarDependenciasParaExclusao(id);
+
+
+        const session = await mongoose.startSession();
+        session.startTransaction();
+
+        try {
+
+            const certificadosExcluidos = await this.certificadoRepository.deletarPorUsuarioId(id, {
+                session
+            });
+
+
+            const cursosAtualizados = await this.cursoRepository.removerReferenciaUsuario(id, {
+                session
+            });
+
+
+            await this.repository.deletarFisicamente(id, {
+                session
+            });
+
+
+            await session.commitTransaction();
+
+            return {
+                mensagem: 'Usuário e todos os seus recursos relacionados foram excluídos permanentemente.',
+                estatisticas: {
+                    usuario: usuario.nome,
+                    email: usuario.email,
+                    certificadosExcluidos: certificadosExcluidos || estatisticas.certificados,
+                    cursosAtualizados: cursosAtualizados || estatisticas.cursosComoAutor,
+                    progressosRemovidos: estatisticas.progressos
+                }
+            };
+        } catch (error) {
+
+            await session.abortTransaction();
+
+            if (!(error instanceof CustomError)) {
+                throw new CustomError({
+                    statusCode: HttpStatusCodes.INTERNAL_SERVER_ERROR.code,
+                    errorType: 'transactionError',
+                    field: 'Usuario',
+                    details: [{
+                        path: 'exclusão em cascata',
+                        message: `Erro ao excluir usuário e dependências: ${error.message}`
+                    }],
+                    customMessage: 'Ocorreu um erro ao excluir o usuário e suas dependências.'
+                });
+            }
+
+            throw error;
+        } finally {
+
+            session.endSession();
+        }
+    }
+
+    async restaurar(id) {
+
         await this.ensureUserExists(id);
-        const data = await this.repository.deletar(id);
-        return data;
+        return await this.repository.restaurar(id);
     }
 
 
 
 
-    //Metódos auxiliares
+
 
     async validateEmail(email, id = null) {
         const usuarioExistente = await this.repository.buscarPorEmail(email, id);
@@ -75,6 +147,57 @@ class UsuarioService {
             });
         }
         return usuarioExistente;
+    }
+
+    async verificarDependenciasParaExclusao(usuarioId) {
+
+        const usuario = await this.repository.buscarPorId(usuarioId);
+
+        if (usuario.progresso && usuario.progresso.length > 0) {
+
+            const progressoSignificativo = usuario.progresso.some(p => {
+                const percentual = parseFloat(p.percentual_conclusao);
+                return percentual >= 50;
+            });
+
+            if (progressoSignificativo) {
+                throw new CustomError({
+                    statusCode: HttpStatusCodes.CONFLICT.code,
+                    errorType: 'dependencyConflict',
+                    field: 'usuario',
+                    details: [{
+                        path: 'usuario',
+                        message: `O usuário possui progresso significativo em cursos.`
+                    }],
+                    customMessage: 'Não é possível excluir o usuário pois possui progresso significativo em cursos. Considere desativá-lo em vez de excluí-lo.'
+                });
+            }
+        }
+
+
+        const cursosComoAutor = await this.cursoRepository.buscarPorCriador(usuarioId);
+
+        if (cursosComoAutor && cursosComoAutor.length > 0) {
+            throw new CustomError({
+                statusCode: HttpStatusCodes.CONFLICT.code,
+                errorType: 'dependencyConflict',
+                field: 'usuario',
+                details: [{
+                    path: 'usuario',
+                    message: `O usuário é autor de ${cursosComoAutor.length} curso(s).`
+                }],
+                customMessage: 'Não é possível excluir o usuário pois é autor de cursos. Considere desativá-lo em vez de excluí-lo.'
+            });
+        }
+
+
+        const certificados = await this.certificadoRepository.contarPorUsuario(usuarioId);
+
+        return {
+            progressos: usuario.progresso ? usuario.progresso.length : 0,
+            certificados: certificados || 0,
+            cursosComoAutor: cursosComoAutor ? cursosComoAutor.length : 0
+        };
     }
 }
 
