@@ -67,8 +67,8 @@ class AulaRepository {
         );
 
         if (dadosAtualizados.cursoId && dadosAtualizados.cursoId !== aulaAtual.cursoId.toString()) {
-            await this.atualizarCargaHorariaDoCurso(aulaAtual.cursoId); 
-            await this.atualizarCargaHorariaDoCurso(dadosAtualizados.cursoId); 
+            await this.atualizarCargaHorariaDoCurso(aulaAtual.cursoId);
+            await this.atualizarCargaHorariaDoCurso(dadosAtualizados.cursoId);
         } else {
             await this.atualizarCargaHorariaDoCurso(aulaAtual.cursoId);
         }
