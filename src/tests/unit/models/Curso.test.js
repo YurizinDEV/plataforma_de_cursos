@@ -51,14 +51,12 @@ describe('Modelo de Curso', () => {
         });
 
         test('deve validar que curso só pode ser cadastrado se possuir título e criadoPorId', async () => {
-            // Teste sem título
             const cursoSemTitulo = new Curso({
                 cargaHorariaTotal: 10,
                 criadoPorId: new mongoose.Types.ObjectId()
             });
             await expect(cursoSemTitulo.save()).rejects.toThrow(/required/);
 
-            // Teste sem criadoPorId
             const cursoSemCriador = new Curso({
                 titulo: 'Curso Teste',
                 cargaHorariaTotal: 10
@@ -164,11 +162,49 @@ describe('Modelo de Curso', () => {
             expect(Array.isArray(cursoSalvo.tags)).toBe(true);
             expect(cursoSalvo.tags).toHaveLength(0);
         });
+
+        test('deve criar curso com status ativo por padrão', async () => {
+            const cursoSemStatus = new Curso({
+                titulo: 'Curso Sem Status Definido',
+                criadoPorId: new mongoose.Types.ObjectId()
+            });
+
+            const cursoSalvo = await cursoSemStatus.save();
+            expect(cursoSalvo.status).toBe('ativo');
+        });
+
+        test('deve aceitar status personalizado quando fornecido', async () => {
+            const cursoComStatus = new Curso({
+                titulo: 'Curso Com Status',
+                status: 'rascunho',
+                criadoPorId: new mongoose.Types.ObjectId()
+            });
+
+            const cursoSalvo = await cursoComStatus.save();
+            expect(cursoSalvo.status).toBe('rascunho');
+        });
+
+        test('deve tratar corretamente material complementar em diferentes estados', async () => {
+            const cursoArrayVazio = new Curso({
+                titulo: 'Curso Array Vazio',
+                materialComplementar: [],
+                criadoPorId: new mongoose.Types.ObjectId()
+            });
+            const salvo1 = await cursoArrayVazio.save();
+            expect(salvo1.materialComplementar).toHaveLength(0);
+
+            const cursoComMaterial = new Curso({
+                titulo: 'Curso Com Material',
+                materialComplementar: ['https://exemplo.com/material.pdf'],
+                criadoPorId: new mongoose.Types.ObjectId()
+            });
+            const salvo2 = await cursoComMaterial.save();
+            expect(salvo2.materialComplementar).toHaveLength(1);
+        });
     });
 
     describe('Leitura de cursos', () => {
         test('deve retornar todos os cursos cadastrados', async () => {
-            // Criar múltiplos cursos
             const curso1 = new Curso({
                 titulo: 'Curso 1',
                 criadoPorId: new mongoose.Types.ObjectId()
@@ -331,7 +367,6 @@ describe('Modelo de Curso', () => {
             const cursoSalvo = await curso.save();
             const timestampOriginal = cursoSalvo.updatedAt;
 
-            // Aguardar um pouco para garantir diferença no timestamp
             await new Promise(resolve => setTimeout(resolve, 10));
 
             await Curso.findByIdAndUpdate(cursoSalvo._id, {
@@ -345,7 +380,7 @@ describe('Modelo de Curso', () => {
 
     describe('Validações de schema', () => {
         test('deve validar limite máximo do título (100 caracteres)', async () => {
-            const tituloLongo = 'A'.repeat(101); // 101 caracteres
+            const tituloLongo = 'A'.repeat(101);
             const curso = new Curso({
                 titulo: tituloLongo,
                 criadoPorId: new mongoose.Types.ObjectId()
@@ -355,7 +390,7 @@ describe('Modelo de Curso', () => {
         });
 
         test('deve validar limite máximo do thumbnail (250 caracteres)', async () => {
-            const thumbnailLongo = 'A'.repeat(251); // 251 caracteres
+            const thumbnailLongo = 'A'.repeat(251);
             const curso = new Curso({
                 titulo: 'Curso Teste',
                 thumbnail: thumbnailLongo,
@@ -367,8 +402,8 @@ describe('Modelo de Curso', () => {
 
         test('deve aceitar título e thumbnail dentro dos limites', async () => {
             const curso = new Curso({
-                titulo: 'A'.repeat(100), // Exatamente 100 caracteres
-                thumbnail: 'A'.repeat(250), // Exatamente 250 caracteres
+                titulo: 'A'.repeat(100),
+                thumbnail: 'A'.repeat(250),
                 criadoPorId: new mongoose.Types.ObjectId()
             });
 
@@ -380,4 +415,4 @@ describe('Modelo de Curso', () => {
     });
 });
 
-//cd "c:\Users\Yuri\Music\IFRO\plataforma-de-cursos" && npx jest src/tests/unit/models/Curso.test.js --coverage --detectOpenHandles
+//npx jest src/tests/unit/models/Curso.test.js --coverage --detectOpenHandles

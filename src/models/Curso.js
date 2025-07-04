@@ -9,7 +9,8 @@ class Curso {
             titulo: {
                 type: String,
                 required: true,
-                maxlength: 100
+                maxlength: 100,
+                unique: true
             },
             descricao: {
                 type: String

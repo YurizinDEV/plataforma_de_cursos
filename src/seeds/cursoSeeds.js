@@ -22,23 +22,22 @@ export default async function cursosSeed() {
     for (let i = 0; i < 20; i++) {
         const criador = usuarios[Math.floor(Math.random() * usuarios.length)];
 
-        // Escolher tags aleatórias
         const numTags = fakerbr.random.number({
             min: 1,
             max: 3
         });
         const tagsEscolhidas = fakerbr.random.arrayElements(tags, numTags);
 
-        // Gerar título
         const titulo = `Curso de ${fakerbr.company.catchPhraseNoun()}`;
 
-        // Status (maioria ativo, alguns null para compatibilidade)
         let status;
         if (i < 3) {
             status = null;
         } else {
-            // Ajustado: 60% de chance de ser ativo, 40% outros status
-            const probabilidade = fakerbr.random.number({ min: 1, max: 100 });
+            const probabilidade = fakerbr.random.number({
+                min: 1,
+                max: 100
+            });
             if (probabilidade <= 60) {
                 status = 'ativo';
             } else {
@@ -46,13 +45,11 @@ export default async function cursosSeed() {
             }
         }
 
-        // Carga horária simples
         const cargaHoraria = fakerbr.random.number({
             min: 10,
             max: 480
         });
 
-        // Material complementar (alguns casos vazios, alguns com material)
         let materialComplementar;
         if (i % 3 === 0) {
             materialComplementar = [];
@@ -64,10 +61,8 @@ export default async function cursosSeed() {
             ];
         }
 
-        // Thumbnail
         const thumbnail = i % 5 === 0 ? "" : fakerbr.image.imageUrl();
 
-        // Professores
         const numProfessores = fakerbr.random.number({
             min: 1,
             max: 2
@@ -84,7 +79,6 @@ export default async function cursosSeed() {
             criadoPorId: criador._id
         };
 
-        // Adicionar campos opcionais
         if (status !== null) {
             curso.status = status;
         }
@@ -97,7 +91,6 @@ export default async function cursosSeed() {
 
     const inserted = await Curso.insertMany(cursos);
 
-    // Atualizar progresso de alguns usuários
     for (let i = 0; i < Math.min(10, inserted.length); i++) {
         const curso = inserted[i];
         const aluno = usuarios[Math.floor(Math.random() * usuarios.length)];
@@ -112,7 +105,7 @@ export default async function cursosSeed() {
         await aluno.save();
     }
 
-    console.log(`Cursos gerados com sucesso: ${inserted.length}`);
+    console.log(`Cursos gerados com sucesso!`);
 
     return {
         total: inserted.length

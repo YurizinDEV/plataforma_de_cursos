@@ -124,7 +124,7 @@ class UsuarioRepository {
         }
         return usuario;
     }
-    
+
     async deletar(id) {
         const usuario = await this.model.findByIdAndDelete(id);
         if (!usuario) {
@@ -137,53 +137,55 @@ class UsuarioRepository {
             });
         }
         return usuario;
-    } 
-    
-    /**
-     * Busca usuários com progresso significativo em um curso específico
-     * Progresso significativo é definido como mais de 30% de conclusão
-     */
+    }
+
     async buscarUsuariosComProgressoSignificativo(cursoId, limiteProgresso = 30) {
         return await this.model.find({
             'progresso': {
                 $elemMatch: {
                     'curso': cursoId,
-                    'percentual_conclusao': { $gte: limiteProgresso.toString() }
+                    'percentual_conclusao': {
+                        $gte: limiteProgresso.toString()
+                    }
                 }
             }
         }).select('_id nome email');
-    }    /**
-     * Remove referências a um curso do progresso e cursosIds de todos os usuários
-     * @param {string} cursoId - ID do curso a ser removido das referências
-     * @param {Object} options - Opções como sessão de transação
-     * @returns {Promise<Object>} Objeto com contadores de referências removidas
-     */
+    }
+
     async removerReferenciaCurso(cursoId, options = {}) {
         const operacoes = [
-            // Remove o curso da lista de cursosIds
-            this.model.updateMany(
-                { cursosIds: cursoId }, 
-                { $pull: { cursosIds: cursoId } },
+            this.model.updateMany({
+                    cursosIds: cursoId
+                }, {
+                    $pull: {
+                        cursosIds: cursoId
+                    }
+                },
                 options
             ),
-            
-            // Remove o progresso relacionado ao curso
-            this.model.updateMany(
-                { 'progresso.curso': cursoId }, 
-                { $pull: { progresso: { curso: cursoId } } },
+
+            this.model.updateMany({
+                    'progresso.curso': cursoId
+                }, {
+                    $pull: {
+                        progresso: {
+                            curso: cursoId
+                        }
+                    }
+                },
                 options
             )
         ];
-        
+
         const resultados = await Promise.all(operacoes);
-        
+
         return {
             cursosRemovidos: resultados[0].modifiedCount,
             progressosRemovidos: resultados[1].modifiedCount
         };
     }
-    
-    // Método auxiliar
+
+
     enriquecerUsuario(usuario) {
         const usuarioObj = usuario.toObject();
         const totalCursos = usuarioObj.cursosIds.length;
@@ -198,7 +200,7 @@ class UsuarioRepository {
         };
     }
 
-    // Método para simulação de erro do banco (apenas para testes)
+
     async simularErroBanco() {
         try {
             await this.model.findOne({

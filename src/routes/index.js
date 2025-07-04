@@ -30,13 +30,13 @@ const routes = (app) => {
     //     swaggerUI.setup(swaggerDocs)(req, res, next);
     // });
 
-    app.use(
+    app.use(express.json(),
         usuarios,
         cursos,
         aulas,
         alternativas,
         questionarios,
-        certificados
+        certificados,
     );
 
     app.use((req, res) => {

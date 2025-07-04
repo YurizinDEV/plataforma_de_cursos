@@ -135,4 +135,41 @@ describe('CursoQuerySchema', () => {
         expect(resultado.data.page).toBe(2);
         expect(resultado.data.limit).toBe(15);
     });
+
+    test('deve validar filtros AND alternativos (tag1, tag2, tag3, professor1, professor2, professor3)', () => {
+        const query = {
+            tag1: 'js',
+            tag2: 'node',
+            tag3: 'api',
+            professor1: 'Prof1',
+            professor2: 'Prof2',
+            professor3: 'Prof3'
+        };
+        const resultado = CursoQuerySchema.safeParse(query);
+        expect(resultado.success).toBe(true);
+        expect(resultado.data.tag1).toBe('js');
+        expect(resultado.data.professor3).toBe('Prof3');
+    });
+
+    test('deve validar filtros via array (tags[], professores[])', () => {
+        const query = {
+            'tags[]': ['js', 'node'],
+            'professores[]': ['Prof1', 'Prof2']
+        };
+        const resultado = CursoQuerySchema.safeParse(query);
+        expect(resultado.success).toBe(true);
+        expect(resultado.data['tags[]']).toEqual(['js', 'node']);
+        expect(resultado.data['professores[]']).toEqual(['Prof1', 'Prof2']);
+    });
+
+    test('deve validar filtros via string única (tags[], professores[])', () => {
+        const query = {
+            'tags[]': 'js',
+            'professores[]': 'Prof1'
+        };
+        const resultado = CursoQuerySchema.safeParse(query);
+        expect(resultado.success).toBe(true);
+        expect(resultado.data['tags[]']).toBe('js');
+        expect(resultado.data['professores[]']).toBe('Prof1');
+    });
 });
