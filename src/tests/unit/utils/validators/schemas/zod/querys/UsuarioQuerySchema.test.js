@@ -77,106 +77,277 @@ describe('UsuarioQuerySchema', () => {
             });
         });
 
-        describe('Campos grupo e unidade', () => {
-            it('deve validar grupo corretamente', async () => {
+        describe('Campo ehAdmin', () => {
+            it('deve validar ehAdmin="true" corretamente', async () => {
                 const resultado = await UsuarioQuerySchema.parseAsync({
-                    grupo: 'Admin'
+                    ehAdmin: 'true'
                 });
-                expect(resultado.grupo).toBe('Admin');
+                expect(resultado.ehAdmin).toBe('true');
             });
 
-            it('deve fazer trim do campo grupo', async () => {
+            it('deve validar ehAdmin="false" corretamente', async () => {
                 const resultado = await UsuarioQuerySchema.parseAsync({
-                    grupo: '  Admin  '
+                    ehAdmin: 'false'
                 });
-                expect(resultado.grupo).toBe('Admin');
+                expect(resultado.ehAdmin).toBe('false');
             });
 
-            it('deve validar unidade corretamente', async () => {
-                const resultado = await UsuarioQuerySchema.parseAsync({
-                    unidade: 'Matriz'
+            it('deve aceitar ehAdmin undefined/vazio', async () => {
+                const resultado1 = await UsuarioQuerySchema.parseAsync({});
+                expect(resultado1.ehAdmin).toBeUndefined();
+                
+                const resultado2 = await UsuarioQuerySchema.parseAsync({
+                    ehAdmin: undefined
                 });
-                expect(resultado.unidade).toBe('Matriz');
+                expect(resultado2.ehAdmin).toBeUndefined();
             });
 
-            it('deve fazer trim do campo unidade', async () => {
-                const resultado = await UsuarioQuerySchema.parseAsync({
-                    unidade: '  Matriz  '
-                });
-                expect(resultado.unidade).toBe('Matriz');
+            it('deve rejeitar valores inválidos para ehAdmin', async () => {
+                await expect(UsuarioQuerySchema.parseAsync({
+                        ehAdmin: 'sim'
+                    }))
+                    .rejects.toThrow("ehAdmin deve ser 'true' ou 'false'");
+
+                await expect(UsuarioQuerySchema.parseAsync({
+                        ehAdmin: '1'
+                    }))
+                    .rejects.toThrow("ehAdmin deve ser 'true' ou 'false'");
+
+                await expect(UsuarioQuerySchema.parseAsync({
+                        ehAdmin: 'admin'
+                    }))
+                    .rejects.toThrow("ehAdmin deve ser 'true' ou 'false'");
             });
         });
 
-        describe('Campo page', () => {
-            it('deve validar page corretamente', async () => {
+        describe('Campo dataInicio', () => {
+            it('deve validar dataInicio corretamente', async () => {
                 const resultado = await UsuarioQuerySchema.parseAsync({
-                    page: '2'
+                    dataInicio: '2023-01-01'
                 });
-                expect(resultado.page).toBe(2);
+                expect(resultado.dataInicio).toBe('2023-01-01');
             });
 
-            it('deve usar valor padrão 1 quando page não é fornecido', async () => {
-                const resultado = await UsuarioQuerySchema.parseAsync({});
-                expect(resultado.page).toBe(1);
+            it('deve aceitar diferentes formatos válidos de data', async () => {
+                const datasValidas = [
+                    '2023-12-25',
+                    '2023-01-01T10:30:00Z',
+                    '2023/01/01',
+                    'December 25, 2023',
+                    '25 Dec 2023'
+                ];
+
+                for (const data of datasValidas) {
+                    const resultado = await UsuarioQuerySchema.parseAsync({
+                        dataInicio: data
+                    });
+                    expect(resultado.dataInicio).toBe(data);
+                }
             });
 
-            it('deve rejeitar valores não numéricos para page', async () => {
-                await expect(UsuarioQuerySchema.parseAsync({
-                        page: 'abc'
-                    }))
-                    .rejects.toThrow('Page deve ser um número inteiro maior que 0');
+            it('deve aceitar dataInicio undefined/vazio', async () => {
+                const resultado1 = await UsuarioQuerySchema.parseAsync({});
+                expect(resultado1.dataInicio).toBeUndefined();
+                
+                const resultado2 = await UsuarioQuerySchema.parseAsync({
+                    dataInicio: undefined
+                });
+                expect(resultado2.dataInicio).toBeUndefined();
             });
 
-            it('deve rejeitar números negativos ou zero para page', async () => {
+            it('deve rejeitar datas inválidas para dataInicio', async () => {
                 await expect(UsuarioQuerySchema.parseAsync({
-                        page: '0'
+                        dataInicio: 'data-invalida'
                     }))
-                    .rejects.toThrow('Page deve ser um número inteiro maior que 0');
+                    .rejects.toThrow("dataInicio deve ser uma data válida (YYYY-MM-DD)");
 
                 await expect(UsuarioQuerySchema.parseAsync({
-                        page: '-1'
+                        dataInicio: '2023-13-01'
                     }))
-                    .rejects.toThrow('Page deve ser um número inteiro maior que 0');
+                    .rejects.toThrow("dataInicio deve ser uma data válida (YYYY-MM-DD)");
+
+                await expect(UsuarioQuerySchema.parseAsync({
+                        dataInicio: '32/01/2023'
+                    }))
+                    .rejects.toThrow("dataInicio deve ser uma data válida (YYYY-MM-DD)");
+
+                await expect(UsuarioQuerySchema.parseAsync({
+                        dataInicio: 'abc123'
+                    }))
+                    .rejects.toThrow("dataInicio deve ser uma data válida (YYYY-MM-DD)");
             });
         });
 
-        describe('Campo limite', () => {
-            it('deve validar limite corretamente', async () => {
+        describe('Campo dataFim', () => {
+            it('deve validar dataFim corretamente', async () => {
                 const resultado = await UsuarioQuerySchema.parseAsync({
-                    limite: '20'
+                    dataFim: '2023-12-31'
                 });
-                expect(resultado.limite).toBe(20);
+                expect(resultado.dataFim).toBe('2023-12-31');
             });
 
-            it('deve usar valor padrão 10 quando limite não é fornecido', async () => {
-                const resultado = await UsuarioQuerySchema.parseAsync({});
-                expect(resultado.limite).toBe(10);
+            it('deve aceitar diferentes formatos válidos de data', async () => {
+                const datasValidas = [
+                    '2023-12-31',
+                    '2023-12-31T23:59:59Z',
+                    '2023/12/31',
+                    'December 31, 2023',
+                    '31 Dec 2023'
+                ];
+
+                for (const data of datasValidas) {
+                    const resultado = await UsuarioQuerySchema.parseAsync({
+                        dataFim: data
+                    });
+                    expect(resultado.dataFim).toBe(data);
+                }
             });
 
-            it('deve rejeitar valores não numéricos para limite', async () => {
-                await expect(UsuarioQuerySchema.parseAsync({
-                        limite: 'abc'
-                    }))
-                    .rejects.toThrow('Limite deve ser um número inteiro entre 1 e 100');
+            it('deve aceitar dataFim undefined/vazio', async () => {
+                const resultado1 = await UsuarioQuerySchema.parseAsync({});
+                expect(resultado1.dataFim).toBeUndefined();
+                
+                const resultado2 = await UsuarioQuerySchema.parseAsync({
+                    dataFim: undefined
+                });
+                expect(resultado2.dataFim).toBeUndefined();
             });
 
-            it('deve rejeitar números negativos ou zero para limite', async () => {
+            it('deve rejeitar datas inválidas para dataFim', async () => {
                 await expect(UsuarioQuerySchema.parseAsync({
-                        limite: '0'
+                        dataFim: 'data-invalida'
                     }))
-                    .rejects.toThrow('Limite deve ser um número inteiro entre 1 e 100');
+                    .rejects.toThrow("dataFim deve ser uma data válida (YYYY-MM-DD)");
 
                 await expect(UsuarioQuerySchema.parseAsync({
-                        limite: '-10'
+                        dataFim: '2023-13-31'
                     }))
-                    .rejects.toThrow('Limite deve ser um número inteiro entre 1 e 100');
+                    .rejects.toThrow("dataFim deve ser uma data válida (YYYY-MM-DD)");
+
+                await expect(UsuarioQuerySchema.parseAsync({
+                        dataFim: '40/12/2023'
+                    }))
+                    .rejects.toThrow("dataFim deve ser uma data válida (YYYY-MM-DD)");
+
+                await expect(UsuarioQuerySchema.parseAsync({
+                        dataFim: 'xyz789'
+                    }))
+                    .rejects.toThrow("dataFim deve ser uma data válida (YYYY-MM-DD)");
+            });
+        });
+
+        describe('Campo ordenarPor', () => {
+            it('deve validar valores válidos para ordenarPor', async () => {
+                const valoresValidos = ['nome', 'email', 'createdAt', 'updatedAt'];
+
+                for (const valor of valoresValidos) {
+                    const resultado = await UsuarioQuerySchema.parseAsync({
+                        ordenarPor: valor
+                    });
+                    expect(resultado.ordenarPor).toBe(valor);
+                }
             });
 
-            it('deve rejeitar números maiores que 100 para limite', async () => {
+            it('deve aceitar ordenarPor undefined/vazio', async () => {
+                const resultado1 = await UsuarioQuerySchema.parseAsync({});
+                expect(resultado1.ordenarPor).toBeUndefined();
+                
+                const resultado2 = await UsuarioQuerySchema.parseAsync({
+                    ordenarPor: undefined
+                });
+                expect(resultado2.ordenarPor).toBeUndefined();
+            });
+
+            it('deve rejeitar valores inválidos para ordenarPor', async () => {
                 await expect(UsuarioQuerySchema.parseAsync({
-                        limite: '101'
+                        ordenarPor: 'campo-invalido'
                     }))
-                    .rejects.toThrow('Limite deve ser um número inteiro entre 1 e 100');
+                    .rejects.toThrow("ordenarPor deve ser um dos valores: nome, email, createdAt, updatedAt");
+
+                await expect(UsuarioQuerySchema.parseAsync({
+                        ordenarPor: 'id'
+                    }))
+                    .rejects.toThrow("ordenarPor deve ser um dos valores: nome, email, createdAt, updatedAt");
+
+                await expect(UsuarioQuerySchema.parseAsync({
+                        ordenarPor: 'data'
+                    }))
+                    .rejects.toThrow("ordenarPor deve ser um dos valores: nome, email, createdAt, updatedAt");
+
+                await expect(UsuarioQuerySchema.parseAsync({
+                        ordenarPor: 'status'
+                    }))
+                    .rejects.toThrow("ordenarPor deve ser um dos valores: nome, email, createdAt, updatedAt");
+            });
+        });
+
+        describe('Campo direcao', () => {
+            it('deve validar direcao="asc" corretamente', async () => {
+                const resultado = await UsuarioQuerySchema.parseAsync({
+                    direcao: 'asc'
+                });
+                expect(resultado.direcao).toBe('asc');
+            });
+
+            it('deve validar direcao="desc" corretamente', async () => {
+                const resultado = await UsuarioQuerySchema.parseAsync({
+                    direcao: 'desc'
+                });
+                expect(resultado.direcao).toBe('desc');
+            });
+
+            it('deve aceitar direcao em maiúsculo (case insensitive)', async () => {
+                const resultado1 = await UsuarioQuerySchema.parseAsync({
+                    direcao: 'ASC'
+                });
+                expect(resultado1.direcao).toBe('ASC');
+
+                const resultado2 = await UsuarioQuerySchema.parseAsync({
+                    direcao: 'DESC'
+                });
+                expect(resultado2.direcao).toBe('DESC');
+
+                const resultado3 = await UsuarioQuerySchema.parseAsync({
+                    direcao: 'AsC'
+                });
+                expect(resultado3.direcao).toBe('AsC');
+            });
+
+            it('deve aceitar direcao undefined/vazio', async () => {
+                const resultado1 = await UsuarioQuerySchema.parseAsync({});
+                expect(resultado1.direcao).toBeUndefined();
+                
+                const resultado2 = await UsuarioQuerySchema.parseAsync({
+                    direcao: undefined
+                });
+                expect(resultado2.direcao).toBeUndefined();
+            });
+
+            it('deve rejeitar valores inválidos para direcao', async () => {
+                await expect(UsuarioQuerySchema.parseAsync({
+                        direcao: 'crescente'
+                    }))
+                    .rejects.toThrow("direcao deve ser 'asc' ou 'desc'");
+
+                await expect(UsuarioQuerySchema.parseAsync({
+                        direcao: 'decrescente'
+                    }))
+                    .rejects.toThrow("direcao deve ser 'asc' ou 'desc'");
+
+                await expect(UsuarioQuerySchema.parseAsync({
+                        direcao: 'up'
+                    }))
+                    .rejects.toThrow("direcao deve ser 'asc' ou 'desc'");
+
+                await expect(UsuarioQuerySchema.parseAsync({
+                        direcao: 'down'
+                    }))
+                    .rejects.toThrow("direcao deve ser 'asc' ou 'desc'");
+
+                await expect(UsuarioQuerySchema.parseAsync({
+                        direcao: '1'
+                    }))
+                    .rejects.toThrow("direcao deve ser 'asc' ou 'desc'");
             });
         });
     });
@@ -205,6 +376,38 @@ describe('UsuarioQuerySchema', () => {
             expect(resultado.limite).toBe(50);
         });
 
+        it('deve aceitar todos os campos válidos incluindo novos campos', async () => {
+            const query = {
+                nome: 'João Silva',
+                email: 'joao.silva@example.com',
+                ativo: 'false',
+                ehAdmin: 'true',
+                dataInicio: '2023-01-01',
+                dataFim: '2023-12-31',
+                ordenarPor: 'nome',
+                direcao: 'asc',
+                grupo: 'Administradores',
+                unidade: 'Unidade Principal',
+                page: '3',
+                limite: '25'
+            };
+
+            const resultado = await UsuarioQuerySchema.parseAsync(query);
+
+            expect(resultado.nome).toBe('João Silva');
+            expect(resultado.email).toBe('joao.silva@example.com');
+            expect(resultado.ativo).toBe('false');
+            expect(resultado.ehAdmin).toBe('true');
+            expect(resultado.dataInicio).toBe('2023-01-01');
+            expect(resultado.dataFim).toBe('2023-12-31');
+            expect(resultado.ordenarPor).toBe('nome');
+            expect(resultado.direcao).toBe('asc');
+            expect(resultado.grupo).toBe('Administradores');
+            expect(resultado.unidade).toBe('Unidade Principal');
+            expect(resultado.page).toBe(3);
+            expect(resultado.limite).toBe(25);
+        });
+
         it('deve rejeitar quando um dos campos é inválido', async () => {
             const query = {
                 nome: 'João',
@@ -214,6 +417,58 @@ describe('UsuarioQuerySchema', () => {
 
             await expect(UsuarioQuerySchema.parseAsync(query))
                 .rejects.toThrow();
+        });
+
+        it('deve rejeitar quando múltiplos campos são inválidos', async () => {
+            const query = {
+                nome: '   ', // nome vazio após trim
+                email: 'email-invalido', // email inválido
+                ativo: 'sim', // ativo inválido
+                ehAdmin: 'maybe', // ehAdmin inválido
+                dataInicio: 'data-invalida', // data inválida
+                dataFim: 'outra-data-invalida', // data inválida
+                ordenarPor: 'campo-inexistente', // campo inválido
+                direcao: 'para-cima', // direção inválida
+                page: '0', // page inválido
+                limite: '150' // limite inválido
+            };
+
+            await expect(UsuarioQuerySchema.parseAsync(query))
+                .rejects.toThrow();
+        });
+
+        it('deve processar corretamente combinações válidas de filtros de data e ordenação', async () => {
+            const query = {
+                dataInicio: '2023-01-01',
+                dataFim: '2023-06-30',
+                ordenarPor: 'createdAt',
+                direcao: 'DESC'
+            };
+
+            const resultado = await UsuarioQuerySchema.parseAsync(query);
+
+            expect(resultado.dataInicio).toBe('2023-01-01');
+            expect(resultado.dataFim).toBe('2023-06-30');
+            expect(resultado.ordenarPor).toBe('createdAt');
+            expect(resultado.direcao).toBe('DESC');
+        });
+
+        it('deve aplicar transformações corretamente em múltiplos campos', async () => {
+            const query = {
+                nome: '  João Silva  ',
+                grupo: '  Administradores  ',
+                unidade: '  Unidade Principal  ',
+                page: '5',
+                limite: '20'
+            };
+
+            const resultado = await UsuarioQuerySchema.parseAsync(query);
+
+            expect(resultado.nome).toBe('João Silva'); // trim aplicado
+            expect(resultado.grupo).toBe('Administradores'); // trim aplicado
+            expect(resultado.unidade).toBe('Unidade Principal'); // trim aplicado
+            expect(resultado.page).toBe(5); // convertido para number
+            expect(resultado.limite).toBe(20); // convertido para number
         });
     });
 

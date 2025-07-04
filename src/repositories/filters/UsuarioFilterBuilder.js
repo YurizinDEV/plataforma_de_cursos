@@ -27,11 +27,62 @@ class UsuarioFilterBuilder {
         }
         return this;
     }
+
     comAtivo(ativo = null) {
         if (ativo === 'true') {
             this.filtros.ativo = true;
         } else if (ativo === 'false') {
             this.filtros.ativo = false;
+        }
+        return this;
+    }
+
+    comEhAdmin(ehAdmin = null) {
+        if (ehAdmin === 'true') {
+            this.filtros.ehAdmin = true;
+        } else if (ehAdmin === 'false') {
+            this.filtros.ehAdmin = false;
+        }
+        return this;
+    }
+
+    comDataInicio(dataInicio) {
+        if (dataInicio) {
+            const data = new Date(dataInicio);
+            if (!isNaN(data.getTime())) {
+                this.filtros.createdAt = this.filtros.createdAt || {};
+                this.filtros.createdAt.$gte = data;
+            }
+        }
+        return this;
+    }
+
+    comDataFim(dataFim) {
+        if (dataFim) {
+            const data = new Date(dataFim);
+            if (!isNaN(data.getTime())) {
+                // Adiciona 23:59:59 para incluir todo o dia
+                data.setHours(23, 59, 59, 999);
+                this.filtros.createdAt = this.filtros.createdAt || {};
+                this.filtros.createdAt.$lte = data;
+            }
+        }
+        return this;
+    }
+
+    ordenarPor(campo, direcao = 'asc') {
+        const camposValidos = [
+            'nome',
+            'email',
+            'createdAt',
+            'updatedAt'
+        ];
+
+        if (campo && camposValidos.includes(campo)) {
+            const direcaoValida = direcao.toLowerCase() === 'desc' ? -1 : 1;
+            this.filtros._sort = {
+                [campo]: direcaoValida
+            };
         }
         return this;
     }
@@ -71,7 +122,26 @@ class UsuarioFilterBuilder {
     }
 
     build() {
-        return this.filtros;
+        const filtrosEspeciais = {};
+        const filtrosNormais = { ...this.filtros };
+
+        // Extrair filtros especiais
+        if (filtrosNormais._sort) {
+            filtrosEspeciais.sort = filtrosNormais._sort;
+            delete filtrosNormais._sort;
+        }
+
+        // Se tem filtros especiais, retorna estrutura completa
+        const temFiltrosEspeciais = Object.keys(filtrosEspeciais).length > 0;
+
+        if (!temFiltrosEspeciais) {
+            return filtrosNormais;
+        }
+
+        return {
+            filtros: filtrosNormais,
+            especiais: filtrosEspeciais
+        };
     }
 }
 

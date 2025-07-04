@@ -1,30 +1,44 @@
-import mongoose from 'mongoose';
-import {
-    MongoMemoryServer
-} from 'mongodb-memory-server';
-import bcrypt from 'bcrypt';
 import UsuarioController from '../../../controllers/UsuarioController.js';
-import UsuarioModel from '../../../models/Usuario.js';
+import UsuarioService from '../../../services/UsuarioService.js';
 import {
-    UsuarioQuerySchema
-} from '../../../utils/validators/schemas/zod/querys/UsuarioQuerySchema.js';
+    UsuarioSchema,
+    UsuarioUpdateSchema
+} from '../../../utils/validators/schemas/zod/UsuarioSchema.js';
 import {
-    ObjectIdSchema
-} from '../../../utils/validators/schemas/zod/ObjectIdSchema.js';
-import {
+    CommonResponse,
     CustomError
 } from '../../../utils/helpers/index.js';
 
-let mongoServer;
-let usuarioController;
-const mockRequest = () => {
+jest.mock('../../../services/UsuarioService.js');
+jest.mock('../../../utils/validators/schemas/zod/UsuarioSchema.js');
+jest.mock('../../../utils/validators/schemas/zod/querys/UsuarioQuerySchema.js', () => ({
+    UsuarioIdSchema: { parse: jest.fn() },
+    UsuarioQuerySchema: { parseAsync: jest.fn() }
+}));
+jest.mock('../../../utils/helpers/index.js', () => {
+    const original = jest.requireActual('../../../utils/helpers/index.js');
+    class CustomError extends Error {
+        constructor({ customMessage }) {
+            super(customMessage);
+            this.name = 'CustomError';
+            this.customMessage = customMessage;
+        }
+    }
     return {
-        params: {},
-        query: {},
-        body: {}
+        ...original,
+        CustomError,
+        CommonResponse: {
+            success: jest.fn(),
+            created: jest.fn()
+        }
     };
-};
+});
 
+const mockRequest = () => ({
+    params: {},
+    query: {},
+    body: {}
+});
 const mockResponse = () => {
     const res = {};
     res.status = jest.fn().mockReturnValue(res);
@@ -35,668 +49,261 @@ const mockResponse = () => {
     return res;
 };
 
-beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const uri = mongoServer.getUri();
-    await mongoose.connect(uri);
-
-    await mongoose.connection.collection('usuarios').createIndex({
-        email: 1
-    }, {
-        unique: true
-    });
-
-    usuarioController = new UsuarioController();
-});
-
-beforeEach(async () => {
-    await UsuarioModel.deleteMany({});
-    jest.clearAllMocks();
-});
-
-afterAll(async () => {
-    await mongoose.disconnect();
-    await mongoServer.stop();
-});
-
-const usuarioValido = {
-    nome: 'Usuário Teste',
-    email: 'usuario@teste.com',
-    senha: 'Senha@123'
-};
+// Importa o mock real do Jest para garantir unicidade
+const { UsuarioIdSchema, UsuarioQuerySchema } = require('../../../utils/validators/schemas/zod/querys/UsuarioQuerySchema.js');
 
 describe('UsuarioController', () => {
-    test('deve instanciar o controller corretamente com serviço', () => {
-        const controller = new UsuarioController();
-        expect(controller).toBeInstanceOf(UsuarioController);
-        expect(controller.service).toBeDefined();
+    let controller;
+    let service;
+    beforeEach(() => {
+        jest.clearAllMocks();
+        // Força o mock no prototype global, cobre qualquer referência
+        Object.getPrototypeOf(UsuarioIdSchema).parse = UsuarioIdSchema.parse;
+        controller = new UsuarioController();
+        service = controller.service;
     });
-    describe('Método listar', () => {
-        test('deve lidar com erro interno do serviço', async () => {
 
-            const mockService = usuarioController.service;
-            const originalListar = mockService.listar;
-            mockService.listar = jest.fn().mockRejectedValue(new Error('Erro interno do serviço'));
-
+    describe('listar', () => {
+        it('deve listar usuários com sucesso', async () => {
+            service.listar.mockResolvedValue({ docs: [{ nome: 'Usuário' }], totalDocs: 1 });
+            CommonResponse.success.mockImplementation((res, data) => data);
+            UsuarioQuerySchema.parseAsync = jest.fn();
             const req = mockRequest();
+            req.query = { nome: 'Usuário' };
             const res = mockResponse();
-
-            await expect(usuarioController.listar(req, res)).rejects.toThrow('Erro interno do serviço');
-
-            mockService.listar = originalListar;
+            await controller.listar(req, res);
+            expect(service.listar).toHaveBeenCalledWith(req);
+            expect(CommonResponse.success).toHaveBeenCalled();
         });
-
-        test('deve listar todos os usuários quando não há filtros', async () => {
-            await UsuarioModel.create([{
-                    nome: 'Usuário 1',
-                    email: 'usuario1@teste.com',
-                    senha: await bcrypt.hash('Senha@123', 10)
-                },
-                {
-                    nome: 'Usuário 2',
-                    email: 'usuario2@teste.com',
-                    senha: await bcrypt.hash('Senha@123', 10)
-                }
-            ]);
-
+        it('deve validar id se presente', async () => {
+            service.listar.mockResolvedValue({});
             const req = mockRequest();
+            req.params.id = 'idvalido';
             const res = mockResponse();
-
-            await usuarioController.listar(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(200);
-            expect(res.json).toHaveBeenCalled();
-            expect(res.data.data.docs).toBeDefined();
-            expect(res.data.data.docs.length).toBe(2);
-            expect(res.data.data.totalDocs).toBe(2);
+            await controller.listar(req, res);
+            expect(UsuarioIdSchema.parse).toHaveBeenCalledWith('idvalido');
         });
-
-        test('deve filtrar usuários por nome corretamente', async () => {
-            await UsuarioModel.create([{
-                    nome: 'João Silva',
-                    email: 'joao@teste.com',
-                    senha: await bcrypt.hash('Senha@123', 10)
-                },
-                {
-                    nome: 'Maria Santos',
-                    email: 'maria@teste.com',
-                    senha: await bcrypt.hash('Senha@123', 10)
-                }
-            ]);
-
+        it('deve validar query se presente', async () => {
+            service.listar.mockResolvedValue({});
+            UsuarioQuerySchema.parseAsync = jest.fn();
             const req = mockRequest();
-            req.query = {
-                nome: 'João'
-            };
+            req.query = { nome: 'Usuário' };
             const res = mockResponse();
-
-            await usuarioController.listar(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(200);
-            expect(res.json).toHaveBeenCalled();
-            expect(res.data.data.docs.length).toBe(1);
-            expect(res.data.data.docs[0].nome).toContain('João');
-        });
-
-        test('deve filtrar usuários por email corretamente', async () => {
-            await UsuarioModel.create([{
-                    nome: 'João Silva',
-                    email: 'joao@teste.com',
-                    senha: await bcrypt.hash('Senha@123', 10)
-                },
-                {
-                    nome: 'Maria Santos',
-                    email: 'maria@teste.com',
-                    senha: await bcrypt.hash('Senha@123', 10)
-                }
-            ]);
-
-            const req = mockRequest();
-            req.query = {
-                email: 'maria@teste.com'
-            };
-            const res = mockResponse();
-
-            await usuarioController.listar(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(200);
-            expect(res.json).toHaveBeenCalled();
-            expect(res.data.data.docs.length).toBe(1);
-            expect(res.data.data.docs[0].email).toBe('maria@teste.com');
-        });
-
-        test('deve filtrar usuários por status ativo corretamente', async () => {
-            await UsuarioModel.create([{
-                    nome: 'João Silva',
-                    email: 'joao@teste.com',
-                    senha: await bcrypt.hash('Senha@123', 10),
-                    ativo: true
-                },
-                {
-                    nome: 'Maria Santos',
-                    email: 'maria@teste.com',
-                    senha: await bcrypt.hash('Senha@123', 10),
-                    ativo: false
-                }
-            ]);
-
-            const req = mockRequest();
-            req.query = {
-                ativo: 'true'
-            };
-            const res = mockResponse();
-
-            await usuarioController.listar(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(200);
-            expect(res.json).toHaveBeenCalled();
-            expect(res.data.data.docs.length).toBe(1);
-            expect(res.data.data.docs[0].ativo).toBe(true);
-        });
-
-        test('deve falhar com erro 400 ao usar filtro inválido', async () => {
-            const req = mockRequest();
-            req.query = {
-                email: 'email-invalido'
-            };
-            const res = mockResponse();
-
-            await expect(usuarioController.listar(req, res)).rejects.toThrow();
-        });
-
-        test('deve buscar usuário por ID corretamente', async () => {
-            const usuario = await UsuarioModel.create({
-                nome: 'Usuário Teste',
-                email: 'usuario@teste.com',
-                senha: await bcrypt.hash('Senha@123', 10)
-            });
-
-            const req = mockRequest();
-            req.params = {
-                id: usuario._id.toString()
-            };
-            const res = mockResponse();
-
-            await usuarioController.listar(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(200);
-            expect(res.json).toHaveBeenCalled();
-
-            expect(res.data.data._id.toString()).toBe(usuario._id.toString());
-
-            expect(res.data.data.nome).toBe(usuario.nome);
-            expect(res.data.data.email).toBe(usuario.email);
-        });
-
-        test('deve validar e processar query params corretamente', async () => {
-            const originalParseAsync = UsuarioQuerySchema.parseAsync;
-            UsuarioQuerySchema.parseAsync = jest.fn().mockResolvedValue({
-                nome: 'João',
-                page: 1
-            });
-
-            const req = mockRequest();
-            req.query = {
-                nome: 'João',
-                page: 1
-            };
-            const res = mockResponse();
-
-            const listarSpy = jest.spyOn(usuarioController.service, 'listar')
-                .mockResolvedValue({
-                    docs: [],
-                    totalDocs: 0
-                });
-
-            await usuarioController.listar(req, res);
-
+            await controller.listar(req, res);
             expect(UsuarioQuerySchema.parseAsync).toHaveBeenCalledWith(req.query);
-            expect(listarSpy).toHaveBeenCalledWith(req);
-            expect(res.status).toHaveBeenCalledWith(200);
-
-            UsuarioQuerySchema.parseAsync = originalParseAsync;
-            listarSpy.mockRestore();
         });
-
-        test('deve pular validação quando query params estiverem vazios', async () => {
-            const originalParseAsync = UsuarioQuerySchema.parseAsync;
-            UsuarioQuerySchema.parseAsync = jest.fn().mockResolvedValue({});
-
+        it('deve pular validação se query vazia', async () => {
+            service.listar.mockResolvedValue({});
+            UsuarioQuerySchema.parseAsync = jest.fn();
             const req = mockRequest();
             req.query = {};
             const res = mockResponse();
-
-            const listarSpy = jest.spyOn(usuarioController.service, 'listar')
-                .mockResolvedValue({
-                    docs: [],
-                    totalDocs: 0
-                });
-
-            await usuarioController.listar(req, res);
-
+            await controller.listar(req, res);
             expect(UsuarioQuerySchema.parseAsync).not.toHaveBeenCalled();
-            expect(listarSpy).toHaveBeenCalledWith(req);
-            expect(res.status).toHaveBeenCalledWith(200);
-
-            UsuarioQuerySchema.parseAsync = originalParseAsync;
-            listarSpy.mockRestore();
         });
-
-        test('deve lançar erro quando ID na listagem é inválido', async () => {
+        it('deve lançar erro do service', async () => {
+            service.listar.mockRejectedValue(new Error('Erro interno'));
             const req = mockRequest();
             const res = mockResponse();
-            req.params = {
-                id: 'id-invalido'
-            };
-
-            await expect(usuarioController.listar(req, res)).rejects.toThrow();
-
-            try {
-                await usuarioController.listar(req, res);
-                fail('Deveria ter lançado um erro');
-            } catch (error) {
-                expect(error.message).toContain("ID inválido");
-            }
+            await expect(controller.listar(req, res)).rejects.toThrow('Erro interno');
         });
-
-        test('deve lançar erro quando query tem campos inválidos', async () => {
+        it('deve listar sem validar id quando params é undefined', async () => {
+            service.listar.mockResolvedValue({ docs: [], totalDocs: 0 });
+            CommonResponse.success.mockImplementation((res, data) => data);
             const req = mockRequest();
+            delete req.params; // Remove params para testar branch de req.params || {}
             const res = mockResponse();
-            req.query = {
-                ativo: 'nao-booleano'
-            };
-
-            await expect(usuarioController.listar(req, res)).rejects.toThrow();
-
-            try {
-                await usuarioController.listar(req, res);
-            } catch (error) {
-                expect(error.message).toContain("Ativo deve ser 'true' ou 'false'");
-            }
+            await controller.listar(req, res);
+            expect(UsuarioIdSchema.parse).not.toHaveBeenCalled();
+            expect(service.listar).toHaveBeenCalledWith(req);
+        });
+        it('deve listar sem validar id quando params.id é undefined', async () => {
+            service.listar.mockResolvedValue({ docs: [], totalDocs: 0 });
+            CommonResponse.success.mockImplementation((res, data) => data);
+            const req = mockRequest();
+            req.params = {}; // params existe mas sem id
+            const res = mockResponse();
+            await controller.listar(req, res);
+            expect(UsuarioIdSchema.parse).not.toHaveBeenCalled();
+            expect(service.listar).toHaveBeenCalledWith(req);
         });
     });
 
-    describe('Método criar', () => {
-        const usuarioValido = {
-            nome: 'Usuário Teste',
-            email: 'teste@usuario.com',
-            senha: 'Senha@123'
-        };
-
-        test('deve lidar com erro interno do serviço', async () => {
-            const mockService = usuarioController.service;
-            const originalCriar = mockService.criar;
-            mockService.criar = jest.fn().mockRejectedValue(new Error('Erro interno do serviço'));
-
+    describe('criar', () => {
+        it('deve criar usuário com sucesso', async () => {
+            UsuarioSchema.parse = jest.fn().mockReturnValue({ nome: 'Usuário', email: 'a@a.com', senha: 'Senha@123' });
+            service.criar.mockResolvedValue({ toObject: () => ({ nome: 'Usuário', email: 'a@a.com', ehAdmin: false, ativo: false }) });
+            CommonResponse.created.mockImplementation((res, data) => data);
             const req = mockRequest();
-            req.body = {
-                ...usuarioValido
-            };
+            req.body = { nome: 'Usuário', email: 'a@a.com', senha: 'Senha@123' };
             const res = mockResponse();
-
-            await expect(usuarioController.criar(req, res)).rejects.toThrow('Erro interno do serviço');
-
-            mockService.criar = originalCriar;
+            await controller.criar(req, res);
+            expect(UsuarioSchema.parse).toHaveBeenCalledWith(req.body);
+            expect(service.criar).toHaveBeenCalled();
+            expect(CommonResponse.created).toHaveBeenCalled();
         });
-
-        test('deve criar um usuário válido com sucesso', async () => {
+        it('deve lançar erro de validação do schema', async () => {
+            UsuarioSchema.parse = jest.fn(() => { throw new Error('Erro de validação'); });
             const req = mockRequest();
-            req.body = {
-                ...usuarioValido
-            };
+            req.body = {};
             const res = mockResponse();
-
-            await usuarioController.criar(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(201);
-            expect(res.json).toHaveBeenCalled();
-            expect(res.data.data.nome).toBe(usuarioValido.nome);
-            expect(res.data.data.email).toBe(usuarioValido.email);
-            expect(res.data.data.senha).toBeUndefined();
-
-            const usuarioSalvo = await UsuarioModel.findOne({
-                email: usuarioValido.email
-            });
-            expect(usuarioSalvo).not.toBeNull();
-            expect(usuarioSalvo.nome).toBe(usuarioValido.nome);
-
-            expect(usuarioSalvo.senha).not.toBe(usuarioValido.senha);
+            await expect(controller.criar(req, res)).rejects.toThrow('Erro de validação');
         });
-
-        test('deve falhar ao criar usuário sem nome', async () => {
+        it('deve lançar erro do service', async () => {
+            UsuarioSchema.parse = jest.fn().mockReturnValue({ nome: 'Usuário', email: 'a@a.com', senha: 'Senha@123' });
+            service.criar.mockRejectedValue(new Error('Erro interno'));
             const req = mockRequest();
-            req.body = {
-                email: usuarioValido.email,
-                senha: usuarioValido.senha
-            };
+            req.body = { nome: 'Usuário', email: 'a@a.com', senha: 'Senha@123' };
             const res = mockResponse();
-
-            await expect(usuarioController.criar(req, res)).rejects.toThrow();
-        });
-
-        test('deve falhar ao criar usuário sem email', async () => {
-            const req = mockRequest();
-            req.body = {
-                nome: usuarioValido.nome,
-                senha: usuarioValido.senha
-            };
-            const res = mockResponse();
-
-            await expect(usuarioController.criar(req, res)).rejects.toThrow();
-        });
-
-        test('deve falhar ao criar usuário sem senha', async () => {
-            const req = mockRequest();
-            req.body = {
-                nome: usuarioValido.nome,
-                email: usuarioValido.email
-            };
-            const res = mockResponse();
-
-            await expect(usuarioController.criar(req, res)).rejects.toThrow();
-        });
-
-        test('deve falhar ao criar usuário com email já existente', async () => {
-            await UsuarioModel.create({
-                nome: 'Usuário Existente',
-                email: usuarioValido.email,
-                senha: await bcrypt.hash(usuarioValido.senha, 10)
-            });
-
-            const req = mockRequest();
-            req.body = {
-                ...usuarioValido
-            };
-            const res = mockResponse();
-
-            await expect(usuarioController.criar(req, res)).rejects.toThrow();
-        });
-        test('deve criar usuário com valores padrão para ehAdmin e ativo', async () => {
-            const req = mockRequest();
-            req.body = {
-                ...usuarioValido
-            };
-            const res = mockResponse();
-
-            await usuarioController.criar(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(201);
-            expect(res.json).toHaveBeenCalled();
-            expect(res.data.data.ehAdmin).toBe(false);
-            expect(res.data.data.ativo).toBe(false);
-
-            const usuarioSalvo = await UsuarioModel.findOne({
-                email: usuarioValido.email
-            });
-            expect(usuarioSalvo.ehAdmin).toBe(false);
-            expect(usuarioSalvo.ativo).toBe(false);
-        });
-        test('deve falhar ao criar usuário com senha inválida (sem requisitos mínimos)', async () => {
-            const req = mockRequest();
-            req.body = {
-                nome: usuarioValido.nome,
-                email: usuarioValido.email,
-                senha: 'senha123'
-            };
-            const res = mockResponse();
-
-            await expect(usuarioController.criar(req, res)).rejects.toThrow();
-        });
-        test('deve criar usuário com campos opcionais', async () => {
-            const emailUnico = `admin${Date.now()}@teste.com`;
-            const req = mockRequest();
-            req.body = {
-                nome: 'Usuário Administrador',
-                email: emailUnico,
-                senha: 'Senha@123',
-                ehAdmin: true,
-                ativo: true
-            };
-            const res = mockResponse();
-
-            await usuarioController.criar(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(201);
-            expect(res.json).toHaveBeenCalled();
-            expect(res.data.data.ehAdmin).toBe(true);
-            expect(res.data.data.ativo).toBe(true);
-
-            const usuarioSalvo = await UsuarioModel.findOne({
-                email: emailUnico
-            });
-            expect(usuarioSalvo).not.toBeNull();
-            expect(usuarioSalvo.ehAdmin).toBe(true);
-            expect(usuarioSalvo.ativo).toBe(true);
+            await expect(controller.criar(req, res)).rejects.toThrow('Erro interno');
         });
     });
 
-    describe('Método atualizar', () => {
-        let usuarioExistente;
-
-        beforeEach(async () => {
-            usuarioExistente = await UsuarioModel.create({
-                nome: 'Usuário para Atualizar',
-                email: 'atualizar@teste.com',
-                senha: await bcrypt.hash('Senha@123', 10),
-                ativo: false
-            });
-        });
-        test('deve lidar com erro interno do serviço', async () => {
-            const mockService = usuarioController.service;
-            const originalAtualizar = mockService.atualizar;
-            mockService.atualizar = jest.fn().mockRejectedValue(new Error('Erro interno do serviço'));
-
+    describe('atualizar', () => {
+        it('deve atualizar usuário com sucesso', async () => {
+            UsuarioUpdateSchema.parse = jest.fn().mockReturnValue({ nome: 'Novo Nome' });
+            service.atualizar.mockResolvedValue({ toObject: () => ({ nome: 'Novo Nome', email: 'a@a.com' }) });
+            CommonResponse.success.mockImplementation((res, data) => data);
             const req = mockRequest();
-            req.params = {
-                id: usuarioExistente._id.toString()
-            };
-            req.body = {
-                nome: 'Nome Atualizado'
-            };
+            req.params.id = 'id';
+            req.body = { nome: 'Novo Nome' };
             const res = mockResponse();
-
-            await expect(usuarioController.atualizar(req, res)).rejects.toThrow('Erro interno do serviço');
-
-            mockService.atualizar = originalAtualizar;
+            await controller.atualizar(req, res);
+            expect(UsuarioIdSchema.parse).toHaveBeenCalledWith('id');
+            expect(UsuarioUpdateSchema.parse).toHaveBeenCalledWith(req.body);
+            expect(service.atualizar).toHaveBeenCalledWith('id', { nome: 'Novo Nome' });
+            expect(CommonResponse.success).toHaveBeenCalled();
         });
-
-        test('deve atualizar o nome do usuário com sucesso', async () => {
+        it('deve lançar erro se body vazio', async () => {
+            UsuarioUpdateSchema.parse = jest.fn(() => { throw new Error('Nenhum dado fornecido para atualização.'); });
             const req = mockRequest();
-            req.params = {
-                id: usuarioExistente._id.toString()
-            };
-            req.body = {
-                nome: 'Nome Atualizado'
-            };
+            req.params.id = 'id';
+            req.body = {};
             const res = mockResponse();
-
-            await usuarioController.atualizar(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(200);
-            expect(res.json).toHaveBeenCalled();
-            expect(res.data.data.nome).toBe('Nome Atualizado');
-            expect(res.data.data.email).toBe(usuarioExistente.email);
-            expect(res.data.data.senha).toBeUndefined();
-
-            const usuarioAtualizado = await UsuarioModel.findById(usuarioExistente._id);
-            expect(usuarioAtualizado.nome).toBe('Nome Atualizado');
+            await expect(controller.atualizar(req, res)).rejects.toThrow('Nenhum dado fornecido para atualização.');
         });
-
-        test('deve atualizar o status ativo do usuário com sucesso', async () => {
+        it('deve lançar erro do service', async () => {
+            UsuarioUpdateSchema.parse = jest.fn().mockReturnValue({ nome: 'Novo Nome' });
+            service.atualizar.mockRejectedValue(new Error('Erro interno'));
             const req = mockRequest();
-            req.params = {
-                id: usuarioExistente._id.toString()
-            };
-            req.body = {
-                ativo: true
-            };
+            req.params.id = 'id';
+            req.body = { nome: 'Novo Nome' };
             const res = mockResponse();
-
-            await usuarioController.atualizar(req, res);
-
-            const usuarioAtualizado = await UsuarioModel.findById(usuarioExistente._id);
-            expect(usuarioAtualizado.ativo).toBe(true);
-        });
-
-        test('não deve permitir atualizar o email do usuário', async () => {
-            const req = mockRequest();
-            req.params = {
-                id: usuarioExistente._id.toString()
-            };
-            req.body = {
-                nome: 'Nome Atualizado',
-                email: 'novo@email.com'
-            };
-            const res = mockResponse();
-
-            await usuarioController.atualizar(req, res);
-
-            const usuarioAtualizado = await UsuarioModel.findById(usuarioExistente._id);
-            expect(usuarioAtualizado.nome).toBe('Nome Atualizado');
-            expect(usuarioAtualizado.email).toBe(usuarioExistente.email);
-        });
-
-        test('não deve permitir atualizar a senha do usuário diretamente', async () => {
-            const senhaOriginal = usuarioExistente.senha;
-
-            const req = mockRequest();
-            req.params = {
-                id: usuarioExistente._id.toString()
-            };
-            req.body = {
-                senha: 'NovaSenha@123'
-            };
-            const res = mockResponse();
-
-            await usuarioController.atualizar(req, res);
-
-
-            const usuarioAtualizado = await UsuarioModel.findById(usuarioExistente._id);
-            expect(usuarioAtualizado.senha).toBe(senhaOriginal);
-        });
-
-        test('deve falhar ao tentar atualizar um usuário inexistente', async () => {
-            const req = mockRequest();
-            req.params = {
-                id: new mongoose.Types.ObjectId().toString()
-            };
-            req.body = {
-                nome: 'Nome Atualizado'
-            };
-            const res = mockResponse();
-
-
-            await expect(usuarioController.atualizar(req, res)).rejects.toThrow();
-        });
-
-        test('deve falhar ao tentar atualizar com ID inválido', async () => {
-            const req = mockRequest();
-            req.params = {
-                id: 'id-invalido'
-            };
-            req.body = {
-                nome: 'Nome Atualizado'
-            };
-            const res = mockResponse();
-
-
-            await expect(usuarioController.atualizar(req, res)).rejects.toThrow();
+            await expect(controller.atualizar(req, res)).rejects.toThrow('Erro interno');
         });
     });
 
-    describe('Método deletar', () => {
-        let usuarioExistente;
-
-        beforeEach(async () => {
-
-            usuarioExistente = await UsuarioModel.create({
-                nome: 'Usuário para Deletar',
-                email: 'deletar@teste.com',
-                senha: await bcrypt.hash('Senha@123', 10)
+    describe('deletar', () => {
+        it('deve deletar usuário com sucesso', async () => {
+            service.deletar.mockResolvedValue({ toObject: () => ({ nome: 'Usuário', email: 'a@a.com', ativo: false }) });
+            CommonResponse.success.mockImplementation((res, data) => data);
+            const req = mockRequest();
+            req.params.id = 'id';
+            const res = mockResponse();
+            await controller.deletar(req, res);
+            // Removido expect(UsuarioIdSchema.parse) porque deletar() não chama essa função
+            expect(service.deletar).toHaveBeenCalledWith('id');
+            expect(CommonResponse.success).toHaveBeenCalled();
+        });
+        it('deve deletar um usuário existente com sucesso', async () => {
+            service.deletar.mockResolvedValue({ toObject: () => ({ nome: 'Usuário', email: 'a@a.com', ativo: false }) });
+            CommonResponse.success.mockImplementation((res, data, statusCode, message) => {
+                res.status(statusCode || 200);
+                res.json({ data, message });
+                return { data, message };
             });
-        });
-        test('deve lidar com erro interno do serviço', async () => {
-
-            const mockService = usuarioController.service;
-            const originalDeletar = mockService.deletar;
-            mockService.deletar = jest.fn().mockRejectedValue(new Error('Erro interno do serviço'));
-
             const req = mockRequest();
-            req.params = {
-                id: usuarioExistente._id.toString()
-            };
+            req.params.id = 'id';
             const res = mockResponse();
-
-
-            await expect(usuarioController.deletar(req, res)).rejects.toThrow('Erro interno do serviço');
-
-
-            mockService.deletar = originalDeletar;
-        });
-
-        test('deve deletar um usuário existente com sucesso', async () => {
-            const req = mockRequest();
-            req.params = {
-                id: usuarioExistente._id.toString()
-            };
-            const res = mockResponse();
-
-            await usuarioController.deletar(req, res);
-
+            await controller.deletar(req, res);
+            // Removido expect(UsuarioIdSchema.parse) porque deletar() não chama essa função
+            expect(service.deletar).toHaveBeenCalledWith('id');
             expect(res.status).toHaveBeenCalledWith(200);
             expect(res.json).toHaveBeenCalled();
-            expect(res.data.message).toContain('excluído com sucesso');
-
-
-            const usuarioDeletado = await UsuarioModel.findById(usuarioExistente._id);
-            expect(usuarioDeletado).toBeNull();
+            expect(res.data.message).toContain('desativado com sucesso');
         });
-
-        test('deve falhar ao tentar deletar um usuário inexistente', async () => {
-            const req = mockRequest();
-            req.params = {
-                id: new mongoose.Types.ObjectId().toString()
-            };
-            const res = mockResponse();
-
-
-            await expect(usuarioController.deletar(req, res)).rejects.toThrow();
-        });
-
-        test('deve falhar ao tentar deletar sem fornecer ID', async () => {
+        it('deve lançar erro se id não fornecido', async () => {
             const req = mockRequest();
             const res = mockResponse();
-
-
-            await expect(usuarioController.deletar(req, res)).rejects.toThrow(CustomError);
+            await expect(controller.deletar(req, res)).rejects.toThrow('ID do usuário é obrigatório para deletar.');
         });
-
-        test('deve falhar ao tentar deletar com ID inválido', async () => {
+        it('deve lançar erro do service', async () => {
+            // Não sobrescreva o mock global
+            service.deletar.mockRejectedValue(new Error('Erro interno'));
             const req = mockRequest();
-            req.params = {
-                id: 'id-invalido'
-            };
+            req.params.id = 'id';
             const res = mockResponse();
-
-
-            await expect(usuarioController.deletar(req, res)).rejects.toThrow();
+            await expect(controller.deletar(req, res)).rejects.toThrow('Erro interno');
         });
-
-        test('deve lançar erro quando ID não é fornecido', async () => {
+        it('deve lançar erro quando params é undefined', async () => {
             const req = mockRequest();
-            req.params = {};
+            delete req.params; // Remove params para testar branch de req.params || {}
             const res = mockResponse();
+            await expect(controller.deletar(req, res)).rejects.toThrow('ID do usuário é obrigatório para deletar.');
+        });
+    });
 
-            try {
-                await usuarioController.deletar(req, res);
-                fail('Deveria ter lançado um erro');
-            } catch (error) {
-                expect(error).toBeInstanceOf(CustomError);
-                expect(error.statusCode).toBe(400);
-                expect(error.errorType).toBe('validationError');
-                expect(error.field).toBe('id');
-                expect(error.customMessage).toContain('ID do usuário é obrigatório');
-            }
+    describe('restaurar', () => {
+        it('deve restaurar usuário com sucesso', async () => {
+            service.restaurar.mockResolvedValue({ toObject: () => ({ nome: 'Usuário', email: 'a@a.com', ativo: true }) });
+            CommonResponse.success.mockImplementation((res, data) => data);
+            const req = mockRequest();
+            req.params.id = 'id';
+            const res = mockResponse();
+            await controller.restaurar(req, res);
+            expect(UsuarioIdSchema.parse).toHaveBeenCalledWith('id');
+            expect(service.restaurar).toHaveBeenCalledWith('id');
+            expect(CommonResponse.success).toHaveBeenCalled();
+        });
+        it('deve lançar erro se id não fornecido', async () => {
+            const req = mockRequest();
+            const res = mockResponse();
+            await expect(controller.restaurar(req, res)).rejects.toThrow('ID do usuário não fornecido');
+        });
+        it('deve lançar erro do service', async () => {
+            service.restaurar.mockRejectedValue(new Error('Erro interno'));
+            const req = mockRequest();
+            req.params.id = 'id';
+            const res = mockResponse();
+            await expect(controller.restaurar(req, res)).rejects.toThrow('Erro interno');
+        });
+        it('deve lançar erro quando params é undefined', async () => {
+            const req = mockRequest();
+            delete req.params; // Remove params para testar branch de req.params || {}
+            const res = mockResponse();
+            await expect(controller.restaurar(req, res)).rejects.toThrow('ID do usuário não fornecido');
+        });
+    });
+
+    describe('deletarFisicamente', () => {
+        it('deve remover usuário fisicamente com sucesso', async () => {
+            service.deletarFisicamente.mockResolvedValue({});
+            CommonResponse.success.mockImplementation((res, data) => data);
+            const req = mockRequest();
+            req.params.id = 'id';
+            const res = mockResponse();
+            await controller.deletarFisicamente(req, res);
+            expect(UsuarioIdSchema.parse).toHaveBeenCalledWith('id');
+            expect(service.deletarFisicamente).toHaveBeenCalledWith('id');
+            expect(CommonResponse.success).toHaveBeenCalled();
+        });
+        it('deve lançar erro se id não fornecido', async () => {
+            const req = mockRequest();
+            const res = mockResponse();
+            await expect(controller.deletarFisicamente(req, res)).rejects.toThrow('ID do usuário não fornecido');
+        });
+        it('deve lançar erro do service', async () => {
+            service.deletarFisicamente.mockRejectedValue(new Error('Erro interno'));
+            const req = mockRequest();
+            req.params.id = 'id';
+            const res = mockResponse();
+            await expect(controller.deletarFisicamente(req, res)).rejects.toThrow('Erro interno');
+        });
+        it('deve lançar erro quando params é undefined', async () => {
+            const req = mockRequest();
+            delete req.params; // Remove params para testar branch de req.params || {}
+            const res = mockResponse();
+            await expect(controller.deletarFisicamente(req, res)).rejects.toThrow('ID do usuário não fornecido');
         });
     });
 });

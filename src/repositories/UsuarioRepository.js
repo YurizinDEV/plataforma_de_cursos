@@ -37,8 +37,9 @@ class UsuarioRepository {
     }
 
     async buscarPorId(id) {
-        let query = await this.model.findById(id);
-        const usuario = await query;
+        let usuario = await this.model.findById(id)
+            .populate('cursosIds', 'titulo cargaHorariaTotal status')
+            .populate('progresso.curso', 'titulo cargaHorariaTotal');
 
         if (!usuario) {
             throw new CustomError({
@@ -56,7 +57,9 @@ class UsuarioRepository {
         const id = req.params.id || null;
 
         if (id) {
-            const usuario = await this.model.findById(id);
+            const usuario = await this.model.findById(id)
+                .populate('cursosIds', 'titulo cargaHorariaTotal status')
+                .populate('progresso.curso', 'titulo cargaHorariaTotal');
             if (!usuario) {
                 throw new CustomError({
                     statusCode: HttpStatusCodes.NOT_FOUND.code,
@@ -70,17 +73,29 @@ class UsuarioRepository {
             const dadosEnriquecidos = this.enriquecerUsuario(usuario);
             return dadosEnriquecidos;
         }
+        
         const {
             nome,
             email,
             ativo,
+            ehAdmin,
+            dataInicio,
+            dataFim,
+            ordenarPor,
+            direcao = 'asc',
             page = 1
         } = req.query;
+        
         const limite = Math.min(parseInt(req.query.limite, 10) || 20, 100);
+        
         const filterBuilder = new UsuarioFilterBuilder()
             .comNome(nome || '')
             .comEmail(email || '')
-            .comAtivo(ativo);
+            .comAtivo(ativo)
+            .comEhAdmin(ehAdmin)
+            .comDataInicio(dataInicio)
+            .comDataFim(dataFim)
+            .ordenarPor(ordenarPor, direcao);
 
         if (typeof filterBuilder.build !== 'function') {
             throw new CustomError({
@@ -92,9 +107,26 @@ class UsuarioRepository {
             });
         }
 
-        const resultado = await this.model.paginate(filterBuilder.build(), {
+        const filtrosCompletos = filterBuilder.build();
+        let opcoesPaginacao = {
             page,
             limit: limite,
+        };
+
+        // Se há filtros especiais (como ordenação), aplicá-los
+        if (filtrosCompletos.especiais && filtrosCompletos.especiais.sort) {
+            opcoesPaginacao.sort = filtrosCompletos.especiais.sort;
+        }
+
+        // Usar apenas os filtros normais para a consulta
+        const filtrosConsulta = filtrosCompletos.filtros || filtrosCompletos;
+
+        const resultado = await this.model.paginate(filtrosConsulta, {
+            ...opcoesPaginacao,
+            populate: [
+                { path: 'cursosIds', select: 'titulo cargaHorariaTotal status' },
+                { path: 'progresso.curso', select: 'titulo cargaHorariaTotal' }
+            ]
         });
 
         resultado.docs = resultado.docs.map(usuario => {
@@ -110,9 +142,15 @@ class UsuarioRepository {
     }
 
     async atualizar(id, parsedData) {
+        // Impede alteração direta de email e senha
+        if ('email' in parsedData) delete parsedData.email;
+        if ('senha' in parsedData) delete parsedData.senha;
         const usuario = await this.model.findByIdAndUpdate(id, parsedData, {
             new: true
-        });
+        })
+        .populate('cursosIds', 'titulo cargaHorariaTotal status')
+        .populate('progresso.curso', 'titulo cargaHorariaTotal');
+        
         if (!usuario) {
             throw new CustomError({
                 statusCode: HttpStatusCodes.NOT_FOUND.code,
@@ -126,12 +164,15 @@ class UsuarioRepository {
     }
 
     async deletar(id) {
-        // Soft delete - muda status para 'inativo'
+        // Soft delete - muda ativo para false
         const usuario = await this.model.findByIdAndUpdate(
             id,
-            { status: 'inativo' },
+            { ativo: false },
             { new: true }
-        );
+        )
+        .populate('cursosIds', 'titulo cargaHorariaTotal status')
+        .populate('progresso.curso', 'titulo cargaHorariaTotal');
+        
         if (!usuario) {
             throw new CustomError({
                 statusCode: HttpStatusCodes.NOT_FOUND.code,
@@ -161,9 +202,12 @@ class UsuarioRepository {
     async restaurar(id) {
         const usuario = await this.model.findByIdAndUpdate(
             id,
-            { status: 'ativo' },
+            { ativo: true },
             { new: true }
-        );
+        )
+        .populate('cursosIds', 'titulo cargaHorariaTotal status')
+        .populate('progresso.curso', 'titulo cargaHorariaTotal');
+        
         if (!usuario) {
             throw new CustomError({
                 statusCode: HttpStatusCodes.NOT_FOUND.code,
@@ -226,33 +270,36 @@ class UsuarioRepository {
     enriquecerUsuario(usuario) {
         const usuarioObj = usuario.toObject();
         const totalCursos = usuarioObj.cursosIds.length;
-        const percentualMedio = usuarioObj.progresso.length > 0 ?
-            usuarioObj.progresso.reduce((acc, prog) => acc + parseFloat(prog.percentual_conclusao), 0) / usuarioObj.progresso.length :
-            0;
+        
+        // Estatísticas de progresso
+        const progresso = usuarioObj.progresso || [];
+        
+        const cursosIniciados = progresso.filter(p => {
+            const percentual = parseFloat(p.percentual_conclusao);
+            return percentual > 0;
+        }).length;
+        
+        const cursosConcluidos = progresso.filter(p => {
+            const percentual = parseFloat(p.percentual_conclusao);
+            return percentual >= 100;
+        }).length;
+        
+        const cursosEmAndamento = progresso.filter(p => {
+            const percentual = parseFloat(p.percentual_conclusao);
+            return percentual > 0 && percentual < 100;
+        }).length;
 
         return {
             ...usuarioObj,
             totalCursos,
-            percentualMedio: percentualMedio.toFixed(2),
+            estatisticasProgresso: {
+                cursosIniciados,
+                cursosConcluidos,
+                cursosEmAndamento,
+                totalComProgresso: progresso.length,
+                cursosInscritosSemProgresso: totalCursos - progresso.length
+            }
         };
-    }
-
-
-    async simularErroBanco() {
-        try {
-            await this.model.findOne({
-                _id: 'id-invalido-forcar-erro'
-            });
-            return true;
-        } catch (error) {
-            throw new CustomError({
-                statusCode: HttpStatusCodes.INTERNAL_SERVER_ERROR.code,
-                errorType: 'databaseError',
-                field: 'Database',
-                details: [],
-                customMessage: 'Erro inesperado do banco de dados.',
-            });
-        }
     }
 }
 

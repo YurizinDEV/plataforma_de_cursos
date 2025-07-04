@@ -91,18 +91,26 @@ export default async function cursosSeed() {
 
     const inserted = await Curso.insertMany(cursos);
 
-    for (let i = 0; i < Math.min(10, inserted.length); i++) {
-        const curso = inserted[i];
-        const aluno = usuarios[Math.floor(Math.random() * usuarios.length)];
-        aluno.cursosIds.push(curso._id);
-        aluno.progresso.push({
-            percentual_conclusao: fakerbr.random.number({
-                min: 0,
-                max: 100
-            }) + "%",
-            curso: curso._id
-        });
-        await aluno.save();
+    // Associar cursos aos usuários (1-3 cursos por usuário)
+    for (const usuario of usuarios) {
+        const numCursos = fakerbr.random.number({ min: 1, max: 3 });
+        const cursosEscolhidos = fakerbr.random.arrayElements(inserted, numCursos);
+        
+        for (const curso of cursosEscolhidos) {
+            // Adicionar curso aos cursosIds
+            usuario.cursosIds.push(curso._id);
+            
+            // 70% de chance de ter progresso registrado
+            const temProgresso = fakerbr.random.number({ min: 1, max: 100 }) <= 70;
+            if (temProgresso) {
+                usuario.progresso.push({
+                    percentual_conclusao: fakerbr.random.number({ min: 0, max: 100 }).toString(),
+                    curso: curso._id
+                });
+            }
+        }
+        
+        await usuario.save();
     }
 
     console.log(`Cursos gerados com sucesso!`);

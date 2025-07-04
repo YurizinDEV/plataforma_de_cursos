@@ -37,7 +37,6 @@ const UsuarioSchema = z.object({
   ehAdmin: z.boolean().optional().default(false),
   link_foto: z.string().optional(),
   ativo: z.boolean().default(false),
-  status: z.enum(['ativo', 'inativo']).default('ativo'),
 
   // Progresso do usuário (opcional)
   progresso: z.array(z.object({
