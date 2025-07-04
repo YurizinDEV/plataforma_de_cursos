@@ -515,6 +515,21 @@ class CursoRepository {
 
         return curso;
     }
+
+    async buscarPorCriador(usuarioId) {
+        return await this.model.find({ criadoPorId: usuarioId });
+    }
+
+    async removerReferenciaUsuario(usuarioId, options = {}) {
+        // Remover referências do usuário criador em cursos (definir como null ou remover)
+        const resultado = await this.model.updateMany(
+            { criadoPorId: usuarioId },
+            { $unset: { criadoPorId: 1 } },
+            options
+        );
+        
+        return resultado.modifiedCount;
+    }
 }
 
 export default CursoRepository;

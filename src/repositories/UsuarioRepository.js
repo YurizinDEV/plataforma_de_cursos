@@ -126,7 +126,44 @@ class UsuarioRepository {
     }
 
     async deletar(id) {
-        const usuario = await this.model.findByIdAndDelete(id);
+        // Soft delete - muda status para 'inativo'
+        const usuario = await this.model.findByIdAndUpdate(
+            id,
+            { status: 'inativo' },
+            { new: true }
+        );
+        if (!usuario) {
+            throw new CustomError({
+                statusCode: HttpStatusCodes.NOT_FOUND.code,
+                errorType: 'resourceNotFound',
+                field: 'Usuário',
+                details: [],
+                customMessage: messages.error.resourceNotFound('Usuário'),
+            });
+        }
+        return usuario;
+    }
+
+    async deletarFisicamente(id, options = {}) {
+        const usuario = await this.model.findByIdAndDelete(id, options);
+        if (!usuario) {
+            throw new CustomError({
+                statusCode: HttpStatusCodes.NOT_FOUND.code,
+                errorType: 'resourceNotFound',
+                field: 'Usuário',
+                details: [],
+                customMessage: messages.error.resourceNotFound('Usuário'),
+            });
+        }
+        return usuario;
+    }
+
+    async restaurar(id) {
+        const usuario = await this.model.findByIdAndUpdate(
+            id,
+            { status: 'ativo' },
+            { new: true }
+        );
         if (!usuario) {
             throw new CustomError({
                 statusCode: HttpStatusCodes.NOT_FOUND.code,

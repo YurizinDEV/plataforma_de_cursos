@@ -30,6 +30,11 @@ class Usuario {
                 type: Boolean,
                 default: false
             },
+            status: {
+                type: String,
+                enum: ['ativo', 'inativo'],
+                default: 'ativo'
+            },
             progresso: [{
 
                 percentual_conclusao: {
