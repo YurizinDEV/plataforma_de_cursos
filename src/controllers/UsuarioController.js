@@ -1,5 +1,4 @@
 //UsuarioController.js
-
 import UsuarioService from '../services/UsuarioService.js';
 import {
     UsuarioQuerySchema,
@@ -79,10 +78,58 @@ class UsuarioController {
         }
 
         const data = await this.service.deletar(id);
-        return CommonResponse.success(res, data, 200, 'Usuário excluído com sucesso.');
+
+        const usuarioLimpo = data.toObject();
+        delete usuarioLimpo.senha;
+
+        return CommonResponse.success(res, usuarioLimpo, 200, 'Usuário desativado com sucesso.');
+    }
+
+    async restaurar(req, res) {
+        const {
+            id
+        } = req.params || {};
+        if (!id) {
+            throw new CustomError({
+                statusCode: HttpStatusCodes.BAD_REQUEST.code,
+                errorType: 'validationError',
+                field: 'id',
+                details: [{
+                    path: 'id',
+                    message: 'ID do usuário não fornecido.'
+                }],
+                customMessage: 'ID do usuário não fornecido.'
+            });
+        }
+        UsuarioIdSchema.parse(id);
+        const usuarioRestaurado = await this.service.restaurar(id);
+
+        const usuarioLimpo = usuarioRestaurado.toObject();
+        delete usuarioLimpo.senha;
+
+        return CommonResponse.success(res, usuarioLimpo, 200, "Usuário restaurado com sucesso.");
+    }
+
+    async deletarFisicamente(req, res) {
+        const {
+            id
+        } = req.params || {};
+        if (!id) {
+            throw new CustomError({
+                statusCode: HttpStatusCodes.BAD_REQUEST.code,
+                errorType: 'validationError',
+                field: 'id',
+                details: [{
+                    path: 'id',
+                    message: 'ID do usuário não fornecido.'
+                }],
+                customMessage: 'ID do usuário não fornecido.'
+            });
+        }
+        UsuarioIdSchema.parse(id);
+        const usuarioRemovido = await this.service.deletarFisicamente(id);
+        return CommonResponse.success(res, usuarioRemovido, 200, "Usuário removido permanentemente.");
     }
 }
-
-
 
 export default UsuarioController;

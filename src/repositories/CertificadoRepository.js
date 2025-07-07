@@ -42,6 +42,19 @@ class CertificadoRepository {
     }, options);
     return result.deletedCount;
   }
+
+  async deletarPorUsuarioId(usuarioId, options = {}) {
+    const result = await this.model.deleteMany({
+      usuarioId
+    }, options);
+    return result.deletedCount;
+  }
+
+  async contarPorUsuario(usuarioId) {
+    return await this.model.countDocuments({
+      usuarioId
+    });
+  }
 }
 
 export default CertificadoRepository;

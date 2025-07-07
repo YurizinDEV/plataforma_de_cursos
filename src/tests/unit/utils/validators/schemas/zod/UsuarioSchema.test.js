@@ -211,7 +211,7 @@ describe('UsuarioSchema', () => {
             nome: 'Usuário',
             email: 'duplicated@email.com',
             senha: 'Senha@123',
-            cursosIds: [cursoId, cursoId] // ID duplicado
+            cursosIds: [cursoId, cursoId]
         };
         expect(() => UsuarioSchema.parse(dadosInvalidos)).toThrow(/Não pode conter IDs repetidos/);
     });
@@ -309,7 +309,7 @@ describe('UsuarioUpdateSchema', () => {
     it('deve lançar erro quando há IDs duplicados no array "cursosIds" durante atualização', () => {
         const cursoId = new mongoose.Types.ObjectId().toString();
         const dadosInvalidos = {
-            cursosIds: [cursoId, cursoId] // ID duplicado
+            cursosIds: [cursoId, cursoId]
         };
         expect(() => UsuarioUpdateSchema.parse(dadosInvalidos)).toThrow(/Não pode conter IDs repetidos/);
     });

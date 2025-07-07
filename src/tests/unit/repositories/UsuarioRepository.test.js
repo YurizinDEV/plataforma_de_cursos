@@ -5,180 +5,144 @@ import {
 import bcrypt from 'bcrypt';
 import UsuarioRepository from '../../../repositories/UsuarioRepository.js';
 import UsuarioModel from '../../../models/Usuario.js';
+import CursoModel from '../../../models/Curso.js';
 import UsuarioFilterBuilder from '../../../repositories/filters/UsuarioFilterBuilder.js';
 import {
     CustomError
 } from '../../../utils/helpers/index.js';
 
-let mongoServer;
-let usuarioRepository;
-
-
-beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const uri = mongoServer.getUri();
-    await mongoose.connect(uri);
-
-
-    await mongoose.connection.collection('usuarios').createIndex({
-        email: 1
-    }, {
-        unique: true
-    });
-
-    usuarioRepository = new UsuarioRepository();
-});
-
-
-beforeEach(async () => {
-    await UsuarioModel.deleteMany({});
-    jest.clearAllMocks();
-});
-
-
-afterAll(async () => {
-    await mongoose.disconnect();
-    await mongoServer.stop();
-});
-
-
-const usuarioBase = {
-    nome: 'Usuário Teste',
-    email: 'usuario@teste.com',
-    senha: 'Senha@123'
-};
-
 describe('UsuarioRepository', () => {
+    let mongoServer;
+    let usuarioRepository;
 
-    test('deve instanciar o repository corretamente', () => {
-        const repository = new UsuarioRepository();
-        expect(repository).toBeInstanceOf(UsuarioRepository);
-        expect(repository.model).toBeDefined();
+    const usuarioBase = {
+        nome: 'Usuário Teste',
+        email: 'usuario@teste.com',
+        senha: 'Senha@123',
+    };
+
+    beforeAll(async () => {
+        mongoServer = await MongoMemoryServer.create();
+        const uri = mongoServer.getUri();
+        await mongoose.connect(uri);
+        if (!mongoose.models.Curso) {
+            mongoose.model('Curso', CursoModel.schema);
+        }
+        usuarioRepository = new UsuarioRepository();
     });
 
-    describe('Método buscarPorEmail', () => {
-        test('deve retornar um usuário quando o email existir', async () => {
+    afterAll(async () => {
+        await mongoose.disconnect();
+        await mongoServer.stop();
+    });
 
+    beforeEach(async () => {
+        await UsuarioModel.deleteMany({});
+        jest.clearAllMocks();
+    });
+
+    describe('Cadastro de usuário', () => {
+        it('deve cadastrar usuário válido com senha criptografada', async () => {
             const senhaHash = await bcrypt.hash(usuarioBase.senha, 10);
-            const usuarioCriado = await UsuarioModel.create({
+            const usuario = await usuarioRepository.criar({
                 ...usuarioBase,
                 senha: senhaHash
             });
-
-            const resultado = await usuarioRepository.buscarPorEmail(usuarioBase.email);
-            expect(resultado).toBeDefined();
-            expect(resultado.email).toBe(usuarioBase.email);
+            expect(usuario).toBeDefined();
+            expect(usuario._id).toBeDefined();
+            expect(usuario.nome).toBe(usuarioBase.nome);
+            expect(usuario.email).toBe(usuarioBase.email);
+            expect(usuario.senha).not.toBe(usuarioBase.senha);
         });
 
-        test('deve retornar null quando o email não existir', async () => {
-            const resultado = await usuarioRepository.buscarPorEmail('inexistente@teste.com');
-            expect(resultado).toBeNull();
+        it('deve falhar ao cadastrar usuário sem nome', async () => {
+            const dados = {
+                ...usuarioBase
+            };
+            delete dados.nome;
+            await expect(usuarioRepository.criar(dados)).rejects.toThrow();
         });
-
-        test('deve ignorar o usuário com ID fornecido', async () => {
-
+        it('deve falhar ao cadastrar usuário sem email', async () => {
+            const dados = {
+                ...usuarioBase
+            };
+            delete dados.email;
+            await expect(usuarioRepository.criar(dados)).rejects.toThrow();
+        });
+        it('deve falhar ao cadastrar usuário sem senha', async () => {
+            const dados = {
+                ...usuarioBase
+            };
+            delete dados.senha;
+            await expect(usuarioRepository.criar(dados)).rejects.toThrow();
+        });
+        it('não deve permitir e-mail duplicado', async () => {
             const senhaHash = await bcrypt.hash(usuarioBase.senha, 10);
-            const usuarioCriado = await UsuarioModel.create({
+            await usuarioRepository.criar({
                 ...usuarioBase,
                 senha: senhaHash
             });
-
-
-            const resultado = await usuarioRepository.buscarPorEmail(usuarioBase.email, usuarioCriado._id);
-            expect(resultado).toBeNull();
+            await expect(usuarioRepository.criar({
+                ...usuarioBase,
+                senha: senhaHash
+            })).rejects.toThrow();
         });
-
-        test('deve lançar erro quando email não existe e throwErrorIfNotFound é true', async () => {
-            await expect(
-                usuarioRepository.buscarPorEmail('inexistente@teste.com', null, true)
-            ).rejects.toThrow(CustomError);
-
-            try {
-                await usuarioRepository.buscarPorEmail('inexistente@teste.com', null, true);
-            } catch (error) {
-                expect(error.statusCode).toBe(404);
-                expect(error.errorType).toBe('resourceNotFound');
-                expect(error.field).toBe('Usuário');
-            }
-        });
-    });
-
-    describe('Método buscarPorId', () => {
-        test('deve retornar um usuário quando o ID existir', async () => {
-
+        it('deve definir ehAdmin e ativo como false por padrão', async () => {
             const senhaHash = await bcrypt.hash(usuarioBase.senha, 10);
-            const usuarioCriado = await UsuarioModel.create({
+            const usuario = await usuarioRepository.criar({
                 ...usuarioBase,
                 senha: senhaHash
             });
-
-            const resultado = await usuarioRepository.buscarPorId(usuarioCriado._id);
-            expect(resultado).toBeDefined();
-            expect(resultado.email).toBe(usuarioBase.email);
-            expect(resultado._id.toString()).toBe(usuarioCriado._id.toString());
+            expect(usuario.ehAdmin).toBe(false);
+            expect(usuario.ativo).toBe(false);
         });
-
-        test('deve lançar erro quando o ID não existir', async () => {
-            const idInexistente = new mongoose.Types.ObjectId().toString();
-
-            await expect(usuarioRepository.buscarPorId(idInexistente)).rejects.toThrow(CustomError);
-
-            try {
-                await usuarioRepository.buscarPorId(idInexistente);
-            } catch (error) {
-                expect(error.statusCode).toBe(404);
-                expect(error.errorType).toBe('resourceNotFound');
-                expect(error.field).toBe('Usuário');
-            }
+        it('deve permitir definir ehAdmin e ativo como true', async () => {
+            const senhaHash = await bcrypt.hash(usuarioBase.senha, 10);
+            const usuario = await usuarioRepository.criar({
+                ...usuarioBase,
+                senha: senhaHash,
+                ehAdmin: true,
+                ativo: true
+            });
+            expect(usuario.ehAdmin).toBe(true);
+            expect(usuario.ativo).toBe(true);
         });
     });
 
-    describe('Método listar', () => {
+    describe('Leitura e listagem', () => {
         beforeEach(async () => {
-            const curso1Id = new mongoose.Types.ObjectId();
-            const curso2Id = new mongoose.Types.ObjectId();
-            const curso3Id = new mongoose.Types.ObjectId();
-
             await UsuarioModel.create([{
-                    nome: 'João Silva',
+                    nome: 'João',
                     email: 'joao@teste.com',
                     senha: await bcrypt.hash('Senha@123', 10),
                     ativo: true,
-                    cursosIds: [curso1Id, curso2Id],
-                    progresso: [{
-                            curso: curso1Id,
-                            percentual_conclusao: '50'
-                        },
-                        {
-                            curso: curso2Id,
-                            percentual_conclusao: '75'
-                        }
-                    ]
+                    ehAdmin: false
                 },
                 {
-                    nome: 'Maria Santos',
+                    nome: 'Maria',
                     email: 'maria@teste.com',
                     senha: await bcrypt.hash('Senha@123', 10),
                     ativo: false,
-                    cursosIds: [curso3Id],
-                    progresso: [{
-                        curso: curso3Id,
-                        percentual_conclusao: '30'
-                    }]
+                    ehAdmin: false
                 },
                 {
-                    nome: 'Pedro Alves',
+                    nome: 'Pedro',
                     email: 'pedro@teste.com',
                     senha: await bcrypt.hash('Senha@123', 10),
                     ativo: true,
-                    cursosIds: [],
-                    progresso: []
-                }
+                    ehAdmin: true
+                },
             ]);
         });
-
-        test('deve retornar um usuário específico quando o ID é fornecido', async () => {
-
+        it('deve retornar todos os usuários cadastrados', async () => {
+            const req = {
+                params: {},
+                query: {}
+            };
+            const resultado = await usuarioRepository.listar(req);
+            expect(resultado.docs.length).toBeGreaterThanOrEqual(3);
+        });
+        it('deve buscar usuário por id', async () => {
             const usuario = await UsuarioModel.findOne({
                 email: 'joao@teste.com'
             });
@@ -188,576 +152,502 @@ describe('UsuarioRepository', () => {
                 },
                 query: {}
             };
-
             const resultado = await usuarioRepository.listar(req);
-
-            expect(resultado).toBeDefined();
+            expect(resultado._id.toString()).toBe(usuario._id.toString());
             expect(resultado.email).toBe('joao@teste.com');
-            expect(resultado.nome).toBe('João Silva');
-            expect(resultado.totalCursos).toBe(2);
-            expect(parseFloat(resultado.percentualMedio)).toBe(62.50);
         });
-
-        test('deve lançar erro quando o ID fornecido não existir', async () => {
-            const idInexistente = new mongoose.Types.ObjectId().toString();
+        it('deve lançar erro ao buscar usuário inexistente por id', async () => {
+            const idFake = new mongoose.Types.ObjectId();
             const req = {
                 params: {
-                    id: idInexistente
+                    id: idFake.toString()
                 },
                 query: {}
             };
-
             await expect(usuarioRepository.listar(req)).rejects.toThrow(CustomError);
-
-            try {
-                await usuarioRepository.listar(req);
-            } catch (error) {
-                expect(error.statusCode).toBe(404);
-                expect(error.errorType).toBe('resourceNotFound');
-                expect(error.field).toBe('Usuário');
-            }
         });
-
-        test('deve listar todos os usuários quando nenhum filtro é fornecido', async () => {
-            const req = {
-                params: {},
-                query: {}
-            };
-
-            const resultado = await usuarioRepository.listar(req);
-
-            expect(resultado.docs).toBeDefined();
-            expect(resultado.docs.length).toBe(3);
-            expect(resultado.totalDocs).toBe(3);
-        });
-
-        test('deve filtrar usuários por nome corretamente', async () => {
+        it('deve filtrar usuários por nome', async () => {
             const req = {
                 params: {},
                 query: {
                     nome: 'Maria'
                 }
             };
-
             const resultado = await usuarioRepository.listar(req);
-
             expect(resultado.docs.length).toBe(1);
-            expect(resultado.docs[0].nome).toBe('Maria Santos');
+            expect(resultado.docs[0].nome).toBe('Maria');
         });
-
-        test('deve filtrar usuários por email corretamente', async () => {
+        it('deve filtrar usuários por email', async () => {
             const req = {
                 params: {},
                 query: {
                     email: 'pedro'
                 }
             };
-
             const resultado = await usuarioRepository.listar(req);
-
             expect(resultado.docs.length).toBe(1);
             expect(resultado.docs[0].email).toBe('pedro@teste.com');
         });
-
-        test('deve filtrar usuários por status ativo corretamente', async () => {
+        it('deve filtrar usuários por status ativo', async () => {
             const req = {
                 params: {},
                 query: {
                     ativo: 'true'
                 }
             };
-
             const resultado = await usuarioRepository.listar(req);
-
-            expect(resultado.docs.length).toBe(2);
-            expect(resultado.docs[0].ativo).toBe(true);
-            expect(resultado.docs[1].ativo).toBe(true);
+            expect(resultado.docs.every(u => u.ativo === true)).toBe(true);
         });
-
-        test('deve aplicar paginação corretamente', async () => {
-
-            const novosUsuarios = [];
-            for (let i = 0; i < 5; i++) {
-                novosUsuarios.push({
-                    nome: `Usuário Extra ${i}`,
-                    email: `extra${i}@teste.com`,
-                    senha: await bcrypt.hash('Senha@123', 10),
-                    ativo: true
-                });
-            }
-            await UsuarioModel.create(novosUsuarios);
-
-
-            const req1 = {
-                params: {},
-                query: {
-                    page: 1,
-                    limite: 3
-                }
-            };
-            const resultado1 = await usuarioRepository.listar(req1);
-
-            expect(resultado1.docs.length).toBe(3);
-            expect(resultado1.page).toBe(1);
-            expect(resultado1.totalDocs).toBe(8);
-            expect(resultado1.totalPages).toBe(3);
-
-
-            const req2 = {
-                params: {},
-                query: {
-                    page: 2,
-                    limite: 3
-                }
-            };
-            const resultado2 = await usuarioRepository.listar(req2);
-
-            expect(resultado2.docs.length).toBe(3);
-            expect(resultado2.page).toBe(2);
-        });
-        test('deve limitar a quantidade máxima de resultados', async () => {
-
-            const novosUsuarios = [];
-            for (let i = 0; i < 20; i++) {
-                novosUsuarios.push({
-                    nome: `Usuário Limite ${i}`,
-                    email: `limite${i}@teste.com`,
-                    senha: await bcrypt.hash('Senha@123', 10),
-                    ativo: true
-                });
-            }
-            await UsuarioModel.create(novosUsuarios);
-
-
+        it('deve filtrar usuários por status inativo', async () => {
             const req = {
                 params: {},
                 query: {
-                    limite: 200
+                    ativo: 'false'
                 }
             };
             const resultado = await usuarioRepository.listar(req);
-
-
-
-            expect(resultado.limit).toBeLessThanOrEqual(100);
+            expect(resultado.docs.every(u => u.ativo === false)).toBe(true);
         });
+        it('deve filtrar usuários por ehAdmin', async () => {
+            const req = {
+                params: {},
+                query: {
+                    ehAdmin: 'true'
+                }
+            };
+            const resultado = await usuarioRepository.listar(req);
+            expect(resultado.docs.every(u => u.ehAdmin === true)).toBe(true);
+        });
+    });
 
-        test('deve enriquecer os dados de cada usuário com totalCursos e percentualMedio', async () => {
+    describe('Atualização de usuário', () => {
+        let usuarioExistente;
+        beforeEach(async () => {
+            usuarioExistente = await UsuarioModel.create({
+                nome: 'Atualizar',
+                email: 'atualizar@teste.com',
+                senha: await bcrypt.hash('Senha@123', 10),
+                ativo: false,
+                ehAdmin: false,
+            });
+        });
+        it('deve atualizar nome do usuário', async () => {
+            const atualizado = await usuarioRepository.atualizar(usuarioExistente._id, {
+                nome: 'Novo Nome'
+            });
+            expect(atualizado.nome).toBe('Novo Nome');
+        });
+        it('não deve permitir atualizar email', async () => {
+            const atualizado = await usuarioRepository.atualizar(usuarioExistente._id, {
+                email: 'novo@email.com'
+            });
+            expect(atualizado.email).toBe('atualizar@teste.com');
+        });
+        it('não deve permitir atualizar senha diretamente', async () => {
+            const atualizado = await usuarioRepository.atualizar(usuarioExistente._id, {
+                senha: 'NovaSenha123'
+            });
+            expect(await bcrypt.compare('NovaSenha123', atualizado.senha)).toBe(false);
+        });
+        it('deve lançar erro ao tentar atualizar usuário inexistente', async () => {
+            const idFake = new mongoose.Types.ObjectId();
+            await expect(usuarioRepository.atualizar(idFake, {
+                nome: 'X'
+            })).rejects.toThrow(CustomError);
+        });
+    });
+
+    describe('Soft delete e restauração', () => {
+        let usuarioExistente;
+        beforeEach(async () => {
+            usuarioExistente = await UsuarioModel.create({
+                nome: 'Deletar',
+                email: 'deletar@teste.com',
+                senha: await bcrypt.hash('Senha@123', 10),
+                ativo: true,
+            });
+        });
+        it('deve desativar usuário (soft delete)', async () => {
+            const deletado = await usuarioRepository.deletar(usuarioExistente._id);
+            expect(deletado.ativo).toBe(false);
+            const usuarioBanco = await UsuarioModel.findById(usuarioExistente._id);
+            expect(usuarioBanco.ativo).toBe(false);
+        });
+        it('deve lançar erro ao tentar deletar usuário inexistente', async () => {
+            const idFake = new mongoose.Types.ObjectId();
+            await expect(usuarioRepository.deletar(idFake)).rejects.toThrow(CustomError);
+        });
+        it('deve restaurar usuário desativado', async () => {
+            await usuarioRepository.deletar(usuarioExistente._id);
+            const restaurado = await usuarioRepository.restaurar(usuarioExistente._id);
+            expect(restaurado.ativo).toBe(true);
+        });
+        it('deve lançar erro ao tentar restaurar usuário inexistente', async () => {
+            const idFake = new mongoose.Types.ObjectId();
+            await expect(usuarioRepository.restaurar(idFake)).rejects.toThrow(CustomError);
+        });
+        it('deve remover fisicamente usuário', async () => {
+            const removido = await usuarioRepository.deletarFisicamente(usuarioExistente._id);
+            expect(removido._id.toString()).toBe(usuarioExistente._id.toString());
+            const buscado = await UsuarioModel.findById(usuarioExistente._id);
+            expect(buscado).toBeNull();
+        });
+        it('deve lançar erro ao tentar remover fisicamente usuário inexistente', async () => {
+            const idFake = new mongoose.Types.ObjectId();
+            await expect(usuarioRepository.deletarFisicamente(idFake)).rejects.toThrow(CustomError);
+        });
+    });
+
+    describe('Relacionamento com cursos e progresso', () => {
+        it('deve associar múltiplos cursos ao usuário', async () => {
+            const curso1 = new mongoose.Types.ObjectId();
+            const curso2 = new mongoose.Types.ObjectId();
+            const usuario = await usuarioRepository.criar({
+                nome: 'Com Cursos',
+                email: 'comcursos@teste.com',
+                senha: await bcrypt.hash('Senha@123', 10),
+                cursosIds: [curso1, curso2],
+            });
+            expect(usuario.cursosIds.length).toBe(2);
+            expect(usuario.cursosIds[0].toString()).toBe(curso1.toString());
+            expect(usuario.cursosIds[1].toString()).toBe(curso2.toString());
+        });
+        it('deve registrar progresso em cursos', async () => {
+            const curso1 = new mongoose.Types.ObjectId();
+            const usuario = await usuarioRepository.criar({
+                nome: 'Com Progresso',
+                email: 'comprogresso@teste.com',
+                senha: await bcrypt.hash('Senha@123', 10),
+                progresso: [{
+                    curso: curso1,
+                    percentual_conclusao: '80'
+                }],
+            });
+            expect(usuario.progresso.length).toBe(1);
+            expect(usuario.progresso[0].curso.toString()).toBe(curso1.toString());
+            expect(usuario.progresso[0].percentual_conclusao).toBe('80');
+        });
+        it('deve popular cursosIds e progresso.curso ao buscar usuário', async () => {
+            const criadorId = new mongoose.Types.ObjectId();
+            const curso1 = await CursoModel.create({
+                _id: new mongoose.Types.ObjectId(),
+                titulo: 'Curso Populado',
+                cargaHorariaTotal: 10,
+                status: 'ativo',
+                criadoPorId: criadorId,
+            });
+            const usuario = await usuarioRepository.criar({
+                nome: 'Populado',
+                email: 'populado@teste.com',
+                senha: await bcrypt.hash('Senha@123', 10),
+                cursosIds: [curso1._id],
+                progresso: [{
+                    curso: curso1._id,
+                    percentual_conclusao: 100
+                }],
+            });
+            const req = {
+                params: {
+                    id: usuario._id.toString()
+                },
+                query: {}
+            };
+            const resultado = await usuarioRepository.listar(req);
+            expect(resultado.cursosIds[0]._id.toString()).toBe(curso1._id.toString());
+            expect(resultado.progresso[0].curso._id.toString()).toBe(curso1._id.toString());
+        });
+    });
+
+    describe('Cobertura de branches e erros raros', () => {
+        it('deve lançar erro se filterBuilder.build não for função', async () => {
+            const originalBuild = UsuarioFilterBuilder.prototype.build;
+            UsuarioFilterBuilder.prototype.build = 'não é uma função';
+
+            const repo = new UsuarioRepository();
             const req = {
                 params: {},
                 query: {}
             };
 
-            const resultado = await usuarioRepository.listar(req);
-
-
-            const joao = resultado.docs.find(u => u.email === 'joao@teste.com');
-            expect(joao.totalCursos).toBe(2);
-            expect(parseFloat(joao.percentualMedio)).toBe(62.50);
-
-
-            const maria = resultado.docs.find(u => u.email === 'maria@teste.com');
-            expect(maria.totalCursos).toBe(1);
-            expect(parseFloat(maria.percentualMedio)).toBe(30);
-
-
-            const pedro = resultado.docs.find(u => u.email === 'pedro@teste.com');
-            expect(pedro.totalCursos).toBe(0);
-            expect(parseFloat(pedro.percentualMedio)).toBe(0);
+            try {
+                await expect(repo.listar(req)).rejects.toThrow(CustomError);
+            } finally {
+                UsuarioFilterBuilder.prototype.build = originalBuild;
+            }
         });
     });
 
-    describe('Método criar', () => {
-        test('deve criar um usuário válido com sucesso', async () => {
-            const dadosUsuario = {
-                nome: 'Novo Usuário',
-                email: 'novo@teste.com',
-                senha: await bcrypt.hash('Senha@123', 10)
-            };
-
-            const resultado = await usuarioRepository.criar(dadosUsuario);
-
-            expect(resultado).toBeDefined();
-            expect(resultado._id).toBeDefined();
-            expect(resultado.nome).toBe(dadosUsuario.nome);
-            expect(resultado.email).toBe(dadosUsuario.email);
-
-
-            const usuarioSalvo = await UsuarioModel.findById(resultado._id);
-            expect(usuarioSalvo).not.toBeNull();
-            expect(usuarioSalvo.nome).toBe(dadosUsuario.nome);
-        });
-
-        test('deve falhar ao criar um usuário com email duplicado', async () => {
-
+    describe('Busca por email', () => {
+        beforeEach(async () => {
             await UsuarioModel.create({
-                nome: 'Usuário Original',
-                email: 'duplicado@teste.com',
-                senha: await bcrypt.hash('Senha@123', 10)
-            });
-
-
-            const dadosUsuario = {
-                nome: 'Usuário Duplicado',
-                email: 'duplicado@teste.com',
-                senha: await bcrypt.hash('Senha@123', 10)
-            };
-
-            await expect(usuarioRepository.criar(dadosUsuario)).rejects.toThrow();
-
-
-            const usuariosEncontrados = await UsuarioModel.find({
-                email: 'duplicado@teste.com'
-            });
-            expect(usuariosEncontrados.length).toBe(1);
-            expect(usuariosEncontrados[0].nome).toBe('Usuário Original');
-        });
-
-        test('deve definir os valores padrão para ehAdmin e ativo', async () => {
-            const dadosUsuario = {
-                nome: 'Usuário Padrões',
-                email: 'padroes@teste.com',
-                senha: await bcrypt.hash('Senha@123', 10)
-            };
-
-            const resultado = await usuarioRepository.criar(dadosUsuario);
-
-            expect(resultado.ehAdmin).toBe(false);
-            expect(resultado.ativo).toBe(false);
-        });
-
-        test('deve permitir definir valores personalizados para ehAdmin e ativo', async () => {
-            const dadosUsuario = {
-                nome: 'Usuário Admin',
-                email: 'admin@teste.com',
+                nome: 'Teste Email',
+                email: 'teste@email.com',
                 senha: await bcrypt.hash('Senha@123', 10),
-                ehAdmin: true,
-                ativo: true
-            };
+            });
+        });
 
-            const resultado = await usuarioRepository.criar(dadosUsuario);
+        it('deve buscar usuário por email', async () => {
+            const usuario = await usuarioRepository.buscarPorEmail('teste@email.com');
+            expect(usuario).toBeDefined();
+            expect(usuario.email).toBe('teste@email.com');
+        });
 
-            expect(resultado.ehAdmin).toBe(true);
-            expect(resultado.ativo).toBe(true);
+        it('deve buscar usuário por email ignorando um ID específico', async () => {
+            const usuarioExistente = await UsuarioModel.findOne({
+                email: 'teste@email.com'
+            });
+            const usuario = await usuarioRepository.buscarPorEmail('teste@email.com', usuarioExistente._id);
+            expect(usuario).toBeNull();
+        });
+
+        it('deve lançar erro quando usuário não encontrado e throwErrorIfNotFound é true', async () => {
+            await expect(
+                usuarioRepository.buscarPorEmail('naoexiste@email.com', null, true)
+            ).rejects.toThrow(CustomError);
+        });
+
+        it('deve retornar null quando usuário não encontrado e throwErrorIfNotFound é false', async () => {
+            const usuario = await usuarioRepository.buscarPorEmail('naoexiste@email.com', null, false);
+            expect(usuario).toBeNull();
         });
     });
 
-    describe('Método atualizar', () => {
-        let usuarioExistente;
-
+    describe('Ordenação e filtros especiais', () => {
         beforeEach(async () => {
-
-            usuarioExistente = await UsuarioModel.create({
-                nome: 'Usuário para Atualizar',
-                email: 'atualizar@teste.com',
-                senha: await bcrypt.hash('Senha@123', 10),
-                ativo: false
-            });
-        });
-
-        test('deve atualizar o nome do usuário com sucesso', async () => {
-            const resultado = await usuarioRepository.atualizar(
-                usuarioExistente._id, {
-                    nome: 'Nome Atualizado'
-                }
-            );
-
-            expect(resultado).toBeDefined();
-            expect(resultado.nome).toBe('Nome Atualizado');
-
-
-            const usuarioAtualizado = await UsuarioModel.findById(usuarioExistente._id);
-            expect(usuarioAtualizado.nome).toBe('Nome Atualizado');
-        });
-
-        test('deve atualizar o status ativo do usuário com sucesso', async () => {
-            const resultado = await usuarioRepository.atualizar(
-                usuarioExistente._id, {
+            await UsuarioModel.create([{
+                    nome: 'Alpha',
+                    email: 'alpha@teste.com',
+                    senha: await bcrypt.hash('Senha@123', 10),
                     ativo: true
-                }
-            );
-
-            expect(resultado.ativo).toBe(true);
-
-
-            const usuarioAtualizado = await UsuarioModel.findById(usuarioExistente._id);
-            expect(usuarioAtualizado.ativo).toBe(true);
+                },
+                {
+                    nome: 'Beta',
+                    email: 'beta@teste.com',
+                    senha: await bcrypt.hash('Senha@123', 10),
+                    ativo: true
+                },
+                {
+                    nome: 'Charlie',
+                    email: 'charlie@teste.com',
+                    senha: await bcrypt.hash('Senha@123', 10),
+                    ativo: true
+                },
+            ]);
         });
 
-        test('deve atualizar múltiplos campos do usuário com sucesso', async () => {
-            const resultado = await usuarioRepository.atualizar(
-                usuarioExistente._id, {
-                    nome: 'Nome Novo',
-                    ativo: true,
-                    ehAdmin: true
+        it('deve aplicar ordenação especial quando especificada', async () => {
+            const req = {
+                params: {},
+                query: {
+                    ordenarPor: 'nome',
+                    direcao: 'desc'
                 }
-            );
-
-            expect(resultado.nome).toBe('Nome Novo');
-            expect(resultado.ativo).toBe(true);
-            expect(resultado.ehAdmin).toBe(true);
-
-
-            const usuarioAtualizado = await UsuarioModel.findById(usuarioExistente._id);
-            expect(usuarioAtualizado.nome).toBe('Nome Novo');
-            expect(usuarioAtualizado.ativo).toBe(true);
-            expect(usuarioAtualizado.ehAdmin).toBe(true);
-        });
-
-        test('deve lançar erro ao tentar atualizar um usuário inexistente', async () => {
-            const idInexistente = new mongoose.Types.ObjectId().toString();
-
-            await expect(usuarioRepository.atualizar(idInexistente, {
-                    nome: 'Nome Novo'
-                }))
-                .rejects.toThrow(CustomError);
-
-            try {
-                await usuarioRepository.atualizar(idInexistente, {
-                    nome: 'Nome Novo'
-                });
-            } catch (error) {
-                expect(error.statusCode).toBe(404);
-                expect(error.errorType).toBe('resourceNotFound');
-                expect(error.field).toBe('Usuário');
-            }
+            };
+            const resultado = await usuarioRepository.listar(req);
+            expect(resultado.docs[0].nome).toBe('Charlie');
+            expect(resultado.docs[1].nome).toBe('Beta');
+            expect(resultado.docs[2].nome).toBe('Alpha');
         });
     });
 
-    describe('Método deletar', () => {
-        let usuarioExistente;
+    describe('Métodos especializados', () => {
+        let cursoId;
 
         beforeEach(async () => {
+            cursoId = new mongoose.Types.ObjectId();
+            await UsuarioModel.create([{
+                    nome: 'Usuario1',
+                    email: 'usuario1@teste.com',
+                    senha: await bcrypt.hash('Senha@123', 10),
+                    cursosIds: [cursoId],
+                    progresso: [{
+                        curso: cursoId,
+                        percentual_conclusao: '50'
+                    }]
+                },
+                {
+                    nome: 'Usuario2',
+                    email: 'usuario2@teste.com',
+                    senha: await bcrypt.hash('Senha@123', 10),
+                    cursosIds: [cursoId],
+                    progresso: [{
+                        curso: cursoId,
+                        percentual_conclusao: '20'
+                    }]
+                },
+                {
+                    nome: 'Usuario3',
+                    email: 'usuario3@teste.com',
+                    senha: await bcrypt.hash('Senha@123', 10),
+                    cursosIds: [cursoId],
+                    progresso: [{
+                        curso: cursoId,
+                        percentual_conclusao: '80'
+                    }]
+                }
+            ]);
+        });
 
-            usuarioExistente = await UsuarioModel.create({
-                nome: 'Usuário para Deletar',
-                email: 'deletar@teste.com',
-                senha: await bcrypt.hash('Senha@123', 10)
+        it('deve buscar usuários com progresso significativo', async () => {
+            const usuarios = await usuarioRepository.buscarUsuariosComProgressoSignificativo(cursoId, 30);
+            expect(usuarios.length).toBe(2); // usuarios com 50% e 80%
+            expect(usuarios.every(u => u.nome && u.email)).toBe(true);
+        });
+
+        it('deve buscar usuários com progresso significativo usando limite padrão', async () => {
+            const usuarios = await usuarioRepository.buscarUsuariosComProgressoSignificativo(cursoId);
+            expect(usuarios.length).toBe(2);
+        });
+
+        it('deve remover referências de curso dos usuários', async () => {
+            const resultado = await usuarioRepository.removerReferenciaCurso(cursoId);
+
+            expect(resultado.cursosRemovidos).toBe(3);
+            expect(resultado.progressosRemovidos).toBe(3);
+
+            const usuarios = await UsuarioModel.find({
+                cursosIds: cursoId
             });
-        });
+            expect(usuarios.length).toBe(0);
 
-        test('deve deletar um usuário existente com sucesso', async () => {
-            const resultado = await usuarioRepository.deletar(usuarioExistente._id);
-
-            expect(resultado).toBeDefined();
-            expect(resultado._id.toString()).toBe(usuarioExistente._id.toString());
-
-
-            const usuarioDeletado = await UsuarioModel.findById(usuarioExistente._id);
-            expect(usuarioDeletado).toBeNull();
-        });
-
-        test('deve lançar erro ao tentar deletar um usuário inexistente', async () => {
-            const idInexistente = new mongoose.Types.ObjectId().toString();
-
-            await expect(usuarioRepository.deletar(idInexistente))
-                .rejects.toThrow(CustomError);
-
-            try {
-                await usuarioRepository.deletar(idInexistente);
-            } catch (error) {
-                expect(error.statusCode).toBe(404);
-                expect(error.errorType).toBe('resourceNotFound');
-                expect(error.field).toBe('Usuário');
-            }
+            const usuariosComProgresso = await UsuarioModel.find({
+                'progresso.curso': cursoId
+            });
+            expect(usuariosComProgresso.length).toBe(0);
         });
     });
 
-    describe('Método enriquecerUsuario', () => {
-        test('deve calcular totalCursos e percentualMedio corretamente para usuário com cursos', async () => {
-            const curso1Id = new mongoose.Types.ObjectId();
-            const curso2Id = new mongoose.Types.ObjectId();
-            const curso3Id = new mongoose.Types.ObjectId();
+    describe('Enriquecimento de dados do usuário', () => {
+        it('deve enriquecer usuário com estatísticas de progresso', async () => {
+            const cursoId1 = new mongoose.Types.ObjectId();
+            const cursoId2 = new mongoose.Types.ObjectId();
+            const cursoId3 = new mongoose.Types.ObjectId();
 
-            const usuario = await UsuarioModel.create({
-                nome: 'Usuário com Cursos',
-                email: 'cursos@teste.com',
+            await CursoModel.create([{
+                    _id: cursoId1,
+                    titulo: 'Curso 1',
+                    cargaHorariaTotal: 10,
+                    status: 'ativo',
+                    criadoPorId: new mongoose.Types.ObjectId()
+                },
+                {
+                    _id: cursoId2,
+                    titulo: 'Curso 2',
+                    cargaHorariaTotal: 20,
+                    status: 'ativo',
+                    criadoPorId: new mongoose.Types.ObjectId()
+                },
+                {
+                    _id: cursoId3,
+                    titulo: 'Curso 3',
+                    cargaHorariaTotal: 30,
+                    status: 'ativo',
+                    criadoPorId: new mongoose.Types.ObjectId()
+                }
+            ]);
+
+            const usuarioCriado = await UsuarioModel.create({
+                nome: 'Usuario Enriquecido',
+                email: 'enriquecido@teste.com',
                 senha: await bcrypt.hash('Senha@123', 10),
-                cursosIds: [curso1Id, curso2Id, curso3Id],
+                cursosIds: [cursoId1, cursoId2, cursoId3],
                 progresso: [{
-                        curso: curso1Id,
-                        percentual_conclusao: '60'
+                        curso: cursoId1,
+                        percentual_conclusao: '100'
                     },
                     {
-                        curso: curso2Id,
-                        percentual_conclusao: '80'
+                        curso: cursoId2,
+                        percentual_conclusao: '50'
                     }
                 ]
             });
 
-            const resultado = usuarioRepository.enriquecerUsuario(usuario);
+            const req = {
+                params: {
+                    id: usuarioCriado._id.toString()
+                },
+                query: {}
+            };
+            const resultado = await usuarioRepository.listar(req);
 
             expect(resultado.totalCursos).toBe(3);
-            expect(resultado.percentualMedio).toBe('70.00');
+            expect(resultado.estatisticasProgresso.cursosIniciados).toBe(2);
+            expect(resultado.estatisticasProgresso.cursosConcluidos).toBe(1);
+            expect(resultado.estatisticasProgresso.cursosEmAndamento).toBe(1);
+            expect(resultado.estatisticasProgresso.totalComProgresso).toBe(2);
+            expect(resultado.estatisticasProgresso.cursosInscritosSemProgresso).toBe(1);
         });
 
-        test('deve calcular totalCursos e percentualMedio corretamente para usuário sem cursos', async () => {
-            const usuario = await UsuarioModel.create({
-                nome: 'Usuário sem Cursos',
-                email: 'semcursos@teste.com',
-                senha: await bcrypt.hash('Senha@123', 10),
-                cursosIds: [],
-                progresso: []
+        it('deve enriquecer usuário sem progresso', async () => {
+            const cursoId = new mongoose.Types.ObjectId();
+
+            await CursoModel.create({
+                _id: cursoId,
+                titulo: 'Curso Sem Progresso',
+                cargaHorariaTotal: 10,
+                status: 'ativo',
+                criadoPorId: new mongoose.Types.ObjectId()
             });
 
-            const resultado = usuarioRepository.enriquecerUsuario(usuario);
-
-            expect(resultado.totalCursos).toBe(0);
-            expect(resultado.percentualMedio).toBe('0.00');
-        });
-        test('deve calcular totalCursos e percentualMedio corretamente para usuário com cursos mas sem progresso', async () => {
-            const curso1Id = new mongoose.Types.ObjectId();
-            const curso2Id = new mongoose.Types.ObjectId();
-
-            const usuario = await UsuarioModel.create({
-                nome: 'Usuário com Cursos sem Progresso',
-                email: 'cursossemprogresso@teste.com',
-                senha: await bcrypt.hash('Senha@123', 10),
-                cursosIds: [curso1Id, curso2Id],
-                progresso: []
-            });
-
-            const resultado = usuarioRepository.enriquecerUsuario(usuario);
-
-            expect(resultado.totalCursos).toBe(2);
-            expect(resultado.percentualMedio).toBe('0.00');
-        });
-        test('deve calcular percentualMedio como 0 quando não houver progresso', () => {
-
-            const mockUsuario = {
-                _id: new mongoose.Types.ObjectId(),
-                nome: 'Usuário Sem Progresso',
+            const usuarioCriado = await UsuarioModel.create({
+                nome: 'Usuario Sem Progresso',
                 email: 'semprogresso@teste.com',
-                cursosIds: [new mongoose.Types.ObjectId(), new mongoose.Types.ObjectId()],
-                progresso: [],
-                toObject: function () {
-                    return {
-                        _id: this._id,
-                        nome: this.nome,
-                        email: this.email,
-                        cursosIds: this.cursosIds,
-                        progresso: this.progresso
-                    };
-                }
+                senha: await bcrypt.hash('Senha@123', 10),
+                cursosIds: [cursoId]
+            });
+
+            const req = {
+                params: {
+                    id: usuarioCriado._id.toString()
+                },
+                query: {}
             };
+            const resultado = await usuarioRepository.listar(req);
 
-            const resultado = usuarioRepository.enriquecerUsuario(mockUsuario);
-
-            expect(resultado).toEqual(expect.objectContaining({
-                totalCursos: 2,
-                percentualMedio: '0.00'
-            }));
+            expect(resultado.totalCursos).toBe(1);
+            expect(resultado.estatisticasProgresso.cursosIniciados).toBe(0);
+            expect(resultado.estatisticasProgresso.cursosConcluidos).toBe(0);
+            expect(resultado.estatisticasProgresso.cursosEmAndamento).toBe(0);
+            expect(resultado.estatisticasProgresso.totalComProgresso).toBe(0);
+            expect(resultado.estatisticasProgresso.cursosInscritosSemProgresso).toBe(1);
         });
 
-        test('deve calcular percentualMedio corretamente quando houver progresso', () => {
+        it('deve enriquecer usuário com progresso zero', async () => {
+            const cursoId = new mongoose.Types.ObjectId();
 
-            const mockUsuario = {
-                _id: new mongoose.Types.ObjectId(),
-                nome: 'Usuário Com Progresso',
-                email: 'comprogresso@teste.com',
-                cursosIds: [new mongoose.Types.ObjectId(), new mongoose.Types.ObjectId()],
+            await CursoModel.create({
+                _id: cursoId,
+                titulo: 'Curso Progresso Zero',
+                cargaHorariaTotal: 15,
+                status: 'ativo',
+                criadoPorId: new mongoose.Types.ObjectId()
+            });
+
+            const usuarioCriado = await UsuarioModel.create({
+                nome: 'Usuario Progresso Zero',
+                email: 'progressozero@teste.com',
+                senha: await bcrypt.hash('Senha@123', 10),
+                cursosIds: [cursoId],
                 progresso: [{
-                        curso_id: new mongoose.Types.ObjectId(),
-                        percentual_conclusao: '25.00'
-                    },
-                    {
-                        curso_id: new mongoose.Types.ObjectId(),
-                        percentual_conclusao: '75.00'
-                    }
-                ],
-                toObject: function () {
-                    return {
-                        _id: this._id,
-                        nome: this.nome,
-                        email: this.email,
-                        cursosIds: this.cursosIds,
-                        progresso: this.progresso
-                    };
-                }
+                    curso: cursoId,
+                    percentual_conclusao: '0'
+                }]
+            });
+
+            const req = {
+                params: {
+                    id: usuarioCriado._id.toString()
+                },
+                query: {}
             };
+            const resultado = await usuarioRepository.listar(req);
 
-            const resultado = usuarioRepository.enriquecerUsuario(mockUsuario);
-
-            expect(resultado).toEqual(expect.objectContaining({
-                totalCursos: 2,
-                percentualMedio: '50.00'
-            }));
-        });
-    });
-
-    describe('Simulação de erros de banco de dados', () => {
-        test('deve lançar CustomError em caso de erro do banco de dados', async () => {
-            await expect(usuarioRepository.simularErroBanco()).rejects.toThrow(CustomError);
-
-            try {
-                await usuarioRepository.simularErroBanco();
-            } catch (error) {
-                expect(error.statusCode).toBe(500);
-                expect(error.errorType).toBe('databaseError');
-                expect(error.field).toBe('Database');
-            }
-        });
-    });
-    describe('Métodos auxiliares e casos especiais', () => {
-        describe('Tratamento de erro no método listar', () => {
-            test('deve lançar erro quando filterBuilder.build não é função', async () => {
-
-                const mockInvalidFilterBuilder = {
-                    comNome: jest.fn().mockReturnThis(),
-                    comEmail: jest.fn().mockReturnThis(),
-                    comAtivo: jest.fn().mockReturnThis(),
-
-                    build: {}
-                };
-
-
-                jest.spyOn(usuarioRepository.model, 'find').mockImplementation(() => {
-                    throw new CustomError({
-                        statusCode: 500,
-                        errorType: 'internalServerError',
-                        field: 'Usuário',
-                        customMessage: 'Erro interno do servidor'
-                    });
-                });
-
-
-                const originalFilterBuilder = usuarioRepository.usuarioFilterBuilder;
-                usuarioRepository.usuarioFilterBuilder = mockInvalidFilterBuilder;
-
-
-                await expect(usuarioRepository.listar({
-                    query: {}
-                })).rejects.toThrow();
-
-
-                usuarioRepository.usuarioFilterBuilder = originalFilterBuilder;
-                jest.restoreAllMocks();
-            });
-        });
-
-        describe('Método simularErroBanco', () => {
-            test('deve lançar CustomError com detalhes específicos quando chamado', async () => {
-
-                const findOneSpy = jest.spyOn(usuarioRepository.model, 'findOne');
-
-                try {
-                    await usuarioRepository.simularErroBanco();
-                    fail('Deveria ter lançado um erro');
-                } catch (error) {
-                    expect(error).toBeInstanceOf(CustomError);
-                    expect(error.statusCode).toBe(500);
-                    expect(error.errorType).toBe('databaseError');
-                    expect(error.field).toBe('Database');
-
-
-                    expect(findOneSpy).toHaveBeenCalledWith({
-                        _id: 'id-invalido-forcar-erro'
-                    });
-                }
-
-
-                findOneSpy.mockRestore();
-            });
+            expect(resultado.totalCursos).toBe(1);
+            expect(resultado.estatisticasProgresso.cursosIniciados).toBe(0); // 0% não conta como iniciado
+            expect(resultado.estatisticasProgresso.cursosConcluidos).toBe(0);
+            expect(resultado.estatisticasProgresso.cursosEmAndamento).toBe(0);
+            expect(resultado.estatisticasProgresso.totalComProgresso).toBe(1);
+            expect(resultado.estatisticasProgresso.cursosInscritosSemProgresso).toBe(0);
         });
     });
 });

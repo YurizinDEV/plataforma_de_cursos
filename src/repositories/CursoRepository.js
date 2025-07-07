@@ -435,10 +435,10 @@ class CursoRepository {
         const totalMaterialComplementar = cursoObj.materialComplementar ? cursoObj.materialComplementar.length : 0;
         const totalAulas = await this.aulaRepository.contarPorCursoId(cursoId);
         const totalCertificados = await this.certificadoRepository.contarPorCursoId(cursoId);
-        
+
         let totalQuestionarios = 0;
         let totalAlternativas = 0;
-        
+
         if (totalAulas > 0) {
             const aulas = await this.aulaRepository.buscarPorCursoId(cursoId);
             const aulaIds = aulas.map(a => a._id);
@@ -451,9 +451,9 @@ class CursoRepository {
                 }
             }
         }
-        
+
         const duracaoTotalMinutos = cursoObj.cargaHorariaTotal || 0;
-        
+
         return {
             ...cursoObj,
             estatisticas: {
@@ -514,6 +514,26 @@ class CursoRepository {
         }
 
         return curso;
+    }
+
+    async buscarPorCriador(usuarioId) {
+        return await this.model.find({
+            criadoPorId: usuarioId
+        });
+    }
+
+    async removerReferenciaUsuario(usuarioId, options = {}) {
+        const resultado = await this.model.updateMany({
+                criadoPorId: usuarioId
+            }, {
+                $unset: {
+                    criadoPorId: 1
+                }
+            },
+            options
+        );
+
+        return resultado.modifiedCount;
     }
 }
 
