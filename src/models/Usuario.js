@@ -15,6 +15,7 @@ class Usuario {
             },
             senha: {
                 type: String,
+                select: false,
                 required: true
             },
             email: {
@@ -46,7 +47,27 @@ class Usuario {
             cursosIds: [{
                 type: mongoose.Schema.Types.ObjectId,
                 ref: "Curso"
-            }]
+            }],
+            tokenUnico: { 
+                type: String, 
+                select: false 
+            }, 
+            codigo_recupera_senha: { 
+                type: String,
+                select: false
+            },
+            exp_codigo_recupera_senha: { 
+                type: Date,
+                select: false
+            },
+            refreshtoken: { 
+                type: String, 
+                select: false 
+            }, 
+            accesstoken: { 
+                type: String, 
+                select: false 
+            }
         }, {
             versionKey: false,
             timestamps: true
