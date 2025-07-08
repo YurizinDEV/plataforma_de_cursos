@@ -131,6 +131,17 @@ class UsuarioController {
         const usuarioRemovido = await this.service.deletarFisicamente(id);
         return CommonResponse.success(res, usuarioRemovido, 200, "Usuário removido permanentemente.");
     }
+
+    async criarComSenha(req, res) {
+        const parsedData = UsuarioSchema.parse(req.body);
+
+        const data = await this.service.criarComSenha(parsedData);
+
+        const usuarioLimpo = data.toObject();
+        delete usuarioLimpo.senha;
+
+        return CommonResponse.created(res, usuarioLimpo);
+    }
 }
 
 

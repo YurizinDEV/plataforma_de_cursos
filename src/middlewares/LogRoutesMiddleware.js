@@ -1,4 +1,5 @@
 const logRoutes = async (req, res, next) => {
+    console.log('=== MIDDLEWARE LOG ROUTES CHAMADO ===');
     try {
         const timestamp = new Date().toISOString();
 

@@ -8,6 +8,7 @@ import errorHandler from './utils/helpers/errorHandler.js';
 import logger from './utils/logger.js';
 import CommonResponse from './utils/helpers/CommonResponse.js';
 
+console.log('=== INICIANDO APP.JS ===');
 const app = express();
 
 await DbConnect.conectar();

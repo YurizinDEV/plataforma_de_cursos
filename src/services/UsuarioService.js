@@ -194,6 +194,30 @@ class UsuarioService {
             cursosComoAutor: cursosComoAutor ? cursosComoAutor.length : 0
         };
     }
+
+    async criarComSenha(parsedData) {
+        await this.validateEmail(parsedData.email);
+        
+        // Sempre hashar a senha para signup
+        if (parsedData.senha) {
+            const saltRounds = 10;
+            parsedData.senha = await bcrypt.hash(parsedData.senha, saltRounds);
+        } else {
+            throw new CustomError({
+                statusCode: HttpStatusCodes.BAD_REQUEST.code,
+                errorType: 'validationError',
+                field: 'senha',
+                details: [{
+                    path: 'senha',
+                    message: 'Senha é obrigatória para signup.'
+                }],
+                customMessage: 'Senha é obrigatória para signup.'
+            });
+        }
+        
+        const data = await this.repository.criar(parsedData);
+        return data;
+    }
 }
 
 export default UsuarioService;

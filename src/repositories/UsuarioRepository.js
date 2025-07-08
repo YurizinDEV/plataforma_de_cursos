@@ -36,8 +36,14 @@ class UsuarioRepository {
         return usuario;
     }
 
-    async buscarPorId(id) {
-        let usuario = await this.model.findById(id)
+    async buscarPorId(id, includeTokens = false) {
+        let query = this.model.findById(id);
+
+        if (includeTokens) {
+            query = query.select('+refreshtoken +accesstoken +senha');
+        }
+
+        let usuario = await query
             .populate('cursosIds', 'titulo cargaHorariaTotal status')
             .populate('progresso.curso', 'titulo cargaHorariaTotal');
 
@@ -300,6 +306,79 @@ class UsuarioRepository {
                 cursosInscritosSemProgresso: totalCursos - progresso.length
             }
         };
+    }
+
+    // Métodos para autenticação
+
+    async armazenarTokens(id, accesstoken, refreshtoken) {
+        const documento = await this.model.findById(id);
+        if (!documento) {
+            throw new CustomError({
+                statusCode: HttpStatusCodes.NOT_FOUND.code,
+                errorType: 'resourceNotFound',
+                field: 'Usuário',
+                details: [],
+                customMessage: messages.error.resourceNotFound('Usuário')
+            });
+        }
+
+        documento.accesstoken = accesstoken;
+        documento.refreshtoken = refreshtoken;
+
+        const data = await documento.save();
+        return data;
+    }
+
+    async buscarPorCodigoRecuperacao(codigo) {
+        return await this.model.findOne({ codigo_recupera_senha: codigo });
+    }
+
+    async buscarPorTokenUnico(token) {
+        return await this.model.findOne({ tokenUnico: token });
+    }
+
+    async atualizarSenha(id, senhaHasheada) {
+        const usuarioAtualizado = await this.model.findByIdAndUpdate(
+            id, 
+            { 
+                senha: senhaHasheada,
+                tokenUnico: null, // Limpa o token após uso
+                codigo_recupera_senha: null, // Limpa o código após uso
+                exp_codigo_recupera_senha: null // Limpa a expiração
+            }, 
+            { new: true }
+        );
+        
+        if (!usuarioAtualizado) {
+            throw new CustomError({
+                statusCode: HttpStatusCodes.NOT_FOUND.code,
+                errorType: 'resourceNotFound',
+                field: 'Usuário',
+                details: [],
+                customMessage: messages.error.resourceNotFound('Usuário')
+            });
+        }
+
+        return usuarioAtualizado;
+    }
+
+    async removeToken(id) {
+        const usuarioExistente = await this.model.findById(id);
+        if (!usuarioExistente) {
+            throw new CustomError({
+                statusCode: HttpStatusCodes.NOT_FOUND.code,
+                errorType: 'resourceNotFound',
+                field: 'Usuário',
+                details: [],
+                customMessage: messages.error.resourceNotFound('Usuário')
+            });
+        }
+
+        usuarioExistente.accesstoken = null;
+        usuarioExistente.refreshtoken = null;
+        
+        await usuarioExistente.save();
+        return usuarioExistente;
     }
 }
 

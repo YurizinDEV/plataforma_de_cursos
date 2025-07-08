@@ -119,31 +119,26 @@ class CursoRepository {
         const professoresIndividuais = [professor1, professor2, professor3].filter(Boolean);
         if (professoresIndividuais.length > 0) {
             finalProfessoresAnd = professoresIndividuais;
-            console.log('Usando professoresIndividuais:', finalProfessoresAnd);
         }
 
 
         if (tagsArrayParam) {
             const tagsFromArray = Array.isArray(tagsArrayParam) ? tagsArrayParam : [tagsArrayParam];
             finalTagsAnd = tagsFromArray.filter(Boolean);
-            console.log('Usando tagsArrayParam:', finalTagsAnd);
         }
 
         if (professoresArrayParam) {
             const professoresFromArray = Array.isArray(professoresArrayParam) ? professoresArrayParam : [professoresArrayParam];
             finalProfessoresAnd = professoresFromArray.filter(Boolean);
-            console.log('Usando professoresArrayParam:', finalProfessoresAnd);
         }
 
 
         if (!finalTagsAnd && todasTagsArray) {
             finalTagsAnd = todasTagsArray;
-            console.log('Usando todasTagsArray como fallback:', finalTagsAnd);
         }
 
         if (!finalProfessoresAnd && todosProfessoresArray) {
             finalProfessoresAnd = todosProfessoresArray;
-            console.log('Usando todosProfessoresArray como fallback:', finalProfessoresAnd);
         }
 
         const limite = Math.min(parseInt(limit, 10) || 20, 100);
@@ -195,7 +190,6 @@ class CursoRepository {
             } else {
                 temMaterialBoolean = Boolean(temMaterialComplementar);
             }
-            console.log(`DEBUG-TEM-MATERIAL: ${typeof temMaterialComplementar} => ${temMaterialComplementar} => convertido para ${temMaterialBoolean}`);
             filterBuilder.comMaterialComplementar(temMaterialBoolean);
         }
         if (temThumbnail !== undefined) filterBuilder.comThumbnail(temThumbnail);
