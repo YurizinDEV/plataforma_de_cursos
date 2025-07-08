@@ -244,10 +244,17 @@ describe('UsuarioRepository', () => {
             expect(atualizado.email).toBe('atualizar@teste.com');
         });
         it('não deve permitir atualizar senha diretamente', async () => {
+            const usuarioOriginal = await UsuarioModel.findById(usuarioExistente._id).select('+senha');
+
             const atualizado = await usuarioRepository.atualizar(usuarioExistente._id, {
                 senha: 'NovaSenha123'
             });
-            expect(await bcrypt.compare('NovaSenha123', atualizado.senha)).toBe(false);
+
+            const usuarioAposUpdate = await UsuarioModel.findById(usuarioExistente._id).select('+senha');
+
+            expect(usuarioOriginal.senha).toBe(usuarioAposUpdate.senha);
+            
+            expect(await bcrypt.compare('NovaSenha123', usuarioAposUpdate.senha)).toBe(false);
         });
         it('deve lançar erro ao tentar atualizar usuário inexistente', async () => {
             const idFake = new mongoose.Types.ObjectId();
