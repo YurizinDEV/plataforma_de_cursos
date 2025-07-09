@@ -1,4 +1,5 @@
 //UsuarioRepository.js
+
 import UsuarioModel from '../models/Usuario.js';
 import UsuarioFilterBuilder from './filters/UsuarioFilterBuilder.js';
 import {
@@ -35,8 +36,14 @@ class UsuarioRepository {
         return usuario;
     }
 
-    async buscarPorId(id) {
-        let usuario = await this.model.findById(id)
+    async buscarPorId(id, includeTokens = false) {
+        let query = this.model.findById(id);
+
+        if (includeTokens) {
+            query = query.select('+refreshtoken +accesstoken +senha');
+        }
+
+        let usuario = await query
             .populate('cursosIds', 'titulo cargaHorariaTotal status')
             .populate('progresso.curso', 'titulo cargaHorariaTotal');
 
@@ -72,7 +79,7 @@ class UsuarioRepository {
             const dadosEnriquecidos = this.enriquecerUsuario(usuario);
             return dadosEnriquecidos;
         }
-
+        
         const {
             nome,
             email,
@@ -84,9 +91,9 @@ class UsuarioRepository {
             direcao = 'asc',
             page = 1
         } = req.query;
-
+        
         const limite = Math.min(parseInt(req.query.limite, 10) || 20, 100);
-
+        
         const filterBuilder = new UsuarioFilterBuilder()
             .comNome(nome || '')
             .comEmail(email || '')
@@ -112,24 +119,17 @@ class UsuarioRepository {
             limit: limite,
         };
 
-
         if (filtrosCompletos.especiais && filtrosCompletos.especiais.sort) {
             opcoesPaginacao.sort = filtrosCompletos.especiais.sort;
         }
-
 
         const filtrosConsulta = filtrosCompletos.filtros || filtrosCompletos;
 
         const resultado = await this.model.paginate(filtrosConsulta, {
             ...opcoesPaginacao,
-            populate: [{
-                    path: 'cursosIds',
-                    select: 'titulo cargaHorariaTotal status'
-                },
-                {
-                    path: 'progresso.curso',
-                    select: 'titulo cargaHorariaTotal'
-                }
+            populate: [
+                { path: 'cursosIds', select: 'titulo cargaHorariaTotal status' },
+                { path: 'progresso.curso', select: 'titulo cargaHorariaTotal' }
             ]
         });
 
@@ -146,15 +146,14 @@ class UsuarioRepository {
     }
 
     async atualizar(id, parsedData) {
-
         if ('email' in parsedData) delete parsedData.email;
         if ('senha' in parsedData) delete parsedData.senha;
         const usuario = await this.model.findByIdAndUpdate(id, parsedData, {
-                new: true
-            })
-            .populate('cursosIds', 'titulo cargaHorariaTotal status')
-            .populate('progresso.curso', 'titulo cargaHorariaTotal');
-
+            new: true
+        })
+        .populate('cursosIds', 'titulo cargaHorariaTotal status')
+        .populate('progresso.curso', 'titulo cargaHorariaTotal');
+        
         if (!usuario) {
             throw new CustomError({
                 statusCode: HttpStatusCodes.NOT_FOUND.code,
@@ -168,17 +167,14 @@ class UsuarioRepository {
     }
 
     async deletar(id) {
-
         const usuario = await this.model.findByIdAndUpdate(
-                id, {
-                    ativo: false
-                }, {
-                    new: true
-                }
-            )
-            .populate('cursosIds', 'titulo cargaHorariaTotal status')
-            .populate('progresso.curso', 'titulo cargaHorariaTotal');
-
+            id,
+            { ativo: false },
+            { new: true }
+        )
+        .populate('cursosIds', 'titulo cargaHorariaTotal status')
+        .populate('progresso.curso', 'titulo cargaHorariaTotal');
+        
         if (!usuario) {
             throw new CustomError({
                 statusCode: HttpStatusCodes.NOT_FOUND.code,
@@ -207,15 +203,13 @@ class UsuarioRepository {
 
     async restaurar(id) {
         const usuario = await this.model.findByIdAndUpdate(
-                id, {
-                    ativo: true
-                }, {
-                    new: true
-                }
-            )
-            .populate('cursosIds', 'titulo cargaHorariaTotal status')
-            .populate('progresso.curso', 'titulo cargaHorariaTotal');
-
+            id,
+            { ativo: true },
+            { new: true }
+        )
+        .populate('cursosIds', 'titulo cargaHorariaTotal status')
+        .populate('progresso.curso', 'titulo cargaHorariaTotal');
+        
         if (!usuario) {
             throw new CustomError({
                 statusCode: HttpStatusCodes.NOT_FOUND.code,
@@ -278,20 +272,19 @@ class UsuarioRepository {
     enriquecerUsuario(usuario) {
         const usuarioObj = usuario.toObject();
         const totalCursos = usuarioObj.cursosIds.length;
-
-
+        
         const progresso = usuarioObj.progresso || [];
-
+        
         const cursosIniciados = progresso.filter(p => {
             const percentual = parseFloat(p.percentual_conclusao);
             return percentual > 0;
         }).length;
-
+        
         const cursosConcluidos = progresso.filter(p => {
             const percentual = parseFloat(p.percentual_conclusao);
             return percentual >= 100;
         }).length;
-
+        
         const cursosEmAndamento = progresso.filter(p => {
             const percentual = parseFloat(p.percentual_conclusao);
             return percentual > 0 && percentual < 100;
@@ -308,6 +301,77 @@ class UsuarioRepository {
                 cursosInscritosSemProgresso: totalCursos - progresso.length
             }
         };
+    }
+
+    async armazenarTokens(id, accesstoken, refreshtoken) {
+        const documento = await this.model.findById(id);
+        if (!documento) {
+            throw new CustomError({
+                statusCode: HttpStatusCodes.NOT_FOUND.code,
+                errorType: 'resourceNotFound',
+                field: 'Usuário',
+                details: [],
+                customMessage: messages.error.resourceNotFound('Usuário')
+            });
+        }
+
+        documento.accesstoken = accesstoken;
+        documento.refreshtoken = refreshtoken;
+
+        const data = await documento.save();
+        return data;
+    }
+
+    async buscarPorCodigoRecuperacao(codigo) {
+        return await this.model.findOne({ codigo_recupera_senha: codigo });
+    }
+
+    async buscarPorTokenUnico(token) {
+        return await this.model.findOne({ tokenUnico: token });
+    }
+
+    async atualizarSenha(id, senhaHasheada) {
+        const usuarioAtualizado = await this.model.findByIdAndUpdate(
+            id, 
+            { 
+                senha: senhaHasheada,
+                tokenUnico: null, 
+                codigo_recupera_senha: null, 
+                exp_codigo_recupera_senha: null 
+            }, 
+            { new: true }
+        );
+        
+        if (!usuarioAtualizado) {
+            throw new CustomError({
+                statusCode: HttpStatusCodes.NOT_FOUND.code,
+                errorType: 'resourceNotFound',
+                field: 'Usuário',
+                details: [],
+                customMessage: messages.error.resourceNotFound('Usuário')
+            });
+        }
+
+        return usuarioAtualizado;
+    }
+
+    async removeToken(id) {
+        const usuarioExistente = await this.model.findById(id);
+        if (!usuarioExistente) {
+            throw new CustomError({
+                statusCode: HttpStatusCodes.NOT_FOUND.code,
+                errorType: 'resourceNotFound',
+                field: 'Usuário',
+                details: [],
+                customMessage: messages.error.resourceNotFound('Usuário')
+            });
+        }
+
+        usuarioExistente.accesstoken = null;
+        usuarioExistente.refreshtoken = null;
+        
+        await usuarioExistente.save();
+        return usuarioExistente;
     }
 }
 

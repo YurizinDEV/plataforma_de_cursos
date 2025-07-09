@@ -1,20 +1,13 @@
-# Imagem base
-FROM node:18
+FROM node:22
 
-# Diretório de trabalho dentro do container
 WORKDIR /app
 
-# Copia os arquivos de dependências
-COPY package*.json ./
+COPY package.json package-lock.json ./
+RUN npm ci
 
-# Instala as dependências
-RUN npm install
-
-# Copia todos os arquivos da API
 COPY . .
+RUN cp .env.example .env
 
-# Expõe a porta (ajustar conforme .env)
 EXPOSE 5011
 
-# Comando para iniciar a aplicação
-CMD ["npm", "start"]
+ENTRYPOINT ["npm", "start"]

@@ -3,6 +3,7 @@ import express from "express";
 // import swaggerUI from "swagger-ui-express";
 // import getSwaggerOptions from "../docs/config/head.js";
 import logRoutes from "../middlewares/LogRoutesMiddleware.js";
+import auth from './authRoutes.js';
 import usuarios from './usuarioRoutes.js';
 import cursos from './cursoRoutes.js';
 import aulas from './aulaRoutes.js';
@@ -31,6 +32,7 @@ const routes = (app) => {
     // });
 
     app.use(express.json(),
+        auth,
         usuarios,
         cursos,
         aulas,
