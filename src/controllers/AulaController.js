@@ -9,6 +9,8 @@ class AulaController {
   }
 
   async listar(req, res) {
+    console.log('Estou no listar em AulaController');
+
     const { id } = req.params || null;
     if (id) {
       AulaIdSchema.parse(id);

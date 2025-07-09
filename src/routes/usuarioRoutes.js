@@ -9,12 +9,9 @@ import { asyncWrapper } from '../utils/helpers/index.js';
 const router = express.Router();
 const usuarioController = new UsuarioController(); 
 
-// Definindo as rotas com o controlador e os middlewares necessários
 router
-    // ROTA ADMINISTRATIVA/DEV - Criar usuário com flexibilidade (senha opcional)
     .post("/usuarios", AuthMiddleware, /*authPermission,*/ asyncWrapper(usuarioController.criar.bind(usuarioController)))
     
-    // ROTAS PROTEGIDAS - Gerenciamento de usuários
     .get("/usuarios", AuthMiddleware, /*authPermission,*/ asyncWrapper(usuarioController.listar.bind(usuarioController)))
     .get("/usuarios/:id", AuthMiddleware, /*authPermission,*/ asyncWrapper(usuarioController.listar.bind(usuarioController)))
     .put("/usuarios/:id", AuthMiddleware, /*authPermission,*/ asyncWrapper(usuarioController.atualizar.bind(usuarioController)))

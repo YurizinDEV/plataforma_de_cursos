@@ -18,7 +18,7 @@ export default async function usuariosSeed() {
 
     for (let i = 0; i < 20; i++) {
         const isAdmin = i < 2;
-        const isAtivo = i < 15; 
+        const isAtivo = i < 15;
         usuarios.push({
             nome: fakerbr.name.firstName() + " " + fakerbr.name.lastName(),
             senha: gerarSenha(),

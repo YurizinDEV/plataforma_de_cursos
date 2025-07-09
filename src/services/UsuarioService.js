@@ -34,7 +34,7 @@ class UsuarioService {
     }
 
     async atualizar(id, parsedData) {
-        delete parsedData.senha; // Não permite alterar a senha diretamente
+        delete parsedData.senha; 
         delete parsedData.email;
         await this.ensureUserExists(id);
         const data = await this.repository.atualizar(id, parsedData);
@@ -49,24 +49,18 @@ class UsuarioService {
     async deletarFisicamente(id) {
         const usuario = await this.ensureUserExists(id);
 
-        // Verificar dependências para exclusão
         const estatisticas = await this.verificarDependenciasParaExclusao(id);
 
-        // Iniciar transação
         const session = await mongoose.startSession();
         session.startTransaction();
 
         try {
-            // Remover certificados do usuário
             const certificadosExcluidos = await this.certificadoRepository.deletarPorUsuarioId(id, { session });
 
-            // Remover referências do usuário nos cursos que ele criou
             const cursosAtualizados = await this.cursoRepository.removerReferenciaUsuario(id, { session });
 
-            // Deletar fisicamente o usuário
             await this.repository.deletarFisicamente(id, { session });
 
-            // Confirmar transação
             await session.commitTransaction();
             
             return {
@@ -80,7 +74,6 @@ class UsuarioService {
                 }
             };
         } catch (error) {
-            // Reverter transação
             await session.abortTransaction();
             
             if (!(error instanceof CustomError)) {
@@ -98,13 +91,12 @@ class UsuarioService {
             
             throw error;
         } finally {
-            // Finalizar sessão
             session.endSession();
         }
     }
 
     async restaurar(id) {
-        // Verificar se usuário existe
+
         await this.ensureUserExists(id);
         return await this.repository.restaurar(id);
     }
@@ -145,11 +137,9 @@ class UsuarioService {
     }
 
     async verificarDependenciasParaExclusao(usuarioId) {
-        // Verificar se usuário tem progresso significativo em cursos
         const usuario = await this.repository.buscarPorId(usuarioId);
         
         if (usuario.progresso && usuario.progresso.length > 0) {
-            // Verificar se tem progresso significativo (>= 50%)
             const progressoSignificativo = usuario.progresso.some(p => {
                 const percentual = parseFloat(p.percentual_conclusao);
                 return percentual >= 50;
@@ -169,7 +159,6 @@ class UsuarioService {
             }
         }
 
-        // Verificar se usuário criou cursos
         const cursosComoAutor = await this.cursoRepository.buscarPorCriador(usuarioId);
         
         if (cursosComoAutor && cursosComoAutor.length > 0) {
@@ -185,7 +174,6 @@ class UsuarioService {
             });
         }
 
-        // Contar recursos para estatísticas
         const certificados = await this.certificadoRepository.contarPorUsuario(usuarioId);
         
         return {
@@ -197,8 +185,7 @@ class UsuarioService {
 
     async criarComSenha(parsedData) {
         await this.validateEmail(parsedData.email);
-        
-        // Sempre hashar a senha para signup
+
         if (parsedData.senha) {
             const saltRounds = 10;
             parsedData.senha = await bcrypt.hash(parsedData.senha, saltRounds);

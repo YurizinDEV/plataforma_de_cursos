@@ -48,23 +48,23 @@ class Usuario {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: "Curso"
             }],
-            tokenUnico: { // Token único para recuperação de senha.
+            tokenUnico: { 
                 type: String, 
                 select: false 
             }, 
-            codigo_recupera_senha: { // Código de 4 dígitos para recuperação
+            codigo_recupera_senha: { 
                 type: String,
                 select: false
             },
-            exp_codigo_recupera_senha: { // Expiração do código de recuperação
+            exp_codigo_recupera_senha: { 
                 type: Date,
                 select: false
             },
-            refreshtoken: { // Refresh token para geração de access token de autenticação longa duração 7 dias para invalidação.
+            refreshtoken: { 
                 type: String, 
                 select: false 
             }, 
-            accesstoken: { // Access token para autenticação curta duração 15 minutos para invalidação.
+            accesstoken: { 
                 type: String, 
                 select: false 
             }

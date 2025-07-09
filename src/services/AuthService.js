@@ -9,7 +9,6 @@ import UsuarioRepository from '../repositories/UsuarioRepository.js';
 
 class AuthService {
     constructor({ tokenUtil: injectedTokenUtil } = {}) {
-        // Se nada for injetado, usa a instância importada
         this.TokenUtil = injectedTokenUtil || tokenUtil;
         this.repository = new UsuarioRepository();
     }
@@ -30,18 +29,9 @@ class AuthService {
     }
 
     async login(body) {
-        // Buscar o usuário pelo email
         const userEncontrado = await this.repository.buscarPorEmail(body.email);
         if (!userEncontrado) {
 
-            /**
-             * Se o usuário não for encontrado, lança um erro personalizado
-             * É importante para bibliotecas de requisições como DIO, Retrofit, Axios, etc. que o 
-             * statusCode seja 401, pois elas tratam esse código como não autorizado
-             * Isso é importante para que o usuário saiba que o email ou senha estão incorretos
-             * Se o statusCode for 404, a biblioteca não irá tratar como não autorizado
-             * Portanto, é importante que o statusCode seja 401
-            */
             throw new CustomError({
                 statusCode: 401,
                 errorType: 'notFound',
@@ -51,7 +41,6 @@ class AuthService {
             });
         }
 
-        // Validar a senha
         const senhaValida = await bcrypt.compare(body.senha, userEncontrado.senha);
         if (!senhaValida) {
             throw new CustomError({
@@ -63,10 +52,8 @@ class AuthService {
             });
         }
 
-        // Gerar novo access token utilizando a instância injetada
         const accesstoken = await this.TokenUtil.generateAccessToken(userEncontrado._id);
 
-        // Buscar o usuário com os tokens já armazenados
         const userComTokens = await this.repository.buscarPorId(userEncontrado._id, true);
         let refreshtoken = userComTokens.refreshtoken;
 
@@ -87,31 +74,22 @@ class AuthService {
                 }
             }
         } else {
-            // Se o refresh token não existe, gera um novo
             refreshtoken = await this.TokenUtil.generateRefreshToken(userEncontrado._id);
         }
 
-        // Armazenar os tokens atualizados
         await this.repository.armazenarTokens(userEncontrado._id, accesstoken, refreshtoken);
 
-        // Buscar novamente o usuário e remover a senha
         const userLogado = await this.repository.buscarPorEmail(body.email);
         delete userLogado.senha;
         const userObjeto = userLogado.toObject();
 
-        // Retornar o usuário com os tokens
         return { user: { accesstoken, refreshtoken, ...userObjeto } };
     }
 
-
-    // RecuperaSenhaService.js
     async recuperaSenha(body) {
-        // ───────────────────────────────────────────────
-        // Passo 1 – Buscar usuário pelo e-mail informado
-        // ───────────────────────────────────────────────
+
         const userEncontrado = await this.repository.buscarPorEmail(body.email);
 
-        // Se não encontrar, lança erro 404
         if (!userEncontrado) {
             throw new CustomError({
                 statusCode: HttpStatusCodes.NOT_FOUND.code,
@@ -121,20 +99,14 @@ class AuthService {
             });
         }
 
-        // ───────────────────────────────────────────────
-        // Passo 2 – Gerar código de verificação (4 carac.)
-        // ───────────────────────────────────────────────
         const generateCode = () => Math.random()
-            .toString(36)              // ex: "0.f5g9hk3j"
-            .replace(/[^a-z0-9]/gi, '') // mantém só letras/números
-            .slice(0, 4)               // pega os 4 primeiros
-            .toUpperCase();            // converte p/ maiúsculas
+            .toString(36)             
+            .replace(/[^a-z0-9]/gi, '') 
+            .slice(0, 4)              
+            .toUpperCase();           
 
         let codigoRecuperaSenha = generateCode();
 
-        // ───────────────────────────────────────────────
-        // Passo 3 – Garantir unicidade do código gerado 
-        // ───────────────────────────────────────────────
         let codigoExistente =
             await this.repository.buscarPorCodigoRecuperacao(codigoRecuperaSenha);
 
@@ -144,24 +116,17 @@ class AuthService {
                 await this.repository.buscarPorCodigoRecuperacao(codigoRecuperaSenha);
         }
 
-        // ───────────────────────────────────────────────
-        // Passo 4 – Gerar token único (JWT) p/ recuperação
-        // ───────────────────────────────────────────────
         const tokenUnico =
             await this.TokenUtil.generatePasswordRecoveryToken(userEncontrado._id);
 
-        // ───────────────────────────────────────────────
-        // Passo 5 – Persistir token + código no usuário
-        // ───────────────────────────────────────────────
-        const expMs = Date.now() + 60 * 60 * 1000; // 1 hora de expiração
+        const expMs = Date.now() + 60 * 60 * 1000;
         const data = await this.repository.atualizar(userEncontrado._id, {
             tokenUnico,
             codigo_recupera_senha: codigoRecuperaSenha,
-            exp_codigo_recupera_senha: new Date(expMs).toISOString() // Armazenar expiração como string ISO TMZ0 Ex.: 2023-10-01T12:00:00.000Z
+            exp_codigo_recupera_senha: new Date(expMs).toISOString()
         });
 
         if (!data) {
-            // Falha ao atualizar → erro 500
             throw new CustomError({
                 statusCode: HttpStatusCodes.INTERNAL_SERVER_ERROR.code,
                 field: 'Recuperação de Senha',
@@ -170,28 +135,6 @@ class AuthService {
             });
         }
 
-        /**
-         * Passo 6 – Enviar e-mail com código + link
-         * 
-         * Usar CHAVE MAIL_API_KEI no .env para requisitar o envio de e-mail em https://edurondon.tplinkdns.com/mail/emails/send
-         * Exemplo de corpo do e-mail:
-         * Corpo do e-mail:
-         * {
-            "to": "falecomgilberto@gmail.com",
-            "subject": "Redefinir senha",
-            "template": "password-reset",
-            "data": {
-                "name": "Gilberto",
-                "resetUrl": "https://edurondon.tplinkdns.com?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.yJpZCI6IjY4NDFmNWVhMmQ5YWYxOWVlN2Y1YmY3OCIsImlhdCI6MTc0OTU2OTI1MiwiZXhwIjoxNzQ5NTcyODUyfQ.D_bW22QyKqZ2YL6lv7kRo-_zY54v3esNHsxK7DKeOq0",
-                "expirationMinutes": 30,
-                "year": 2025,
-                "company": "Exemplo Ltda"
-                }
-            }
-         * 
-         */
-
-        // Preparar dados do e-mail
         const resetUrl = `https://edurondon.tplinkdns.com/auth/?token=${tokenUnico}`;
         const emailData = {
             to: userEncontrado.email,
@@ -200,14 +143,12 @@ class AuthService {
             data: {
                 name: userEncontrado.nome,
                 resetUrl: resetUrl,
-                expirationMinutes: 60, // Expiração em minutos
+                expirationMinutes: 60, 
                 year: new Date().getFullYear(),
                 company: process.env.COMPANY_NAME || 'Auth'
             }
         };
 
-        // Criar função para fazer a chamada para enviar o e-mail
-        // Usa a URL base do serviço de e-mail do .env
         const sendMail = async (emailData) => {
             const mailApiUrl = process.env.MAIL_API_URL || 'http://localhost:3001';
             const url = `${mailApiUrl}/emails/send?apiKey=${process.env.MAIL_API_KEY}`;
@@ -238,38 +179,21 @@ class AuthService {
 
         await sendMail(emailData);
 
-        // ───────────────────────────────────────────────
-        // Passo 7 – Retornar resposta ao cliente
-        // ───────────────────────────────────────────────
         return {
             message:
                 'Solicitação de recuperação de senha recebida. Um e-mail foi enviado com instruções.'
         };
     }
 
-    /**
-          * Atualiza a senha do próprio usuário em dois cenários NÃO autenticados:
-          *
-          * 1) Normal (token único passado na URL como query: `?token=<JWT_PASSWORD_RECOVERY>`) 
-          *    + { senha } no body.
-          *    → Decodifica JWT, extrai usuarioId, salva o hash da nova senha mesmo que usuário esteja inativo.
-          *
-          * 2) Recuperação por código (envia `{ codigo_recupera_senha, senha }` no body).
-          *    → Busca usuário pelo campo `codigo_recupera_senha`, salva hash da nova senha (mesmo se inativo),
-          *      e "zera" o campo `codigo_recupera_senha`.
-          */
     async atualizarSenhaToken(tokenRecuperacao, senhaBody) {
-        // 1) Decodifica o token para obter o ID do usuário
         const usuarioId = await this.TokenUtil.decodePasswordRecoveryToken(
             tokenRecuperacao,
             process.env.JWT_SECRET_PASSWORD_RECOVERY
         );
 
-        // 2) Gera o hash da senha pura
         const senhaHasheada = await AuthHelper.hashPassword(senhaBody.senha);
         console.log('Senha hasheada:', senhaHasheada);
 
-        // Buscar usuário pelo token unico
         const usuario = await this.repository.buscarPorTokenUnico(tokenRecuperacao);
         if (!usuario) {
             throw new CustomError({
@@ -280,7 +204,6 @@ class AuthService {
             });
         }
 
-        // 3) Atualiza no repositório (já com hash)
         const usuarioAtualizado = await this.repository.atualizarSenha(usuarioId, senhaHasheada);
         if (!usuarioAtualizado) {
             throw new CustomError({
@@ -294,11 +217,8 @@ class AuthService {
         return { message: 'Senha atualizada com sucesso.' };
     }
 
-    /**
-     * Atualiza senha via código de recuperação
-     */
     async atualizarSenhaCodigo(codigoRecuperaSenha, senhaBody) {
-        // 1) Busca usuário pelo código de recuperação
+
         const user = await this.repository.buscarPorCodigoRecuperacao(
             codigoRecuperaSenha
         );
@@ -311,7 +231,6 @@ class AuthService {
             });
         }
 
-        // 2) Verifica expiração
         if (user.exp_codigo_recupera_senha < new Date()) {
             throw new CustomError({
                 statusCode: HttpStatusCodes.UNAUTHORIZED.code,
@@ -321,10 +240,8 @@ class AuthService {
             });
         }
 
-        // 3) Hash da nova senha
         const senhaHasheada = await AuthHelper.hashPassword(senhaBody.senha);
 
-        // 4) Atualiza no repositório
         const atualizado = await this.repository.atualizarSenha(
             user._id,
             senhaHasheada
@@ -364,14 +281,8 @@ class AuthService {
             });
         }
 
-
-        // Gerar novo access token utilizando a instância injetada
         const accesstoken = await this.TokenUtil.generateAccessToken(id);
 
-        /**
-         * Se SINGLE_SESSION_REFRESH_TOKEN for true, gera um novo refresh token
-         * Senão, mantém o token armazenado
-         */
         let refreshtoken = '';
         if (process.env.SINGLE_SESSION_REFRESH_TOKEN === 'true') {
             refreshtoken = await this.TokenUtil.generateRefreshToken(id);
@@ -379,10 +290,8 @@ class AuthService {
             refreshtoken = userEncontrado.refreshtoken;
         }
 
-        // Atualiza o usuário com os novos tokens
         await this.repository.armazenarTokens(id, accesstoken, refreshtoken);
 
-        // monta o objeto de usuário com os tokens para resposta
         const userLogado = await this.repository.buscarPorId(id, { includeTokens: true });
         delete userLogado.senha;
         const userObjeto = userLogado.toObject();

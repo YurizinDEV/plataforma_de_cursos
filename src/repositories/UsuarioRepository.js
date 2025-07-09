@@ -119,12 +119,10 @@ class UsuarioRepository {
             limit: limite,
         };
 
-        // Se há filtros especiais (como ordenação), aplicá-los
         if (filtrosCompletos.especiais && filtrosCompletos.especiais.sort) {
             opcoesPaginacao.sort = filtrosCompletos.especiais.sort;
         }
 
-        // Usar apenas os filtros normais para a consulta
         const filtrosConsulta = filtrosCompletos.filtros || filtrosCompletos;
 
         const resultado = await this.model.paginate(filtrosConsulta, {
@@ -148,7 +146,6 @@ class UsuarioRepository {
     }
 
     async atualizar(id, parsedData) {
-        // Impede alteração direta de email e senha
         if ('email' in parsedData) delete parsedData.email;
         if ('senha' in parsedData) delete parsedData.senha;
         const usuario = await this.model.findByIdAndUpdate(id, parsedData, {
@@ -170,7 +167,6 @@ class UsuarioRepository {
     }
 
     async deletar(id) {
-        // Soft delete - muda ativo para false
         const usuario = await this.model.findByIdAndUpdate(
             id,
             { ativo: false },
@@ -277,7 +273,6 @@ class UsuarioRepository {
         const usuarioObj = usuario.toObject();
         const totalCursos = usuarioObj.cursosIds.length;
         
-        // Estatísticas de progresso
         const progresso = usuarioObj.progresso || [];
         
         const cursosIniciados = progresso.filter(p => {
@@ -307,8 +302,6 @@ class UsuarioRepository {
             }
         };
     }
-
-    // Métodos para autenticação
 
     async armazenarTokens(id, accesstoken, refreshtoken) {
         const documento = await this.model.findById(id);
@@ -342,9 +335,9 @@ class UsuarioRepository {
             id, 
             { 
                 senha: senhaHasheada,
-                tokenUnico: null, // Limpa o token após uso
-                codigo_recupera_senha: null, // Limpa o código após uso
-                exp_codigo_recupera_senha: null // Limpa a expiração
+                tokenUnico: null, 
+                codigo_recupera_senha: null, 
+                exp_codigo_recupera_senha: null 
             }, 
             { new: true }
         );

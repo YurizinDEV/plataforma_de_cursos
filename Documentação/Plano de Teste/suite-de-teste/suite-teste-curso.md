@@ -1,4 +1,4 @@
-# Plano de Teste para Model (Sprint 4 e 6) 
+# Plano de Teste para Model (Sprint 4) 
 
 | Funcionalidade                  | Comportamento Esperado                                                                 | Verificações                                                        | Critérios de Aceite                                                                                 |
 |---------------------------------|--------------------------------------------------------------------------------------|---------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
@@ -39,7 +39,7 @@
 | Bloqueio de exclusão       | Deve impedir exclusão de curso com usuários com progresso significativo              | Tentar excluir curso com usuário com progresso > 30%                | Deve retornar erro 409 (Conflict) com mensagem adequada                                          |
 | Estatísticas na exclusão   | Ao excluir um curso, deve retornar estatísticas do que foi excluído                  | Excluir um curso com aulas, questionários, alternativas e certificados | Resposta contém contagens de entidades excluídas                                                  |
 
-# Plano de Teste Service (Sprint 5 e 6)
+# Plano de Teste Service (Sprint 5)
 
 | Funcionalidade              | Comportamento Esperado                                                                 | Verificações                                                        | Critérios de Aceite                                                                                 |
 |----------------------------|--------------------------------------------------------------------------------------|---------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
@@ -55,7 +55,7 @@
 | Remoção de referências em usuários | Ao excluir um curso, deve remover referências em usuários | Excluir um curso que possui referências em usuários | As referências ao curso são removidas dos usuários (cursosIds e progresso) |
 | Tratamento de erros | Deve propagar erros apropriadamente sem try/catch desnecessários | Verificar como erros são tratados no service | Erros são propagados corretamente e apenas try/catch necessários para transação |
 
-# Plano de Teste Repository (Sprint 5 e 6)
+# Plano de Teste Repository (Sprint 5)
 
 | Funcionalidade              | Comportamento Esperado                                                                 | Verificações                                                        | Critérios de Aceite                                                                                 |
 |----------------------------|--------------------------------------------------------------------------------------|---------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
@@ -81,3 +81,6 @@
 | Comportamento padrão de status | Deve retornar apenas cursos ativos quando status não é especificado | Listar cursos sem filtro de status | Retorna apenas cursos ativos e cursos sem status definido |
 | Filtros especiais no builder | Deve construir corretamente filtros que exigem tratamento especial | Testar build() com filtros como quantidadeAulas e sort | Retorna estrutura com filtros normais e especiais separados |
 | Combinações de filtros | Deve aplicar corretamente múltiplos filtros em uma mesma consulta | Combinar filtros de tags, professores, datas e status | Retorna apenas cursos que atendem a todos os critérios combinados |
+
+
+# Plano de Teste ENDPOINT (Sprint 6)

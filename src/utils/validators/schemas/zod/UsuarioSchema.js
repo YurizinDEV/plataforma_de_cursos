@@ -1,5 +1,4 @@
 // src/utils/validators/schemas/zod/UsuarioSchema.js
-
 import {
   z
 } from 'zod';
@@ -8,13 +7,8 @@ import {
   RotaSchema
 } from './RotaSchema.js';
 
-/** Definição da expressão regular para a senha
- * Padrão: 1 letra maiúscula, 1 letra minúscula, 1 número e 1 caractere especial
- * Tamanho mínimo: 8 caracteres
- **/
 const senhaRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
-// Validação para arrays de ObjectId sem duplicatas
 const distinctObjectIdArray = z
   .array(objectIdSchema)
   .refine(
@@ -23,7 +17,7 @@ const distinctObjectIdArray = z
     }
   );
 
-// Esquema para dados do usuário
+
 const UsuarioSchema = z.object({
   nome: z.string().min(1, 'Campo nome é obrigatório.'),
   email: z
@@ -38,17 +32,16 @@ const UsuarioSchema = z.object({
   link_foto: z.string().optional(),
   ativo: z.boolean().default(false),
 
-  // Progresso do usuário (opcional)
+
   progresso: z.array(z.object({
     percentual_conclusao: z.string().min(1, 'Percentual de conclusão é obrigatório.'),
-    curso: objectIdSchema // Exemplo de ID do curso
+    curso: objectIdSchema
   })).optional().default([]),
 
-  // IDs dos cursos (opcional)
+
   cursosIds: distinctObjectIdArray.optional().default([]),
 });
 
-// Para atualizações, todos os campos são opcionais
 const UsuarioUpdateSchema = UsuarioSchema.partial();
 
 export {

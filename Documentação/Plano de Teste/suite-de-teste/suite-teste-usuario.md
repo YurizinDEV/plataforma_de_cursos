@@ -11,7 +11,7 @@
 | Leitura de usuários        | O sistema deve retornar todos os usuários cadastrados                                 | Fazer find() e verificar leitura dos dados inseridos                 | A resposta contém um array com os usuários cadastrados                                              |
 | Atualização de usuário     | Deve ser possível atualizar informações de um usuário válido, exceto e-mail e senha   | Fazer updateOne() / findByIdAndUpdate()                             | O usuário deve refletir os dados alterados, exceto `email` e `senha`                                |
 | Proibição de update email  | Não deve ser possível alterar o e-mail de um usuário                                  | Tentar atualizar o campo `email`                                     | O campo `email` permanece inalterado após a operação                                                |
-| Proibição de update senha  | Não deve ser possível alterar a senha de um usuário por update direto                 | Tentar atualizar o campo `senha`                                     | O campo `senha` permanece inalterado após a operação                                                |
+| Proibição de update senha  | Não deve ser possível alterar a senha de um usuário por update direto                 | Tentar atualizar o campo `senha` e verificar que a senha original permanece                | O campo `senha` é removido do update e a senha original permanece inalterada (buscar usuário original com +senha para comparar) |
 | Soft delete de usuário     | Um usuário deve ser desativado (ativo=false) ao invés de removido fisicamente         | Fazer update com `ativo: false`                                     | O usuário permanece no banco com campo `ativo` como `false`                                         |
 | Restauração de usuário     | Um usuário desativado pode ser reativado (ativo=true)                                 | Fazer update com `ativo: true` em usuário desativado                | O usuário fica com campo `ativo` como `true` e volta a ser utilizável                               |
 | Relacionamento com cursos  | Um usuário pode ter múltiplos cursos associados via `cursosIds`                       | Associar cursos ao usuário e verificar o array `cursosIds`           | O array `cursosIds` contém os ids dos cursos associados corretamente                                |
@@ -49,7 +49,7 @@
 |----------------------------|--------------------------------------------------------------------------------------|---------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
 | Criptografia de senha      | Deve criptografar a senha antes de salvar                                             | Cadastrar usuário e verificar campo `senha`                         | O campo `senha` está criptografado                                                                  |
 | Proibição de update email  | Deve impedir alteração de e-mail via update                                           | Tentar atualizar o campo `email`                                    | O campo `email` permanece inalterado após a operação                                                |
-| Proibição de update senha  | Deve impedir alteração de senha via update                                            | Tentar atualizar o campo `senha`                                    | O campo `senha` permanece inalterado após a operação                                                |
+| Proibição de update senha  | Deve impedir alteração de senha via update                                            | Tentar atualizar o campo `senha` e verificar que a senha original permanece                | O campo `senha` é removido do update e a senha original permanece inalterada (buscar usuário original com +senha para comparar) |
 | Unicidade de e-mail        | Deve validar unicidade do e-mail                                                      | Cadastrar dois usuários com o mesmo e-mail                          | A segunda operação falha com erro de unicidade                                                      |
 | Usuário inexistente        | Deve lançar erro se usuário não existir ao atualizar ou deletar                       | Atualizar ou deletar usuário inexistente                            | Deve retornar erro 404 para usuário não encontrado                                                   |
 | Falha na criptografia da senha | Deve lançar erro se a senha não puder ser criptografada                              | Simular falha no bcrypt.hash                                        | Deve lançar exceção e não salvar usuário                                                            |
@@ -84,37 +84,7 @@
 | Filtro por período de criação| Deve filtrar usuários por data de criação                                           | Listar usuários com dataInicio e dataFim                            | Retorna apenas usuários criados no período especificado                                             |
 | Ordenação de resultados     | Deve ordenar resultados por campos válidos                                           | Listar usuários com ordenarPor e direcao                            | Retorna usuários ordenados pelo campo e direção especificados                                       |
 | Populate automático de cursos| Deve popular automaticamente dados dos cursos relacionados                           | Buscar usuário com cursosIds ou progresso                           | cursosIds e progresso.curso retornam objetos completos dos cursos                                   |
-| Populate em operações de escrita| Deve retornar dados populados em operações de atualização e soft delete            | Atualizar, deletar ou restaurar usuário                             | Operações retornam usuário com dados de cursos populados                                            |
+| Populate em operações de escrita| Deve retornar dados populados em operações de atualização e soft delete            | Atualizar, deletar ou restaurar usuário                             | Operações retornam usuário com dados de cursos populados            
+
 
 # Plano de Teste ENDPOINT (Sprint 6)
-
-## Resumo dos Testes para Usuário - Sprint 5 ✅
-
-**CONCLUÍDO COM SUCESSO** - Todos os componentes do sistema de usuário foram testados com alta cobertura de código.
-
-### Cobertura Alcançada:
-
-#### 1. UsuarioRepository.js 
-- **Cobertura:** 94.44% Statements | 94.33% Branches | 93.75% Functions | 94.28% Lines
-- **Testes:** 39 casos de teste
-- **Status:** ✅ CONCLUÍDO - Meta de 80%+ atingida
-
-#### 2. UsuarioFilterBuilder.js
-- **Cobertura:** 100% Statements | 100% Branches | 100% Functions | 100% Lines
-- **Testes:** 59 casos de teste
-- **Status:** ✅ CONCLUÍDO - Cobertura máxima atingida
-
-#### 3. UsuarioQuerySchema.js
-- **Cobertura:** 100% Statements | 100% Branches | 100% Functions | 100% Lines
-- **Testes:** 37 casos de teste
-- **Status:** ✅ CONCLUÍDO - Melhorado de 76% para 100% de branches
-
-### Melhorias Implementadas:
-- Testes completos para todos os branches das validações Zod (ehAdmin, dataInicio, dataFim, ordenarPor, direcao)
-- Cobertura de casos edge cases e múltiplos campos inválidos
-- Testes para métodos assíncronos com mocks (comGrupo, comUnidade)
-- Casos de teste para escape de regex e transformações
-- Testes de isolamento entre instâncias
-- Validação de estruturas complexas de filtros
-
-### Total de Testes: 135 casos de teste passando ✅

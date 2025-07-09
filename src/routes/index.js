@@ -17,15 +17,10 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const routes = (app) => {
-    console.log('=== REGISTRANDO ROTAS ===');
     if (process.env.DEBUGLOG) {
-        console.log('DEBUGLOG está ativo - Registrando middleware de log');
         app.use(logRoutes);
-        console.log('Middleware de log registrado');
     }
-    console.log('Registrando rota GET /');
     app.get("/", (req, res) => {
-        console.log('=== ROTA GET / CHAMADA ===');
         res.redirect("/docs");
     }
     );
@@ -36,15 +31,15 @@ const routes = (app) => {
     //     swaggerUI.setup(swaggerDocs)(req, res, next);
     // });
 
-    console.log('=== REGISTRANDO MIDDLEWARES E ROTAS ===');
-    app.use(express.json());
-    app.use(auth);
-    app.use(usuarios);
-    app.use(cursos);
-    app.use(aulas);
-    app.use(alternativas);
-    app.use(questionarios);
-    app.use(certificados);
+    app.use(express.json(),
+        auth,
+        usuarios,
+        cursos,
+        aulas,
+        alternativas,
+        questionarios,
+        certificados,
+    );
 
     app.use((req, res) => {
         res.status(404).json({ message: "Rota não encontrada" });

@@ -12,13 +12,19 @@ import {
 jest.mock('../../../services/UsuarioService.js');
 jest.mock('../../../utils/validators/schemas/zod/UsuarioSchema.js');
 jest.mock('../../../utils/validators/schemas/zod/querys/UsuarioQuerySchema.js', () => ({
-    UsuarioIdSchema: { parse: jest.fn() },
-    UsuarioQuerySchema: { parseAsync: jest.fn() }
+    UsuarioIdSchema: {
+        parse: jest.fn()
+    },
+    UsuarioQuerySchema: {
+        parseAsync: jest.fn()
+    }
 }));
 jest.mock('../../../utils/helpers/index.js', () => {
     const original = jest.requireActual('../../../utils/helpers/index.js');
     class CustomError extends Error {
-        constructor({ customMessage }) {
+        constructor({
+            customMessage
+        }) {
             super(customMessage);
             this.name = 'CustomError';
             this.customMessage = customMessage;
@@ -49,15 +55,18 @@ const mockResponse = () => {
     return res;
 };
 
-// Importa o mock real do Jest para garantir unicidade
-const { UsuarioIdSchema, UsuarioQuerySchema } = require('../../../utils/validators/schemas/zod/querys/UsuarioQuerySchema.js');
+
+const {
+    UsuarioIdSchema,
+    UsuarioQuerySchema
+} = require('../../../utils/validators/schemas/zod/querys/UsuarioQuerySchema.js');
 
 describe('UsuarioController', () => {
     let controller;
     let service;
     beforeEach(() => {
         jest.clearAllMocks();
-        // Força o mock no prototype global, cobre qualquer referência
+
         Object.getPrototypeOf(UsuarioIdSchema).parse = UsuarioIdSchema.parse;
         controller = new UsuarioController();
         service = controller.service;
@@ -65,11 +74,18 @@ describe('UsuarioController', () => {
 
     describe('listar', () => {
         it('deve listar usuários com sucesso', async () => {
-            service.listar.mockResolvedValue({ docs: [{ nome: 'Usuário' }], totalDocs: 1 });
+            service.listar.mockResolvedValue({
+                docs: [{
+                    nome: 'Usuário'
+                }],
+                totalDocs: 1
+            });
             CommonResponse.success.mockImplementation((res, data) => data);
             UsuarioQuerySchema.parseAsync = jest.fn();
             const req = mockRequest();
-            req.query = { nome: 'Usuário' };
+            req.query = {
+                nome: 'Usuário'
+            };
             const res = mockResponse();
             await controller.listar(req, res);
             expect(service.listar).toHaveBeenCalledWith(req);
@@ -87,7 +103,9 @@ describe('UsuarioController', () => {
             service.listar.mockResolvedValue({});
             UsuarioQuerySchema.parseAsync = jest.fn();
             const req = mockRequest();
-            req.query = { nome: 'Usuário' };
+            req.query = {
+                nome: 'Usuário'
+            };
             const res = mockResponse();
             await controller.listar(req, res);
             expect(UsuarioQuerySchema.parseAsync).toHaveBeenCalledWith(req.query);
@@ -108,20 +126,26 @@ describe('UsuarioController', () => {
             await expect(controller.listar(req, res)).rejects.toThrow('Erro interno');
         });
         it('deve listar sem validar id quando params é undefined', async () => {
-            service.listar.mockResolvedValue({ docs: [], totalDocs: 0 });
+            service.listar.mockResolvedValue({
+                docs: [],
+                totalDocs: 0
+            });
             CommonResponse.success.mockImplementation((res, data) => data);
             const req = mockRequest();
-            delete req.params; // Remove params para testar branch de req.params || {}
+            delete req.params;
             const res = mockResponse();
             await controller.listar(req, res);
             expect(UsuarioIdSchema.parse).not.toHaveBeenCalled();
             expect(service.listar).toHaveBeenCalledWith(req);
         });
         it('deve listar sem validar id quando params.id é undefined', async () => {
-            service.listar.mockResolvedValue({ docs: [], totalDocs: 0 });
+            service.listar.mockResolvedValue({
+                docs: [],
+                totalDocs: 0
+            });
             CommonResponse.success.mockImplementation((res, data) => data);
             const req = mockRequest();
-            req.params = {}; // params existe mas sem id
+            req.params = {};
             const res = mockResponse();
             await controller.listar(req, res);
             expect(UsuarioIdSchema.parse).not.toHaveBeenCalled();
@@ -131,11 +155,26 @@ describe('UsuarioController', () => {
 
     describe('criar', () => {
         it('deve criar usuário com sucesso', async () => {
-            UsuarioSchema.parse = jest.fn().mockReturnValue({ nome: 'Usuário', email: 'a@a.com', senha: 'Senha@123' });
-            service.criar.mockResolvedValue({ toObject: () => ({ nome: 'Usuário', email: 'a@a.com', ehAdmin: false, ativo: false }) });
+            UsuarioSchema.parse = jest.fn().mockReturnValue({
+                nome: 'Usuário',
+                email: 'a@a.com',
+                senha: 'Senha@123'
+            });
+            service.criar.mockResolvedValue({
+                toObject: () => ({
+                    nome: 'Usuário',
+                    email: 'a@a.com',
+                    ehAdmin: false,
+                    ativo: false
+                })
+            });
             CommonResponse.created.mockImplementation((res, data) => data);
             const req = mockRequest();
-            req.body = { nome: 'Usuário', email: 'a@a.com', senha: 'Senha@123' };
+            req.body = {
+                nome: 'Usuário',
+                email: 'a@a.com',
+                senha: 'Senha@123'
+            };
             const res = mockResponse();
             await controller.criar(req, res);
             expect(UsuarioSchema.parse).toHaveBeenCalledWith(req.body);
@@ -143,17 +182,27 @@ describe('UsuarioController', () => {
             expect(CommonResponse.created).toHaveBeenCalled();
         });
         it('deve lançar erro de validação do schema', async () => {
-            UsuarioSchema.parse = jest.fn(() => { throw new Error('Erro de validação'); });
+            UsuarioSchema.parse = jest.fn(() => {
+                throw new Error('Erro de validação');
+            });
             const req = mockRequest();
             req.body = {};
             const res = mockResponse();
             await expect(controller.criar(req, res)).rejects.toThrow('Erro de validação');
         });
         it('deve lançar erro do service', async () => {
-            UsuarioSchema.parse = jest.fn().mockReturnValue({ nome: 'Usuário', email: 'a@a.com', senha: 'Senha@123' });
+            UsuarioSchema.parse = jest.fn().mockReturnValue({
+                nome: 'Usuário',
+                email: 'a@a.com',
+                senha: 'Senha@123'
+            });
             service.criar.mockRejectedValue(new Error('Erro interno'));
             const req = mockRequest();
-            req.body = { nome: 'Usuário', email: 'a@a.com', senha: 'Senha@123' };
+            req.body = {
+                nome: 'Usuário',
+                email: 'a@a.com',
+                senha: 'Senha@123'
+            };
             const res = mockResponse();
             await expect(controller.criar(req, res)).rejects.toThrow('Erro interno');
         });
@@ -161,21 +210,34 @@ describe('UsuarioController', () => {
 
     describe('atualizar', () => {
         it('deve atualizar usuário com sucesso', async () => {
-            UsuarioUpdateSchema.parse = jest.fn().mockReturnValue({ nome: 'Novo Nome' });
-            service.atualizar.mockResolvedValue({ toObject: () => ({ nome: 'Novo Nome', email: 'a@a.com' }) });
+            UsuarioUpdateSchema.parse = jest.fn().mockReturnValue({
+                nome: 'Novo Nome'
+            });
+            service.atualizar.mockResolvedValue({
+                toObject: () => ({
+                    nome: 'Novo Nome',
+                    email: 'a@a.com'
+                })
+            });
             CommonResponse.success.mockImplementation((res, data) => data);
             const req = mockRequest();
             req.params.id = 'id';
-            req.body = { nome: 'Novo Nome' };
+            req.body = {
+                nome: 'Novo Nome'
+            };
             const res = mockResponse();
             await controller.atualizar(req, res);
             expect(UsuarioIdSchema.parse).toHaveBeenCalledWith('id');
             expect(UsuarioUpdateSchema.parse).toHaveBeenCalledWith(req.body);
-            expect(service.atualizar).toHaveBeenCalledWith('id', { nome: 'Novo Nome' });
+            expect(service.atualizar).toHaveBeenCalledWith('id', {
+                nome: 'Novo Nome'
+            });
             expect(CommonResponse.success).toHaveBeenCalled();
         });
         it('deve lançar erro se body vazio', async () => {
-            UsuarioUpdateSchema.parse = jest.fn(() => { throw new Error('Nenhum dado fornecido para atualização.'); });
+            UsuarioUpdateSchema.parse = jest.fn(() => {
+                throw new Error('Nenhum dado fornecido para atualização.');
+            });
             const req = mockRequest();
             req.params.id = 'id';
             req.body = {};
@@ -183,11 +245,15 @@ describe('UsuarioController', () => {
             await expect(controller.atualizar(req, res)).rejects.toThrow('Nenhum dado fornecido para atualização.');
         });
         it('deve lançar erro do service', async () => {
-            UsuarioUpdateSchema.parse = jest.fn().mockReturnValue({ nome: 'Novo Nome' });
+            UsuarioUpdateSchema.parse = jest.fn().mockReturnValue({
+                nome: 'Novo Nome'
+            });
             service.atualizar.mockRejectedValue(new Error('Erro interno'));
             const req = mockRequest();
             req.params.id = 'id';
-            req.body = { nome: 'Novo Nome' };
+            req.body = {
+                nome: 'Novo Nome'
+            };
             const res = mockResponse();
             await expect(controller.atualizar(req, res)).rejects.toThrow('Erro interno');
         });
@@ -195,28 +261,46 @@ describe('UsuarioController', () => {
 
     describe('deletar', () => {
         it('deve deletar usuário com sucesso', async () => {
-            service.deletar.mockResolvedValue({ toObject: () => ({ nome: 'Usuário', email: 'a@a.com', ativo: false }) });
+            service.deletar.mockResolvedValue({
+                toObject: () => ({
+                    nome: 'Usuário',
+                    email: 'a@a.com',
+                    ativo: false
+                })
+            });
             CommonResponse.success.mockImplementation((res, data) => data);
             const req = mockRequest();
             req.params.id = 'id';
             const res = mockResponse();
             await controller.deletar(req, res);
-            // Removido expect(UsuarioIdSchema.parse) porque deletar() não chama essa função
+
             expect(service.deletar).toHaveBeenCalledWith('id');
             expect(CommonResponse.success).toHaveBeenCalled();
         });
         it('deve deletar um usuário existente com sucesso', async () => {
-            service.deletar.mockResolvedValue({ toObject: () => ({ nome: 'Usuário', email: 'a@a.com', ativo: false }) });
+            service.deletar.mockResolvedValue({
+                toObject: () => ({
+                    nome: 'Usuário',
+                    email: 'a@a.com',
+                    ativo: false
+                })
+            });
             CommonResponse.success.mockImplementation((res, data, statusCode, message) => {
                 res.status(statusCode || 200);
-                res.json({ data, message });
-                return { data, message };
+                res.json({
+                    data,
+                    message
+                });
+                return {
+                    data,
+                    message
+                };
             });
             const req = mockRequest();
             req.params.id = 'id';
             const res = mockResponse();
             await controller.deletar(req, res);
-            // Removido expect(UsuarioIdSchema.parse) porque deletar() não chama essa função
+
             expect(service.deletar).toHaveBeenCalledWith('id');
             expect(res.status).toHaveBeenCalledWith(200);
             expect(res.json).toHaveBeenCalled();
@@ -228,7 +312,7 @@ describe('UsuarioController', () => {
             await expect(controller.deletar(req, res)).rejects.toThrow('ID do usuário é obrigatório para deletar.');
         });
         it('deve lançar erro do service', async () => {
-            // Não sobrescreva o mock global
+
             service.deletar.mockRejectedValue(new Error('Erro interno'));
             const req = mockRequest();
             req.params.id = 'id';
@@ -237,7 +321,7 @@ describe('UsuarioController', () => {
         });
         it('deve lançar erro quando params é undefined', async () => {
             const req = mockRequest();
-            delete req.params; // Remove params para testar branch de req.params || {}
+            delete req.params;
             const res = mockResponse();
             await expect(controller.deletar(req, res)).rejects.toThrow('ID do usuário é obrigatório para deletar.');
         });
@@ -245,7 +329,13 @@ describe('UsuarioController', () => {
 
     describe('restaurar', () => {
         it('deve restaurar usuário com sucesso', async () => {
-            service.restaurar.mockResolvedValue({ toObject: () => ({ nome: 'Usuário', email: 'a@a.com', ativo: true }) });
+            service.restaurar.mockResolvedValue({
+                toObject: () => ({
+                    nome: 'Usuário',
+                    email: 'a@a.com',
+                    ativo: true
+                })
+            });
             CommonResponse.success.mockImplementation((res, data) => data);
             const req = mockRequest();
             req.params.id = 'id';
@@ -269,7 +359,7 @@ describe('UsuarioController', () => {
         });
         it('deve lançar erro quando params é undefined', async () => {
             const req = mockRequest();
-            delete req.params; // Remove params para testar branch de req.params || {}
+            delete req.params;
             const res = mockResponse();
             await expect(controller.restaurar(req, res)).rejects.toThrow('ID do usuário não fornecido');
         });
@@ -301,7 +391,7 @@ describe('UsuarioController', () => {
         });
         it('deve lançar erro quando params é undefined', async () => {
             const req = mockRequest();
-            delete req.params; // Remove params para testar branch de req.params || {}
+            delete req.params;
             const res = mockResponse();
             await expect(controller.deletarFisicamente(req, res)).rejects.toThrow('ID do usuário não fornecido');
         });

@@ -61,7 +61,7 @@ class UsuarioFilterBuilder {
         if (dataFim) {
             const data = new Date(dataFim);
             if (!isNaN(data.getTime())) {
-                // Adiciona 23:59:59 para incluir todo o dia
+                
                 data.setHours(23, 59, 59, 999);
                 this.filtros.createdAt = this.filtros.createdAt || {};
                 this.filtros.createdAt.$lte = data;
@@ -123,15 +123,17 @@ class UsuarioFilterBuilder {
 
     build() {
         const filtrosEspeciais = {};
-        const filtrosNormais = { ...this.filtros };
+        const filtrosNormais = {
+            ...this.filtros
+        };
 
-        // Extrair filtros especiais
+        
         if (filtrosNormais._sort) {
             filtrosEspeciais.sort = filtrosNormais._sort;
             delete filtrosNormais._sort;
         }
 
-        // Se tem filtros especiais, retorna estrutura completa
+        
         const temFiltrosEspeciais = Object.keys(filtrosEspeciais).length > 0;
 
         if (!temFiltrosEspeciais) {

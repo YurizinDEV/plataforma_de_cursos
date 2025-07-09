@@ -119,26 +119,31 @@ class CursoRepository {
         const professoresIndividuais = [professor1, professor2, professor3].filter(Boolean);
         if (professoresIndividuais.length > 0) {
             finalProfessoresAnd = professoresIndividuais;
+            console.log('Usando professoresIndividuais:', finalProfessoresAnd);
         }
 
 
         if (tagsArrayParam) {
             const tagsFromArray = Array.isArray(tagsArrayParam) ? tagsArrayParam : [tagsArrayParam];
             finalTagsAnd = tagsFromArray.filter(Boolean);
+            console.log('Usando tagsArrayParam:', finalTagsAnd);
         }
 
         if (professoresArrayParam) {
             const professoresFromArray = Array.isArray(professoresArrayParam) ? professoresArrayParam : [professoresArrayParam];
             finalProfessoresAnd = professoresFromArray.filter(Boolean);
+            console.log('Usando professoresArrayParam:', finalProfessoresAnd);
         }
 
 
         if (!finalTagsAnd && todasTagsArray) {
             finalTagsAnd = todasTagsArray;
+            console.log('Usando todasTagsArray como fallback:', finalTagsAnd);
         }
 
         if (!finalProfessoresAnd && todosProfessoresArray) {
             finalProfessoresAnd = todosProfessoresArray;
+            console.log('Usando todosProfessoresArray como fallback:', finalProfessoresAnd);
         }
 
         const limite = Math.min(parseInt(limit, 10) || 20, 100);
@@ -190,6 +195,7 @@ class CursoRepository {
             } else {
                 temMaterialBoolean = Boolean(temMaterialComplementar);
             }
+            console.log(`DEBUG-TEM-MATERIAL: ${typeof temMaterialComplementar} => ${temMaterialComplementar} => convertido para ${temMaterialBoolean}`);
             filterBuilder.comMaterialComplementar(temMaterialBoolean);
         }
         if (temThumbnail !== undefined) filterBuilder.comThumbnail(temThumbnail);
@@ -429,10 +435,10 @@ class CursoRepository {
         const totalMaterialComplementar = cursoObj.materialComplementar ? cursoObj.materialComplementar.length : 0;
         const totalAulas = await this.aulaRepository.contarPorCursoId(cursoId);
         const totalCertificados = await this.certificadoRepository.contarPorCursoId(cursoId);
-        
+
         let totalQuestionarios = 0;
         let totalAlternativas = 0;
-        
+
         if (totalAulas > 0) {
             const aulas = await this.aulaRepository.buscarPorCursoId(cursoId);
             const aulaIds = aulas.map(a => a._id);
@@ -445,9 +451,9 @@ class CursoRepository {
                 }
             }
         }
-        
+
         const duracaoTotalMinutos = cursoObj.cargaHorariaTotal || 0;
-        
+
         return {
             ...cursoObj,
             estatisticas: {
@@ -511,17 +517,22 @@ class CursoRepository {
     }
 
     async buscarPorCriador(usuarioId) {
-        return await this.model.find({ criadoPorId: usuarioId });
+        return await this.model.find({
+            criadoPorId: usuarioId
+        });
     }
 
     async removerReferenciaUsuario(usuarioId, options = {}) {
-        // Remover referências do usuário criador em cursos (definir como null ou remover)
-        const resultado = await this.model.updateMany(
-            { criadoPorId: usuarioId },
-            { $unset: { criadoPorId: 1 } },
+        const resultado = await this.model.updateMany({
+                criadoPorId: usuarioId
+            }, {
+                $unset: {
+                    criadoPorId: 1
+                }
+            },
             options
         );
-        
+
         return resultado.modifiedCount;
     }
 }

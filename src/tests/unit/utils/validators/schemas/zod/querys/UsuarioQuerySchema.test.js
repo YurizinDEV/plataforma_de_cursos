@@ -8,7 +8,7 @@ import {
 } from '../../../../../../../utils/validators/schemas/zod/querys/UsuarioQuerySchema.js';
 
 describe('UsuarioQuerySchema', () => {
-    
+
     describe('Validações de campo', () => {
         it('deve aceitar query vazia', async () => {
             const resultado = await UsuarioQuerySchema.parseAsync({});
@@ -95,7 +95,7 @@ describe('UsuarioQuerySchema', () => {
             it('deve aceitar ehAdmin undefined/vazio', async () => {
                 const resultado1 = await UsuarioQuerySchema.parseAsync({});
                 expect(resultado1.ehAdmin).toBeUndefined();
-                
+
                 const resultado2 = await UsuarioQuerySchema.parseAsync({
                     ehAdmin: undefined
                 });
@@ -148,7 +148,7 @@ describe('UsuarioQuerySchema', () => {
             it('deve aceitar dataInicio undefined/vazio', async () => {
                 const resultado1 = await UsuarioQuerySchema.parseAsync({});
                 expect(resultado1.dataInicio).toBeUndefined();
-                
+
                 const resultado2 = await UsuarioQuerySchema.parseAsync({
                     dataInicio: undefined
                 });
@@ -206,7 +206,7 @@ describe('UsuarioQuerySchema', () => {
             it('deve aceitar dataFim undefined/vazio', async () => {
                 const resultado1 = await UsuarioQuerySchema.parseAsync({});
                 expect(resultado1.dataFim).toBeUndefined();
-                
+
                 const resultado2 = await UsuarioQuerySchema.parseAsync({
                     dataFim: undefined
                 });
@@ -251,7 +251,7 @@ describe('UsuarioQuerySchema', () => {
             it('deve aceitar ordenarPor undefined/vazio', async () => {
                 const resultado1 = await UsuarioQuerySchema.parseAsync({});
                 expect(resultado1.ordenarPor).toBeUndefined();
-                
+
                 const resultado2 = await UsuarioQuerySchema.parseAsync({
                     ordenarPor: undefined
                 });
@@ -316,7 +316,7 @@ describe('UsuarioQuerySchema', () => {
             it('deve aceitar direcao undefined/vazio', async () => {
                 const resultado1 = await UsuarioQuerySchema.parseAsync({});
                 expect(resultado1.direcao).toBeUndefined();
-                
+
                 const resultado2 = await UsuarioQuerySchema.parseAsync({
                     direcao: undefined
                 });
@@ -352,7 +352,7 @@ describe('UsuarioQuerySchema', () => {
         });
     });
 
-    
+
     describe('Validações de múltiplos campos', () => {
         it('deve aceitar múltiplos campos válidos', async () => {
             const query = {
@@ -412,7 +412,7 @@ describe('UsuarioQuerySchema', () => {
             const query = {
                 nome: 'João',
                 email: 'joao@example.com',
-                ativo: 'invalido' 
+                ativo: 'invalido'
             };
 
             await expect(UsuarioQuerySchema.parseAsync(query))
@@ -421,16 +421,16 @@ describe('UsuarioQuerySchema', () => {
 
         it('deve rejeitar quando múltiplos campos são inválidos', async () => {
             const query = {
-                nome: '   ', // nome vazio após trim
-                email: 'email-invalido', // email inválido
-                ativo: 'sim', // ativo inválido
-                ehAdmin: 'maybe', // ehAdmin inválido
-                dataInicio: 'data-invalida', // data inválida
-                dataFim: 'outra-data-invalida', // data inválida
-                ordenarPor: 'campo-inexistente', // campo inválido
-                direcao: 'para-cima', // direção inválida
-                page: '0', // page inválido
-                limite: '150' // limite inválido
+                nome: '   ', 
+                email: 'email-invalido', 
+                ativo: 'sim', 
+                ehAdmin: 'maybe', 
+                dataInicio: 'data-invalida', 
+                dataFim: 'outra-data-invalida',
+                ordenarPor: 'campo-inexistente', 
+                direcao: 'para-cima', 
+                page: '0',
+                limite: '150' 
             };
 
             await expect(UsuarioQuerySchema.parseAsync(query))
@@ -464,11 +464,11 @@ describe('UsuarioQuerySchema', () => {
 
             const resultado = await UsuarioQuerySchema.parseAsync(query);
 
-            expect(resultado.nome).toBe('João Silva'); // trim aplicado
-            expect(resultado.grupo).toBe('Administradores'); // trim aplicado
-            expect(resultado.unidade).toBe('Unidade Principal'); // trim aplicado
-            expect(resultado.page).toBe(5); // convertido para number
-            expect(resultado.limite).toBe(20); // convertido para number
+            expect(resultado.nome).toBe('João Silva'); 
+            expect(resultado.grupo).toBe('Administradores'); 
+            expect(resultado.unidade).toBe('Unidade Principal'); 
+            expect(resultado.page).toBe(5); 
+            expect(resultado.limite).toBe(20); 
         });
     });
 
