@@ -44,6 +44,9 @@ class UsuarioController {
 
         const usuarioLimpo = data.toObject();
         delete usuarioLimpo.senha;
+        
+        // Adicionar informações de grupos/permissões
+        usuarioLimpo.nomeGrupos = data.nomeGrupos;
 
         return CommonResponse.created(res, usuarioLimpo);
     }
@@ -59,6 +62,9 @@ class UsuarioController {
 
         const usuarioLimpo = data.toObject();
         delete usuarioLimpo.senha;
+        
+        // Adicionar informações de grupos/permissões
+        usuarioLimpo.nomeGrupos = data.nomeGrupos;
 
         return CommonResponse.success(res, usuarioLimpo, 200,
             'Usuário atualizado com sucesso. Porém, o e-mail é ignorado em tentativas de atualização, pois é operação proibida.');
@@ -82,6 +88,9 @@ class UsuarioController {
         
         const usuarioLimpo = data.toObject();
         delete usuarioLimpo.senha;
+        
+        // Adicionar informações de grupos/permissões
+        usuarioLimpo.nomeGrupos = data.nomeGrupos;
         
         return CommonResponse.success(res, usuarioLimpo, 200, 'Usuário desativado com sucesso.');
     }
@@ -107,6 +116,9 @@ class UsuarioController {
 
         const usuarioLimpo = usuarioRestaurado.toObject();
         delete usuarioLimpo.senha;
+        
+        // Adicionar informações de grupos/permissões
+        usuarioLimpo.nomeGrupos = usuarioRestaurado.nomeGrupos;
 
         return CommonResponse.success(res, usuarioLimpo, 200, "Usuário restaurado com sucesso.");
     }
@@ -139,6 +151,9 @@ class UsuarioController {
 
         const usuarioLimpo = data.toObject();
         delete usuarioLimpo.senha;
+        
+        // Adicionar informações de grupos/permissões
+        usuarioLimpo.nomeGrupos = data.nomeGrupos;
 
         return CommonResponse.created(res, usuarioLimpo);
     }

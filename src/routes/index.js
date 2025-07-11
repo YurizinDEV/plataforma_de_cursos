@@ -10,6 +10,9 @@ import aulas from './aulaRoutes.js';
 import alternativas from './alternativaRoutes.js';
 import certificados from './certificadoRoutes.js';
 import questionarios from './questionarioRoutes.js';
+import grupos from './grupoRoutes.js';
+import rotas from './rotaRoutes.js';
+import permissoes from './permissionRoutes.js';
 
 
 import dotenv from "dotenv";
@@ -33,12 +36,15 @@ const routes = (app) => {
 
     app.use(express.json(),
         auth,
+        permissoes, // Rotas de permissões sem authPermission para evitar dependência circular
         usuarios,
         cursos,
         aulas,
         alternativas,
         questionarios,
         certificados,
+        grupos,
+        rotas,
     );
 
     app.use((req, res) => {

@@ -4,14 +4,14 @@ import Rota from '../models/Rota.js';
 import { CustomError, errorHandler, messages } from '../utils/helpers/index.js';
 
 // Certifique-se de que as variáveis de ambiente estejam carregadas
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET_ACCESS_TOKEN = process.env.JWT_SECRET_ACCESS_TOKEN;
 
 class AuthPermission {
   constructor() {
     this.jwt = jwt;
     this.permissionService = new PermissionService();
     this.Rota = Rota;
-    this.JWT_SECRET = JWT_SECRET;
+    this.JWT_SECRET_ACCESS_TOKEN = JWT_SECRET_ACCESS_TOKEN;
     this.messages = messages;
 
 
@@ -39,7 +39,7 @@ class AuthPermission {
       // 2. Verifica e decodifica o token
       let decoded;
       try {
-        decoded = this.jwt.verify(token, this.JWT_SECRET);
+        decoded = this.jwt.verify(token, this.JWT_SECRET_ACCESS_TOKEN);
       } catch (err) {
         throw new CustomError({
           statusCode: 401,

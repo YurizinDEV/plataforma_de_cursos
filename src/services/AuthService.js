@@ -54,7 +54,7 @@ class AuthService {
 
         const accesstoken = await this.TokenUtil.generateAccessToken(userEncontrado._id);
 
-        const userComTokens = await this.repository.buscarPorId(userEncontrado._id, true);
+        const userComTokens = await this.repository.buscarPorId(userEncontrado._id, { includeTokens: true });
         let refreshtoken = userComTokens.refreshtoken;
 
         if (refreshtoken) {

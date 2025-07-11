@@ -81,7 +81,6 @@ describe('Modelo de Usuário', () => {
         expect(usuarioSalvo.email).toBe(dados.email);
         expect(usuarioSalvo.senha).toBe(dados.senha);
         expect(usuarioSalvo._id).toBeDefined();
-        expect(usuarioSalvo.ehAdmin).toBe(false);
         expect(usuarioSalvo.ativo).toBe(false);
     });
 
@@ -107,7 +106,7 @@ describe('Modelo de Usuário', () => {
     });
 
 
-    test('deve definir ehAdmin como false por padrão', async () => {
+    test('deve definir ativo como false por padrão', async () => {
         const usuario = new Usuario({
             nome: 'Usuário Teste',
             email: 'teste@email.com',
@@ -115,7 +114,7 @@ describe('Modelo de Usuário', () => {
         });
 
         const usuarioSalvo = await usuario.save();
-        expect(usuarioSalvo.ehAdmin).toBe(false);
+        expect(usuarioSalvo.ativo).toBe(false);
     });
 
 
@@ -374,8 +373,8 @@ describe('Modelo de Usuário', () => {
             nome: 'Usuário Tipos',
             email: 'tipos@email.com',
             senha: 'Senha@123',
-            ehAdmin: true,
             ativo: true,
+            grupos: ['67607e1b123456789abcdef0'], // ID de exemplo de grupo
             progresso: [{
                 percentual_conclusao: '100',
                 curso: cursoId
@@ -386,8 +385,8 @@ describe('Modelo de Usuário', () => {
         expect(typeof usuario.nome).toBe('string');
         expect(typeof usuario.senha).toBe('string');
         expect(typeof usuario.email).toBe('string');
-        expect(typeof usuario.ehAdmin).toBe('boolean');
         expect(typeof usuario.ativo).toBe('boolean');
+        expect(Array.isArray(usuario.grupos)).toBe(true);
         expect(Array.isArray(usuario.progresso)).toBe(true);
         expect(Array.isArray(usuario.cursosIds)).toBe(true);
         expect(usuario.cursosIds[0] instanceof mongoose.Types.ObjectId).toBe(true);

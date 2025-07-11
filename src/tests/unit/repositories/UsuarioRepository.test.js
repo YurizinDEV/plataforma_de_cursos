@@ -87,24 +87,21 @@ describe('UsuarioRepository', () => {
                 senha: senhaHash
             })).rejects.toThrow();
         });
-        it('deve definir ehAdmin e ativo como false por padrão', async () => {
+        it('deve definir ativo como false por padrão', async () => {
             const senhaHash = await bcrypt.hash(usuarioBase.senha, 10);
             const usuario = await usuarioRepository.criar({
                 ...usuarioBase,
                 senha: senhaHash
             });
-            expect(usuario.ehAdmin).toBe(false);
             expect(usuario.ativo).toBe(false);
         });
-        it('deve permitir definir ehAdmin e ativo como true', async () => {
+        it('deve permitir definir ativo como true', async () => {
             const senhaHash = await bcrypt.hash(usuarioBase.senha, 10);
             const usuario = await usuarioRepository.criar({
                 ...usuarioBase,
                 senha: senhaHash,
-                ehAdmin: true,
                 ativo: true
             });
-            expect(usuario.ehAdmin).toBe(true);
             expect(usuario.ativo).toBe(true);
         });
     });
@@ -115,22 +112,20 @@ describe('UsuarioRepository', () => {
                     nome: 'João',
                     email: 'joao@teste.com',
                     senha: await bcrypt.hash('Senha@123', 10),
-                    ativo: true,
-                    ehAdmin: false
+                    ativo: true
                 },
                 {
                     nome: 'Maria',
                     email: 'maria@teste.com',
                     senha: await bcrypt.hash('Senha@123', 10),
-                    ativo: false,
-                    ehAdmin: false
+                    ativo: false
                 },
                 {
                     nome: 'Pedro',
                     email: 'pedro@teste.com',
                     senha: await bcrypt.hash('Senha@123', 10),
                     ativo: true,
-                    ehAdmin: true
+                    grupos: ['67607e1b123456789abcdef0'] // ID do grupo Administradores
                 },
             ]);
         });
@@ -208,15 +203,36 @@ describe('UsuarioRepository', () => {
             const resultado = await usuarioRepository.listar(req);
             expect(resultado.docs.every(u => u.ativo === false)).toBe(true);
         });
-        it('deve filtrar usuários por ehAdmin', async () => {
+        it('deve filtrar usuários por grupos (Administradores)', async () => {
+            // Importar o modelo correto
+            const GrupoModel = (await import('../../../models/Grupo.js')).default;
+
+            // Criar o grupo Administradores primeiro
+            const grupoAdmin = await GrupoModel.create({
+                nome: 'Administradores',
+                descricao: 'Grupo de administradores',
+                ativo: true,
+                permissoes: []
+            });
+
+            // Criar um usuário e associá-lo ao grupo
+            const usuarioAdmin = await UsuarioModel.create({
+                nome: 'Admin User',
+                email: 'admin@test.com',
+                senha: 'senha123',
+                ativo: true,
+                grupos: [grupoAdmin._id]
+            });
+
             const req = {
                 params: {},
                 query: {
-                    ehAdmin: 'true'
+                    grupos: 'Administradores'
                 }
             };
             const resultado = await usuarioRepository.listar(req);
-            expect(resultado.docs.every(u => u.ehAdmin === true)).toBe(true);
+            expect(resultado.docs.length).toBeGreaterThan(0);
+            expect(resultado.docs.some(user => user._id.toString() === usuarioAdmin._id.toString())).toBe(true);
         });
     });
 
@@ -227,8 +243,7 @@ describe('UsuarioRepository', () => {
                 nome: 'Atualizar',
                 email: 'atualizar@teste.com',
                 senha: await bcrypt.hash('Senha@123', 10),
-                ativo: false,
-                ehAdmin: false,
+                ativo: false
             });
         });
         it('deve atualizar nome do usuário', async () => {

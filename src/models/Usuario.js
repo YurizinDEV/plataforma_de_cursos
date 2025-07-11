@@ -23,10 +23,6 @@ class Usuario {
                 required: true,
                 unique: true
             },
-            ehAdmin: {
-                type: Boolean,
-                default: false
-            },
             ativo: {
                 type: Boolean,
                 default: false
@@ -67,7 +63,23 @@ class Usuario {
             accesstoken: { 
                 type: String, 
                 select: false 
-            }
+            },
+            grupos: [{
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "grupos"
+            }],
+            permissoes: [
+                {
+                    rota: { type: String, index: true, required: true }, // usuários / grupos / unidades / rotas
+                    dominio: { type: String }, // http://localhost:3000
+                    ativo: { type: Boolean, default: false },  // false
+                    buscar: { type: Boolean, default: false },    // false
+                    enviar: { type: Boolean, default: false },   // false
+                    substituir: { type: Boolean, default: false },    // false
+                    modificar: { type: Boolean, default: false },  // false
+                    excluir: { type: Boolean, default: false }, // false
+                }
+            ]
         }, {
             versionKey: false,
             timestamps: true

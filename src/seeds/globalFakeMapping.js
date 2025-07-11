@@ -36,7 +36,7 @@ const fakeMappings = {
         nome: () => fakerbr.name.firstName() + " " + fakerbr.name.lastName(),
         senha: () => gerarSenha(),
         email: () => fakerbr.internet.email().toLowerCase(),
-        ehAdmin: () => fakerbr.random.boolean(),
+        grupos: () => [], // Grupos serão associados separadamente
         cursosIds: () => [new mongoose.Types.ObjectId()],
         progresso: () => [{
             percentual_conclusao: fakerbr.datatype.number({

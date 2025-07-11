@@ -36,16 +36,23 @@ class UsuarioRepository {
         return usuario;
     }
 
-    async buscarPorId(id, includeTokens = false) {
+    async buscarPorId(id, options = {}) {
+        const { includeTokens = false, grupos = false } = options;
         let query = this.model.findById(id);
 
         if (includeTokens) {
             query = query.select('+refreshtoken +accesstoken +senha');
         }
 
-        let usuario = await query
+        query = query
             .populate('cursosIds', 'titulo cargaHorariaTotal status')
             .populate('progresso.curso', 'titulo cargaHorariaTotal');
+            
+        if (grupos) {
+            query = query.populate('grupos');
+        }
+
+        let usuario = await query;
 
         if (!usuario) {
             throw new CustomError({
@@ -65,7 +72,8 @@ class UsuarioRepository {
         if (id) {
             const usuario = await this.model.findById(id)
                 .populate('cursosIds', 'titulo cargaHorariaTotal status')
-                .populate('progresso.curso', 'titulo cargaHorariaTotal');
+                .populate('progresso.curso', 'titulo cargaHorariaTotal')
+                .populate('grupos', 'nome descricao');
             if (!usuario) {
                 throw new CustomError({
                     statusCode: HttpStatusCodes.NOT_FOUND.code,
@@ -76,7 +84,7 @@ class UsuarioRepository {
                 });
             }
 
-            const dadosEnriquecidos = this.enriquecerUsuario(usuario);
+            const dadosEnriquecidos = await this.enriquecerUsuario(usuario);
             return dadosEnriquecidos;
         }
         
@@ -84,7 +92,7 @@ class UsuarioRepository {
             nome,
             email,
             ativo,
-            ehAdmin,
+            grupos,
             dataInicio,
             dataFim,
             ordenarPor,
@@ -98,10 +106,14 @@ class UsuarioRepository {
             .comNome(nome || '')
             .comEmail(email || '')
             .comAtivo(ativo)
-            .comEhAdmin(ehAdmin)
             .comDataInicio(dataInicio)
             .comDataFim(dataFim)
             .ordenarPor(ordenarPor, direcao);
+
+        // Aplicar filtros assíncronos
+        if (grupos) {
+            await filterBuilder.comGrupos(grupos);
+        }
 
         if (typeof filterBuilder.build !== 'function') {
             throw new CustomError({
@@ -129,13 +141,14 @@ class UsuarioRepository {
             ...opcoesPaginacao,
             populate: [
                 { path: 'cursosIds', select: 'titulo cargaHorariaTotal status' },
-                { path: 'progresso.curso', select: 'titulo cargaHorariaTotal' }
+                { path: 'progresso.curso', select: 'titulo cargaHorariaTotal' },
+                { path: 'grupos', select: 'nome descricao' }
             ]
         });
 
-        resultado.docs = resultado.docs.map(usuario => {
-            return this.enriquecerUsuario(usuario);
-        });
+        resultado.docs = await Promise.all(resultado.docs.map(async usuario => {
+            return await this.enriquecerUsuario(usuario);
+        }));
 
         return resultado;
     }
@@ -269,7 +282,7 @@ class UsuarioRepository {
     }
 
 
-    enriquecerUsuario(usuario) {
+    async enriquecerUsuario(usuario) {
         const usuarioObj = usuario.toObject();
         const totalCursos = usuarioObj.cursosIds.length;
         
@@ -290,8 +303,22 @@ class UsuarioRepository {
             return percentual > 0 && percentual < 100;
         }).length;
 
+        // Buscar nomes dos grupos
+        let nomeGrupos = [];
+        
+        if (usuarioObj.grupos && Array.isArray(usuarioObj.grupos)) {
+            // Buscar os nomes dos grupos pelos IDs
+            const GrupoModel = (await import('../models/Grupo.js')).default;
+            const grupos = await GrupoModel.find({ _id: { $in: usuarioObj.grupos } }, 'nome');
+            grupos.forEach(grupo => {
+                nomeGrupos.push(grupo.nome);
+            });
+        }
+
         return {
             ...usuarioObj,
+            // Substituir array de grupos pelos nomes quando disponíveis
+            grupos: nomeGrupos.length > 0 ? nomeGrupos : usuarioObj.grupos,
             totalCursos,
             estatisticasProgresso: {
                 cursosIniciados,
@@ -299,7 +326,9 @@ class UsuarioRepository {
                 cursosEmAndamento,
                 totalComProgresso: progresso.length,
                 cursosInscritosSemProgresso: totalCursos - progresso.length
-            }
+            },
+            // Adicionar informações de grupos
+            nomeGrupos: nomeGrupos
         };
     }
 
