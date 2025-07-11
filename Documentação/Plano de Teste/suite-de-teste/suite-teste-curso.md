@@ -84,3 +84,25 @@
 
 
 # Plano de Teste ENDPOINT (Sprint 6)
+| Método | Endpoint | Cenário | Dados de Entrada | Comportamento Esperado | Critérios de Aceite |
+|--------|----------|---------|------------------|-----------------------|---------------------|
+| GET    | /cursos  | Listar todos os cursos ativos | - | Retorna lista de cursos ativos | Status 200, array de cursos, apenas status 'ativo' |
+| GET    | /cursos?status=inativo | Listar cursos inativos | - | Retorna lista de cursos inativos | Status 200, array de cursos, apenas status 'inativo' |
+| GET    | /cursos/:id | Buscar curso por id | id válido | Retorna curso correspondente | Status 200, objeto curso |
+| GET    | /cursos/:id | Buscar curso inexistente | id inexistente | Retorna erro de não encontrado | Status 404, mensagem padronizada |
+| POST   | /cursos   | Criar curso válido | título, cargaHorariaTotal, criadoPorId | Cria novo curso | Status 201, objeto curso criado |
+| POST   | /cursos   | Criar curso com título duplicado | título já existente | Retorna erro de validação | Status 400, mensagem de título já cadastrado |
+| POST   | /cursos   | Criar curso com dados ausentes | campos obrigatórios ausentes | Retorna erro de validação | Status 400, mensagem de dados inválidos |
+| PUT    | /cursos/:id | Atualizar curso existente | id válido, dados válidos | Atualiza curso | Status 200, objeto curso atualizado |
+| PUT    | /cursos/:id | Atualizar curso inexistente | id inexistente | Retorna erro de não encontrado | Status 404, mensagem padronizada |
+| PUT    | /cursos/:id | Atualizar curso com título duplicado | título já existente | Retorna erro de validação | Status 400, mensagem de título já cadastrado |
+| PUT    | /cursos/:id | Atualizar curso sem dados | corpo vazio | Retorna erro de validação | Status 400, mensagem sobre necessidade de dados |
+| DELETE | /cursos/:id | Remover curso existente sem dependências | id válido, sem dependências | Remove curso | Status 200, estatísticas de exclusão |
+| DELETE | /cursos/:id | Remover curso inexistente | id inexistente | Retorna erro de não encontrado | Status 404, mensagem padronizada |
+| DELETE | /cursos/:id | Remover curso com dependências | id válido, com aulas/questionários/etc | Remove curso e dependências | Status 200, estatísticas completas |
+| DELETE | /cursos/:id | Remover curso com usuários com progresso > 30% | id válido, usuários vinculados | Retorna erro de conflito | Status 409, mensagem sobre progresso significativo |
+| GET    | /cursos?ordenarPor=titulo&direcaoOrdem=desc | Listar cursos ordenados | - | Retorna cursos ordenados conforme solicitado | Status 200, array ordenado |
+| GET    | /cursos?tag=js&tag=node | Listar cursos filtrados por tags | tags válidas | Retorna cursos que possuem todas as tags | Status 200, array filtrado |
+| GET    | /cursos?temMaterialComplementar=true | Listar cursos com material complementar | - | Retorna cursos com material complementar | Status 200, array filtrado |
+| GET    | /cursos?criadoApos=2023-01-01T00:00:00Z | Listar cursos criados após data | data válida | Retorna cursos filtrados por data | Status 200, array filtrado |
+| GET    | /cursos/:id | Enriquecimento de dados | id válido | Retorna curso com estatísticas | Status 200, campos calculados presentes |
