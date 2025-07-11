@@ -25,8 +25,7 @@ const routes = (app) => {
     }
     app.get("/", (req, res) => {
         res.redirect("/docs");
-    }
-    );
+    });
 
     // const swaggerDocs = swaggerJsDoc(getSwaggerOptions());
     // app.use(swaggerUI.serve);
@@ -36,7 +35,7 @@ const routes = (app) => {
 
     app.use(express.json(),
         auth,
-        permissoes, // Rotas de permissões sem authPermission para evitar dependência circular
+        permissoes,
         usuarios,
         cursos,
         aulas,
@@ -48,7 +47,9 @@ const routes = (app) => {
     );
 
     app.use((req, res) => {
-        res.status(404).json({ message: "Rota não encontrada" });
+        res.status(404).json({
+            message: "Rota não encontrada"
+        });
     });
 };
 

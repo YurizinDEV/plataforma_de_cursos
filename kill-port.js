@@ -2,7 +2,7 @@ import {
     execSync
 } from 'child_process';
 
-const port = process.env.PORT || 5011;
+const port = process.env.PORT || 5010;
 
 try {
     const result = execSync(`lsof -i :${port} -t`, {

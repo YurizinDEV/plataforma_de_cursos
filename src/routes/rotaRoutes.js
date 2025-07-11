@@ -2,10 +2,12 @@ import express from "express";
 import AuthMiddleware from "../middlewares/AuthMiddleware.js";
 import authPermission from '../middlewares/AuthPermission.js';
 import RotaController from '../controllers/RotaController.js';
-import { asyncWrapper } from '../utils/helpers/index.js';
+import {
+    asyncWrapper
+} from '../utils/helpers/index.js';
 
 const router = express.Router();
-const rotaController = new RotaController(); 
+const rotaController = new RotaController();
 
 router
     .post("/rotas", AuthMiddleware, authPermission, asyncWrapper(rotaController.criar.bind(rotaController)))

@@ -1,5 +1,8 @@
 import Grupo from '../models/Grupo.js';
-import { CustomError, HttpStatusCodes } from '../utils/helpers/index.js';
+import {
+    CustomError,
+    HttpStatusCodes
+} from '../utils/helpers/index.js';
 
 class GrupoRepository {
     constructor() {
@@ -12,17 +15,24 @@ class GrupoRepository {
     }
 
     async listar(options = {}) {
-        const { page = 1, limit = 10, nome } = options;
-        
+        const {
+            page = 1, limit = 10, nome
+        } = options;
+
         let query = {};
         if (nome) {
-            query.nome = { $regex: nome, $options: 'i' };
+            query.nome = {
+                $regex: nome,
+                $options: 'i'
+            };
         }
 
         const opcoesConsulta = {
             page,
             limit,
-            sort: { createdAt: -1 },
+            sort: {
+                createdAt: -1
+            },
             lean: true
         };
 
@@ -44,14 +54,16 @@ class GrupoRepository {
     }
 
     async buscarPorNome(nome) {
-        const grupo = await this.model.findOne({ nome });
-        return grupo; // Retorna o grupo se encontrar, null se não encontrar
+        const grupo = await this.model.findOne({
+            nome
+        });
+        return grupo;
     }
 
     async atualizar(id, dados) {
-        const grupo = await this.model.findByIdAndUpdate(id, dados, { 
-            new: true, 
-            runValidators: true 
+        const grupo = await this.model.findByIdAndUpdate(id, dados, {
+            new: true,
+            runValidators: true
         });
         if (!grupo) {
             throw new CustomError({

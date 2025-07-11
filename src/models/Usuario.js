@@ -44,42 +44,64 @@ class Usuario {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: "Curso"
             }],
-            tokenUnico: { 
-                type: String, 
-                select: false 
-            }, 
-            codigo_recupera_senha: { 
+            tokenUnico: {
                 type: String,
                 select: false
             },
-            exp_codigo_recupera_senha: { 
+            codigo_recupera_senha: {
+                type: String,
+                select: false
+            },
+            exp_codigo_recupera_senha: {
                 type: Date,
                 select: false
             },
-            refreshtoken: { 
-                type: String, 
-                select: false 
-            }, 
-            accesstoken: { 
-                type: String, 
-                select: false 
+            refreshtoken: {
+                type: String,
+                select: false
+            },
+            accesstoken: {
+                type: String,
+                select: false
             },
             grupos: [{
                 type: mongoose.Schema.Types.ObjectId,
                 ref: "grupos"
             }],
-            permissoes: [
-                {
-                    rota: { type: String, index: true, required: true }, // usuários / grupos / unidades / rotas
-                    dominio: { type: String }, // http://localhost:3000
-                    ativo: { type: Boolean, default: false },  // false
-                    buscar: { type: Boolean, default: false },    // false
-                    enviar: { type: Boolean, default: false },   // false
-                    substituir: { type: Boolean, default: false },    // false
-                    modificar: { type: Boolean, default: false },  // false
-                    excluir: { type: Boolean, default: false }, // false
-                }
-            ]
+            permissoes: [{
+                rota: {
+                    type: String,
+                    index: true,
+                    required: true
+                },
+                dominio: {
+                    type: String
+                },
+                ativo: {
+                    type: Boolean,
+                    default: false
+                },
+                buscar: {
+                    type: Boolean,
+                    default: false
+                },
+                enviar: {
+                    type: Boolean,
+                    default: false
+                },
+                substituir: {
+                    type: Boolean,
+                    default: false
+                },
+                modificar: {
+                    type: Boolean,
+                    default: false
+                },
+                excluir: {
+                    type: Boolean,
+                    default: false
+                },
+            }]
         }, {
             versionKey: false,
             timestamps: true

@@ -1,8 +1,7 @@
 import Rota from '../models/Rota.js';
 import Grupo from '../models/Grupo.js';
 
-const rotasSeeds = [
-    {
+const rotasSeeds = [{
         rota: 'usuarios',
         dominio: 'localhost',
         ativo: true,
@@ -84,31 +83,30 @@ const rotasSeeds = [
     }
 ];
 
-const gruposSeeds = [
-    {
+const gruposSeeds = [{
         nome: 'Administradores',
         descricao: 'Grupo com acesso administrativo ao sistema',
         ativo: true,
-        permissoes: [] // Permissões serão configuradas via interface/banco
+        permissoes: []
     },
     {
         nome: 'Usuários',
         descricao: 'Grupo padrão para usuários comuns',
         ativo: true,
-        permissoes: [] // Permissões serão configuradas via interface/banco
+        permissoes: []
     }
 ];
 
 const criarRotasSeeds = async () => {
     try {
         console.log('Iniciando criação de rotas...');
-        
+
         for (const rotaData of rotasSeeds) {
-            const rotaExistente = await Rota.findOne({ 
-                rota: rotaData.rota, 
-                dominio: rotaData.dominio 
+            const rotaExistente = await Rota.findOne({
+                rota: rotaData.rota,
+                dominio: rotaData.dominio
             });
-            
+
             if (!rotaExistente) {
                 await Rota.create(rotaData);
                 console.log(`Rota criada: ${rotaData.rota}`);
@@ -116,7 +114,7 @@ const criarRotasSeeds = async () => {
                 console.log(`Rota já existe: ${rotaData.rota}`);
             }
         }
-        
+
         console.log('Rotas criadas com sucesso!');
     } catch (error) {
         console.error('Erro ao criar rotas:', error);
@@ -126,10 +124,12 @@ const criarRotasSeeds = async () => {
 const criarGruposSeeds = async () => {
     try {
         console.log('🌱 Iniciando criação de grupos...');
-        
+
         for (const grupoData of gruposSeeds) {
-            const grupoExistente = await Grupo.findOne({ nome: grupoData.nome });
-            
+            const grupoExistente = await Grupo.findOne({
+                nome: grupoData.nome
+            });
+
             if (!grupoExistente) {
                 await Grupo.create(grupoData);
                 console.log(`Grupo criado: ${grupoData.nome}`);
@@ -137,7 +137,7 @@ const criarGruposSeeds = async () => {
                 console.log(`Grupo já existe: ${grupoData.nome}`);
             }
         }
-        
+
         console.log('Grupos criados com sucesso!');
         console.log('ℹUse as rotas /grupos e /rotas para configurar as permissões via API');
     } catch (error) {
@@ -145,4 +145,7 @@ const criarGruposSeeds = async () => {
     }
 };
 
-export { criarRotasSeeds, criarGruposSeeds };
+export {
+    criarRotasSeeds,
+    criarGruposSeeds
+};

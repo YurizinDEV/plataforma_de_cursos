@@ -36,7 +36,7 @@ const fakeMappings = {
         nome: () => fakerbr.name.firstName() + " " + fakerbr.name.lastName(),
         senha: () => gerarSenha(),
         email: () => fakerbr.internet.email().toLowerCase(),
-        grupos: () => [], // Grupos serão associados separadamente
+        grupos: () => [],
         cursosIds: () => [new mongoose.Types.ObjectId()],
         progresso: () => [{
             percentual_conclusao: fakerbr.datatype.number({
@@ -159,15 +159,15 @@ function validateModelMapping(model, modelName, mapping) {
     const missing = fields.filter((f) => !(f in mapping));
     if (missing.length)
         console.error(
-            `⚠️  Model ${modelName} sem mapping para: ${missing.join(", ")}`
+            `Model ${modelName} sem mapping para: ${missing.join(", ")}`
         );
-    else console.log(`✅ Model ${modelName} coberto.`);
+    else console.log(`Model ${modelName} coberto.`);
     return missing;
 }
 
 
 export async function getGlobalFakeMapping() {
-    const models = await loadModels(); // [{ model, name }]
+    const models = await loadModels();
     let global = {
         ...fakeMappings.common
     };
@@ -202,10 +202,10 @@ export async function getGlobalFakeMapping() {
     });
 
     if (!ok) {
-        console.error("❌  Corrija os mappings antes de prosseguir.");
+        console.error("Corrija os mappings antes de prosseguir.");
         process.exit(1);
     } else {
-        console.log("🌱  globalFakeMapping pronto para uso.");
+        console.log("globalFakeMapping pronto para uso.");
     }
 })();
 

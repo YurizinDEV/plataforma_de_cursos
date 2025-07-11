@@ -37,7 +37,9 @@ class UsuarioRepository {
     }
 
     async buscarPorId(id, options = {}) {
-        const { includeTokens = false, grupos = false } = options;
+        const {
+            includeTokens = false, grupos = false
+        } = options;
         let query = this.model.findById(id);
 
         if (includeTokens) {
@@ -47,7 +49,7 @@ class UsuarioRepository {
         query = query
             .populate('cursosIds', 'titulo cargaHorariaTotal status')
             .populate('progresso.curso', 'titulo cargaHorariaTotal');
-            
+
         if (grupos) {
             query = query.populate('grupos');
         }
@@ -87,7 +89,7 @@ class UsuarioRepository {
             const dadosEnriquecidos = await this.enriquecerUsuario(usuario);
             return dadosEnriquecidos;
         }
-        
+
         const {
             nome,
             email,
@@ -99,9 +101,9 @@ class UsuarioRepository {
             direcao = 'asc',
             page = 1
         } = req.query;
-        
+
         const limite = Math.min(parseInt(req.query.limite, 10) || 20, 100);
-        
+
         const filterBuilder = new UsuarioFilterBuilder()
             .comNome(nome || '')
             .comEmail(email || '')
@@ -110,7 +112,6 @@ class UsuarioRepository {
             .comDataFim(dataFim)
             .ordenarPor(ordenarPor, direcao);
 
-        // Aplicar filtros assíncronos
         if (grupos) {
             await filterBuilder.comGrupos(grupos);
         }
@@ -139,10 +140,18 @@ class UsuarioRepository {
 
         const resultado = await this.model.paginate(filtrosConsulta, {
             ...opcoesPaginacao,
-            populate: [
-                { path: 'cursosIds', select: 'titulo cargaHorariaTotal status' },
-                { path: 'progresso.curso', select: 'titulo cargaHorariaTotal' },
-                { path: 'grupos', select: 'nome descricao' }
+            populate: [{
+                    path: 'cursosIds',
+                    select: 'titulo cargaHorariaTotal status'
+                },
+                {
+                    path: 'progresso.curso',
+                    select: 'titulo cargaHorariaTotal'
+                },
+                {
+                    path: 'grupos',
+                    select: 'nome descricao'
+                }
             ]
         });
 
@@ -162,11 +171,11 @@ class UsuarioRepository {
         if ('email' in parsedData) delete parsedData.email;
         if ('senha' in parsedData) delete parsedData.senha;
         const usuario = await this.model.findByIdAndUpdate(id, parsedData, {
-            new: true
-        })
-        .populate('cursosIds', 'titulo cargaHorariaTotal status')
-        .populate('progresso.curso', 'titulo cargaHorariaTotal');
-        
+                new: true
+            })
+            .populate('cursosIds', 'titulo cargaHorariaTotal status')
+            .populate('progresso.curso', 'titulo cargaHorariaTotal');
+
         if (!usuario) {
             throw new CustomError({
                 statusCode: HttpStatusCodes.NOT_FOUND.code,
@@ -181,13 +190,15 @@ class UsuarioRepository {
 
     async deletar(id) {
         const usuario = await this.model.findByIdAndUpdate(
-            id,
-            { ativo: false },
-            { new: true }
-        )
-        .populate('cursosIds', 'titulo cargaHorariaTotal status')
-        .populate('progresso.curso', 'titulo cargaHorariaTotal');
-        
+                id, {
+                    ativo: false
+                }, {
+                    new: true
+                }
+            )
+            .populate('cursosIds', 'titulo cargaHorariaTotal status')
+            .populate('progresso.curso', 'titulo cargaHorariaTotal');
+
         if (!usuario) {
             throw new CustomError({
                 statusCode: HttpStatusCodes.NOT_FOUND.code,
@@ -216,13 +227,15 @@ class UsuarioRepository {
 
     async restaurar(id) {
         const usuario = await this.model.findByIdAndUpdate(
-            id,
-            { ativo: true },
-            { new: true }
-        )
-        .populate('cursosIds', 'titulo cargaHorariaTotal status')
-        .populate('progresso.curso', 'titulo cargaHorariaTotal');
-        
+                id, {
+                    ativo: true
+                }, {
+                    new: true
+                }
+            )
+            .populate('cursosIds', 'titulo cargaHorariaTotal status')
+            .populate('progresso.curso', 'titulo cargaHorariaTotal');
+
         if (!usuario) {
             throw new CustomError({
                 statusCode: HttpStatusCodes.NOT_FOUND.code,
@@ -285,31 +298,33 @@ class UsuarioRepository {
     async enriquecerUsuario(usuario) {
         const usuarioObj = usuario.toObject();
         const totalCursos = usuarioObj.cursosIds.length;
-        
+
         const progresso = usuarioObj.progresso || [];
-        
+
         const cursosIniciados = progresso.filter(p => {
             const percentual = parseFloat(p.percentual_conclusao);
             return percentual > 0;
         }).length;
-        
+
         const cursosConcluidos = progresso.filter(p => {
             const percentual = parseFloat(p.percentual_conclusao);
             return percentual >= 100;
         }).length;
-        
+
         const cursosEmAndamento = progresso.filter(p => {
             const percentual = parseFloat(p.percentual_conclusao);
             return percentual > 0 && percentual < 100;
         }).length;
 
-        // Buscar nomes dos grupos
         let nomeGrupos = [];
-        
+
         if (usuarioObj.grupos && Array.isArray(usuarioObj.grupos)) {
-            // Buscar os nomes dos grupos pelos IDs
             const GrupoModel = (await import('../models/Grupo.js')).default;
-            const grupos = await GrupoModel.find({ _id: { $in: usuarioObj.grupos } }, 'nome');
+            const grupos = await GrupoModel.find({
+                _id: {
+                    $in: usuarioObj.grupos
+                }
+            }, 'nome');
             grupos.forEach(grupo => {
                 nomeGrupos.push(grupo.nome);
             });
@@ -317,7 +332,6 @@ class UsuarioRepository {
 
         return {
             ...usuarioObj,
-            // Substituir array de grupos pelos nomes quando disponíveis
             grupos: nomeGrupos.length > 0 ? nomeGrupos : usuarioObj.grupos,
             totalCursos,
             estatisticasProgresso: {
@@ -327,7 +341,6 @@ class UsuarioRepository {
                 totalComProgresso: progresso.length,
                 cursosInscritosSemProgresso: totalCursos - progresso.length
             },
-            // Adicionar informações de grupos
             nomeGrupos: nomeGrupos
         };
     }
@@ -352,25 +365,29 @@ class UsuarioRepository {
     }
 
     async buscarPorCodigoRecuperacao(codigo) {
-        return await this.model.findOne({ codigo_recupera_senha: codigo });
+        return await this.model.findOne({
+            codigo_recupera_senha: codigo
+        });
     }
 
     async buscarPorTokenUnico(token) {
-        return await this.model.findOne({ tokenUnico: token });
+        return await this.model.findOne({
+            tokenUnico: token
+        });
     }
 
     async atualizarSenha(id, senhaHasheada) {
         const usuarioAtualizado = await this.model.findByIdAndUpdate(
-            id, 
-            { 
+            id, {
                 senha: senhaHasheada,
-                tokenUnico: null, 
-                codigo_recupera_senha: null, 
-                exp_codigo_recupera_senha: null 
-            }, 
-            { new: true }
+                tokenUnico: null,
+                codigo_recupera_senha: null,
+                exp_codigo_recupera_senha: null
+            }, {
+                new: true
+            }
         );
-        
+
         if (!usuarioAtualizado) {
             throw new CustomError({
                 statusCode: HttpStatusCodes.NOT_FOUND.code,
@@ -398,7 +415,7 @@ class UsuarioRepository {
 
         usuarioExistente.accesstoken = null;
         usuarioExistente.refreshtoken = null;
-        
+
         await usuarioExistente.save();
         return usuarioExistente;
     }

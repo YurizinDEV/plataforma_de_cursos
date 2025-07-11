@@ -2,10 +2,12 @@ import express from "express";
 import AuthMiddleware from "../middlewares/AuthMiddleware.js";
 import authPermission from '../middlewares/AuthPermission.js';
 import GrupoController from '../controllers/GrupoController.js';
-import { asyncWrapper } from '../utils/helpers/index.js';
+import {
+    asyncWrapper
+} from '../utils/helpers/index.js';
 
 const router = express.Router();
-const grupoController = new GrupoController(); 
+const grupoController = new GrupoController();
 
 router
     .post("/grupos", AuthMiddleware, authPermission, asyncWrapper(grupoController.criar.bind(grupoController)))

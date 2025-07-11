@@ -16,7 +16,6 @@ export default async function usuariosSeed() {
 
     const usuarios = [];
 
-    // Usuário administrador fixo
     usuarios.push({
         nome: "Administrador",
         senha: bcrypt.hashSync("Admin@1234", 12),
@@ -24,10 +23,9 @@ export default async function usuariosSeed() {
         ativo: true,
         progresso: [],
         cursosIds: [],
-        grupos: [] // Será associado ao grupo Administradores depois
+        grupos: []
     });
 
-    // Usuários aleatórios
     for (let i = 0; i < 19; i++) {
         const isAtivo = i < 14;
         usuarios.push({
@@ -37,25 +35,28 @@ export default async function usuariosSeed() {
             ativo: isAtivo,
             progresso: [],
             cursosIds: [],
-            grupos: [] // Grupos serão associados após a criação dos grupos
+            grupos: []
         });
     }
 
     const usuariosCriados = await Usuario.insertMany(usuarios);
     console.log("Usuários gerados com sucesso");
-    
-    // Associar os primeiros 2 usuários ao grupo Administradores
+
     try {
         const Grupo = (await import('../models/Grupo.js')).default;
-        const grupoAdmin = await Grupo.findOne({ nome: 'Administradores' });
-        
+        const grupoAdmin = await Grupo.findOne({
+            nome: 'Administradores'
+        });
+
         if (grupoAdmin) {
-            // Associa o primeiro usuário (admin fixo) ao grupo Administradores
             const adminId = usuariosCriados[0]._id;
-            await Usuario.updateOne(
-                { _id: adminId },
-                { $push: { grupos: grupoAdmin._id } }
-            );
+            await Usuario.updateOne({
+                _id: adminId
+            }, {
+                $push: {
+                    grupos: grupoAdmin._id
+                }
+            });
             console.log("Usuário administrador fixo associado ao grupo");
             console.log(`Admin criado: admin@example.com / admin123`);
             console.log(`ID do admin: ${adminId}`);

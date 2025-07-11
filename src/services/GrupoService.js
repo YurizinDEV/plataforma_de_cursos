@@ -7,34 +7,18 @@ class GrupoService {
     }
 
     async criar(dados) {
-        try {
-            // Verificar se já existe um grupo com este nome ANTES de criar
-            const grupoExistente = await this.repository.buscarPorNome(dados.nome);
-            if (grupoExistente) {
-                throw new CustomError({
-                    statusCode: HttpStatusCodes.CONFLICT.code,
-                    errorType: 'duplicateKey',
-                    field: 'nome',
-                    details: [],
-                    customMessage: 'Grupo com este nome já existe'
-                });
-            }
-
-            const grupo = await this.repository.criar(dados);
-            return grupo;
-        } catch (error) {
-            // Se for erro de duplicidade do MongoDB (fallback)
-            if (error.code === 11000) {
-                throw new CustomError({
-                    statusCode: HttpStatusCodes.CONFLICT.code,
-                    errorType: 'duplicateKey',
-                    field: 'nome',
-                    details: [],
-                    customMessage: 'Grupo com este nome já existe'
-                });
-            }
-            throw error;
+        const grupoExistente = await this.repository.buscarPorNome(dados.nome);
+        if (grupoExistente) {
+            throw new CustomError({
+                statusCode: HttpStatusCodes.CONFLICT.code,
+                errorType: 'duplicateKey',
+                field: 'nome',
+                details: [],
+                customMessage: 'Grupo com este nome já existe'
+            });
         }
+        const grupo = await this.repository.criar(dados);
+        return grupo;
     }
 
     async listar(req) {

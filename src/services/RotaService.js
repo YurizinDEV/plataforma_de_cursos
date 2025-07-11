@@ -1,5 +1,9 @@
 import RotaRepository from '../repositories/RotaRepository.js';
-import { CustomError, CommonResponse, HttpStatusCodes } from '../utils/helpers/index.js';
+import {
+    CustomError,
+    CommonResponse,
+    HttpStatusCodes
+} from '../utils/helpers/index.js';
 
 class RotaService {
     constructor() {
@@ -25,7 +29,12 @@ class RotaService {
     }
 
     async listar(req) {
-        const { page, limit, rota, dominio } = req.query;
+        const {
+            page,
+            limit,
+            rota,
+            dominio
+        } = req.query;
         const id = req.params.id || null;
 
         if (id) {

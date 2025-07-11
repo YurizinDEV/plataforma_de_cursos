@@ -1,5 +1,8 @@
 import Rota from '../models/Rota.js';
-import { CustomError, HttpStatusCodes } from '../utils/helpers/index.js';
+import {
+    CustomError,
+    HttpStatusCodes
+} from '../utils/helpers/index.js';
 
 class RotaRepository {
     constructor() {
@@ -12,11 +15,16 @@ class RotaRepository {
     }
 
     async listar(options = {}) {
-        const { page = 1, limit = 10, rota, dominio } = options;
-        
+        const {
+            page = 1, limit = 10, rota, dominio
+        } = options;
+
         let query = {};
         if (rota) {
-            query.rota = { $regex: rota, $options: 'i' };
+            query.rota = {
+                $regex: rota,
+                $options: 'i'
+            };
         }
         if (dominio) {
             query.dominio = dominio;
@@ -25,7 +33,9 @@ class RotaRepository {
         const opcoesConsulta = {
             page,
             limit,
-            sort: { createdAt: -1 },
+            sort: {
+                createdAt: -1
+            },
             lean: true
         };
 
@@ -47,9 +57,9 @@ class RotaRepository {
     }
 
     async atualizar(id, dados) {
-        const rota = await this.model.findByIdAndUpdate(id, dados, { 
-            new: true, 
-            runValidators: true 
+        const rota = await this.model.findByIdAndUpdate(id, dados, {
+            new: true,
+            runValidators: true
         });
         if (!rota) {
             throw new CustomError({

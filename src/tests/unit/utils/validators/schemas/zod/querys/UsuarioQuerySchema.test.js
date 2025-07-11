@@ -404,16 +404,16 @@ describe('UsuarioQuerySchema', () => {
 
         it('deve rejeitar quando múltiplos campos são inválidos', async () => {
             const query = {
-                nome: '   ', 
-                email: 'email-invalido', 
-                ativo: 'sim', 
-                grupos: '', 
-                dataInicio: 'data-invalida', 
+                nome: '   ',
+                email: 'email-invalido',
+                ativo: 'sim',
+                grupos: '',
+                dataInicio: 'data-invalida',
                 dataFim: 'outra-data-invalida',
-                ordenarPor: 'campo-inexistente', 
-                direcao: 'para-cima', 
+                ordenarPor: 'campo-inexistente',
+                direcao: 'para-cima',
                 page: '0',
-                limite: '150' 
+                limite: '150'
             };
 
             await expect(UsuarioQuerySchema.parseAsync(query))
@@ -447,11 +447,11 @@ describe('UsuarioQuerySchema', () => {
 
             const resultado = await UsuarioQuerySchema.parseAsync(query);
 
-            expect(resultado.nome).toBe('João Silva'); 
-            expect(resultado.grupo).toBe('Administradores'); 
-            expect(resultado.unidade).toBe('Unidade Principal'); 
-            expect(resultado.page).toBe(5); 
-            expect(resultado.limite).toBe(20); 
+            expect(resultado.nome).toBe('João Silva');
+            expect(resultado.grupo).toBe('Administradores');
+            expect(resultado.unidade).toBe('Unidade Principal');
+            expect(resultado.page).toBe(5);
+            expect(resultado.limite).toBe(20);
         });
     });
 

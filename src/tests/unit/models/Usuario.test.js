@@ -374,7 +374,7 @@ describe('Modelo de Usuário', () => {
             email: 'tipos@email.com',
             senha: 'Senha@123',
             ativo: true,
-            grupos: ['67607e1b123456789abcdef0'], // ID de exemplo de grupo
+            grupos: ['67607e1b123456789abcdef0'],
             progresso: [{
                 percentual_conclusao: '100',
                 curso: cursoId

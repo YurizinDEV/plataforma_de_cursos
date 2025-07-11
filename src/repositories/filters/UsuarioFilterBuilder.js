@@ -41,13 +41,15 @@ class UsuarioFilterBuilder {
 
     async comGrupos(grupos = null) {
         if (grupos && grupos.trim()) {
-            // Buscar grupo por nome (ex: "Administradores")
             const grupo = await this.grupoRepository.buscarPorNome(grupos.trim());
             if (grupo) {
-                this.filtros.grupos = { $in: [grupo._id] };
+                this.filtros.grupos = {
+                    $in: [grupo._id]
+                };
             } else {
-                // Se não encontrar o grupo, não retorna nenhum usuário
-                this.filtros.grupos = { $in: [] };
+                this.filtros.grupos = {
+                    $in: []
+                };
             }
         }
         return this;
@@ -68,7 +70,7 @@ class UsuarioFilterBuilder {
         if (dataFim) {
             const data = new Date(dataFim);
             if (!isNaN(data.getTime())) {
-                
+
                 data.setHours(23, 59, 59, 999);
                 this.filtros.createdAt = this.filtros.createdAt || {};
                 this.filtros.createdAt.$lte = data;
@@ -119,13 +121,11 @@ class UsuarioFilterBuilder {
             ...this.filtros
         };
 
-        
         if (filtrosNormais._sort) {
             filtrosEspeciais.sort = filtrosNormais._sort;
             delete filtrosNormais._sort;
         }
 
-        
         const temFiltrosEspeciais = Object.keys(filtrosEspeciais).length > 0;
 
         if (!temFiltrosEspeciais) {
