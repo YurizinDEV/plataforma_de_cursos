@@ -34,7 +34,7 @@ class UsuarioService {
     }
 
     async atualizar(id, parsedData) {
-        delete parsedData.senha; 
+        delete parsedData.senha;
         delete parsedData.email;
         await this.ensureUserExists(id);
         const data = await this.repository.atualizar(id, parsedData);
@@ -55,14 +55,20 @@ class UsuarioService {
         session.startTransaction();
 
         try {
-            const certificadosExcluidos = await this.certificadoRepository.deletarPorUsuarioId(id, { session });
+            const certificadosExcluidos = await this.certificadoRepository.deletarPorUsuarioId(id, {
+                session
+            });
 
-            const cursosAtualizados = await this.cursoRepository.removerReferenciaUsuario(id, { session });
+            const cursosAtualizados = await this.cursoRepository.removerReferenciaUsuario(id, {
+                session
+            });
 
-            await this.repository.deletarFisicamente(id, { session });
+            await this.repository.deletarFisicamente(id, {
+                session
+            });
 
             await session.commitTransaction();
-            
+
             return {
                 mensagem: 'Usuário e todos os seus recursos relacionados foram excluídos permanentemente.',
                 estatisticas: {
@@ -75,7 +81,7 @@ class UsuarioService {
             };
         } catch (error) {
             await session.abortTransaction();
-            
+
             if (!(error instanceof CustomError)) {
                 throw new CustomError({
                     statusCode: HttpStatusCodes.INTERNAL_SERVER_ERROR.code,
@@ -88,7 +94,7 @@ class UsuarioService {
                     customMessage: 'Ocorreu um erro ao excluir o usuário e suas dependências.'
                 });
             }
-            
+
             throw error;
         } finally {
             session.endSession();
@@ -138,13 +144,13 @@ class UsuarioService {
 
     async verificarDependenciasParaExclusao(usuarioId) {
         const usuario = await this.repository.buscarPorId(usuarioId);
-        
+
         if (usuario.progresso && usuario.progresso.length > 0) {
             const progressoSignificativo = usuario.progresso.some(p => {
                 const percentual = parseFloat(p.percentual_conclusao);
                 return percentual >= 50;
             });
-            
+
             if (progressoSignificativo) {
                 throw new CustomError({
                     statusCode: HttpStatusCodes.CONFLICT.code,
@@ -160,7 +166,7 @@ class UsuarioService {
         }
 
         const cursosComoAutor = await this.cursoRepository.buscarPorCriador(usuarioId);
-        
+
         if (cursosComoAutor && cursosComoAutor.length > 0) {
             throw new CustomError({
                 statusCode: HttpStatusCodes.CONFLICT.code,
@@ -175,7 +181,7 @@ class UsuarioService {
         }
 
         const certificados = await this.certificadoRepository.contarPorUsuario(usuarioId);
-        
+
         return {
             progressos: usuario.progresso ? usuario.progresso.length : 0,
             certificados: certificados || 0,
@@ -201,7 +207,7 @@ class UsuarioService {
                 customMessage: 'Senha é obrigatória para signup.'
             });
         }
-        
+
         const data = await this.repository.criar(parsedData);
         return data;
     }

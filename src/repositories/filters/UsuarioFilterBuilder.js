@@ -1,10 +1,12 @@
 import UsuarioModel from '../../models/Usuario.js';
 import UsuarioRepository from '../UsuarioRepository.js';
+import GrupoRepository from '../GrupoRepository.js';
 
 class UsuarioFilterBuilder {
     constructor() {
         this.filtros = {};
         this.usuarioRepository = new UsuarioRepository();
+        this.grupoRepository = new GrupoRepository();
         this.usuarioModel = UsuarioModel;
     }
 
@@ -37,11 +39,18 @@ class UsuarioFilterBuilder {
         return this;
     }
 
-    comEhAdmin(ehAdmin = null) {
-        if (ehAdmin === 'true') {
-            this.filtros.ehAdmin = true;
-        } else if (ehAdmin === 'false') {
-            this.filtros.ehAdmin = false;
+    async comGrupos(grupos = null) {
+        if (grupos && grupos.trim()) {
+            const grupo = await this.grupoRepository.buscarPorNome(grupos.trim());
+            if (grupo) {
+                this.filtros.grupos = {
+                    $in: [grupo._id]
+                };
+            } else {
+                this.filtros.grupos = {
+                    $in: []
+                };
+            }
         }
         return this;
     }
@@ -61,7 +70,7 @@ class UsuarioFilterBuilder {
         if (dataFim) {
             const data = new Date(dataFim);
             if (!isNaN(data.getTime())) {
-                
+
                 data.setHours(23, 59, 59, 999);
                 this.filtros.createdAt = this.filtros.createdAt || {};
                 this.filtros.createdAt.$lte = data;
@@ -82,21 +91,6 @@ class UsuarioFilterBuilder {
             const direcaoValida = direcao.toLowerCase() === 'desc' ? -1 : 1;
             this.filtros._sort = {
                 [campo]: direcaoValida
-            };
-        }
-        return this;
-    }
-
-    async comGrupo(grupo) {
-        if (grupo) {
-            const gruposEncontrados = await this.grupoRepository.buscarPorNome(grupo);
-
-            const grupoIds = gruposEncontrados ?
-                Array.isArray(gruposEncontrados) ?
-                gruposEncontrados.map(g => g._id) : [gruposEncontrados._id] : [];
-
-            this.filtros.grupos = {
-                $in: grupoIds
             };
         }
         return this;
@@ -127,13 +121,11 @@ class UsuarioFilterBuilder {
             ...this.filtros
         };
 
-        
         if (filtrosNormais._sort) {
             filtrosEspeciais.sort = filtrosNormais._sort;
             delete filtrosNormais._sort;
         }
 
-        
         const temFiltrosEspeciais = Object.keys(filtrosEspeciais).length > 0;
 
         if (!temFiltrosEspeciais) {
