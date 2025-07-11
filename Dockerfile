@@ -8,6 +8,6 @@ RUN npm ci
 COPY . .
 RUN cp .env.example .env
 
-EXPOSE 5011
+EXPOSE 5010
 
 ENTRYPOINT ["npm", "start"]

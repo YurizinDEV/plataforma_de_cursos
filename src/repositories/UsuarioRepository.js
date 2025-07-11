@@ -36,16 +36,25 @@ class UsuarioRepository {
         return usuario;
     }
 
-    async buscarPorId(id, includeTokens = false) {
+    async buscarPorId(id, options = {}) {
+        const {
+            includeTokens = false, grupos = false
+        } = options;
         let query = this.model.findById(id);
 
         if (includeTokens) {
             query = query.select('+refreshtoken +accesstoken +senha');
         }
 
-        let usuario = await query
+        query = query
             .populate('cursosIds', 'titulo cargaHorariaTotal status')
             .populate('progresso.curso', 'titulo cargaHorariaTotal');
+
+        if (grupos) {
+            query = query.populate('grupos');
+        }
+
+        let usuario = await query;
 
         if (!usuario) {
             throw new CustomError({
@@ -65,7 +74,8 @@ class UsuarioRepository {
         if (id) {
             const usuario = await this.model.findById(id)
                 .populate('cursosIds', 'titulo cargaHorariaTotal status')
-                .populate('progresso.curso', 'titulo cargaHorariaTotal');
+                .populate('progresso.curso', 'titulo cargaHorariaTotal')
+                .populate('grupos', 'nome descricao');
             if (!usuario) {
                 throw new CustomError({
                     statusCode: HttpStatusCodes.NOT_FOUND.code,
@@ -76,32 +86,35 @@ class UsuarioRepository {
                 });
             }
 
-            const dadosEnriquecidos = this.enriquecerUsuario(usuario);
+            const dadosEnriquecidos = await this.enriquecerUsuario(usuario);
             return dadosEnriquecidos;
         }
-        
+
         const {
             nome,
             email,
             ativo,
-            ehAdmin,
+            grupos,
             dataInicio,
             dataFim,
             ordenarPor,
             direcao = 'asc',
             page = 1
         } = req.query;
-        
+
         const limite = Math.min(parseInt(req.query.limite, 10) || 20, 100);
-        
+
         const filterBuilder = new UsuarioFilterBuilder()
             .comNome(nome || '')
             .comEmail(email || '')
             .comAtivo(ativo)
-            .comEhAdmin(ehAdmin)
             .comDataInicio(dataInicio)
             .comDataFim(dataFim)
             .ordenarPor(ordenarPor, direcao);
+
+        if (grupos) {
+            await filterBuilder.comGrupos(grupos);
+        }
 
         if (typeof filterBuilder.build !== 'function') {
             throw new CustomError({
@@ -127,15 +140,24 @@ class UsuarioRepository {
 
         const resultado = await this.model.paginate(filtrosConsulta, {
             ...opcoesPaginacao,
-            populate: [
-                { path: 'cursosIds', select: 'titulo cargaHorariaTotal status' },
-                { path: 'progresso.curso', select: 'titulo cargaHorariaTotal' }
+            populate: [{
+                    path: 'cursosIds',
+                    select: 'titulo cargaHorariaTotal status'
+                },
+                {
+                    path: 'progresso.curso',
+                    select: 'titulo cargaHorariaTotal'
+                },
+                {
+                    path: 'grupos',
+                    select: 'nome descricao'
+                }
             ]
         });
 
-        resultado.docs = resultado.docs.map(usuario => {
-            return this.enriquecerUsuario(usuario);
-        });
+        resultado.docs = await Promise.all(resultado.docs.map(async usuario => {
+            return await this.enriquecerUsuario(usuario);
+        }));
 
         return resultado;
     }
@@ -149,11 +171,11 @@ class UsuarioRepository {
         if ('email' in parsedData) delete parsedData.email;
         if ('senha' in parsedData) delete parsedData.senha;
         const usuario = await this.model.findByIdAndUpdate(id, parsedData, {
-            new: true
-        })
-        .populate('cursosIds', 'titulo cargaHorariaTotal status')
-        .populate('progresso.curso', 'titulo cargaHorariaTotal');
-        
+                new: true
+            })
+            .populate('cursosIds', 'titulo cargaHorariaTotal status')
+            .populate('progresso.curso', 'titulo cargaHorariaTotal');
+
         if (!usuario) {
             throw new CustomError({
                 statusCode: HttpStatusCodes.NOT_FOUND.code,
@@ -168,13 +190,15 @@ class UsuarioRepository {
 
     async deletar(id) {
         const usuario = await this.model.findByIdAndUpdate(
-            id,
-            { ativo: false },
-            { new: true }
-        )
-        .populate('cursosIds', 'titulo cargaHorariaTotal status')
-        .populate('progresso.curso', 'titulo cargaHorariaTotal');
-        
+                id, {
+                    ativo: false
+                }, {
+                    new: true
+                }
+            )
+            .populate('cursosIds', 'titulo cargaHorariaTotal status')
+            .populate('progresso.curso', 'titulo cargaHorariaTotal');
+
         if (!usuario) {
             throw new CustomError({
                 statusCode: HttpStatusCodes.NOT_FOUND.code,
@@ -203,13 +227,15 @@ class UsuarioRepository {
 
     async restaurar(id) {
         const usuario = await this.model.findByIdAndUpdate(
-            id,
-            { ativo: true },
-            { new: true }
-        )
-        .populate('cursosIds', 'titulo cargaHorariaTotal status')
-        .populate('progresso.curso', 'titulo cargaHorariaTotal');
-        
+                id, {
+                    ativo: true
+                }, {
+                    new: true
+                }
+            )
+            .populate('cursosIds', 'titulo cargaHorariaTotal status')
+            .populate('progresso.curso', 'titulo cargaHorariaTotal');
+
         if (!usuario) {
             throw new CustomError({
                 statusCode: HttpStatusCodes.NOT_FOUND.code,
@@ -269,29 +295,44 @@ class UsuarioRepository {
     }
 
 
-    enriquecerUsuario(usuario) {
+    async enriquecerUsuario(usuario) {
         const usuarioObj = usuario.toObject();
         const totalCursos = usuarioObj.cursosIds.length;
-        
+
         const progresso = usuarioObj.progresso || [];
-        
+
         const cursosIniciados = progresso.filter(p => {
             const percentual = parseFloat(p.percentual_conclusao);
             return percentual > 0;
         }).length;
-        
+
         const cursosConcluidos = progresso.filter(p => {
             const percentual = parseFloat(p.percentual_conclusao);
             return percentual >= 100;
         }).length;
-        
+
         const cursosEmAndamento = progresso.filter(p => {
             const percentual = parseFloat(p.percentual_conclusao);
             return percentual > 0 && percentual < 100;
         }).length;
 
+        let nomeGrupos = [];
+
+        if (usuarioObj.grupos && Array.isArray(usuarioObj.grupos)) {
+            const GrupoModel = (await import('../models/Grupo.js')).default;
+            const grupos = await GrupoModel.find({
+                _id: {
+                    $in: usuarioObj.grupos
+                }
+            }, 'nome');
+            grupos.forEach(grupo => {
+                nomeGrupos.push(grupo.nome);
+            });
+        }
+
         return {
             ...usuarioObj,
+            grupos: nomeGrupos.length > 0 ? nomeGrupos : usuarioObj.grupos,
             totalCursos,
             estatisticasProgresso: {
                 cursosIniciados,
@@ -299,7 +340,8 @@ class UsuarioRepository {
                 cursosEmAndamento,
                 totalComProgresso: progresso.length,
                 cursosInscritosSemProgresso: totalCursos - progresso.length
-            }
+            },
+            nomeGrupos: nomeGrupos
         };
     }
 
@@ -323,25 +365,29 @@ class UsuarioRepository {
     }
 
     async buscarPorCodigoRecuperacao(codigo) {
-        return await this.model.findOne({ codigo_recupera_senha: codigo });
+        return await this.model.findOne({
+            codigo_recupera_senha: codigo
+        });
     }
 
     async buscarPorTokenUnico(token) {
-        return await this.model.findOne({ tokenUnico: token });
+        return await this.model.findOne({
+            tokenUnico: token
+        });
     }
 
     async atualizarSenha(id, senhaHasheada) {
         const usuarioAtualizado = await this.model.findByIdAndUpdate(
-            id, 
-            { 
+            id, {
                 senha: senhaHasheada,
-                tokenUnico: null, 
-                codigo_recupera_senha: null, 
-                exp_codigo_recupera_senha: null 
-            }, 
-            { new: true }
+                tokenUnico: null,
+                codigo_recupera_senha: null,
+                exp_codigo_recupera_senha: null
+            }, {
+                new: true
+            }
         );
-        
+
         if (!usuarioAtualizado) {
             throw new CustomError({
                 statusCode: HttpStatusCodes.NOT_FOUND.code,
@@ -369,7 +415,7 @@ class UsuarioRepository {
 
         usuarioExistente.accesstoken = null;
         usuarioExistente.refreshtoken = null;
-        
+
         await usuarioExistente.save();
         return usuarioExistente;
     }

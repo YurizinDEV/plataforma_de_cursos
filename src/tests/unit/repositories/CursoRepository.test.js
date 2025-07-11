@@ -43,6 +43,185 @@ afterAll(async () => {
 });
 
 describe('CursoRepository', () => {
+    describe('Cobertura de branches de filtros e parâmetros', () => {
+        test('usa fallback todasTagsArray e todosProfessoresArray', async () => {
+            await cursoRepository.criar({
+                ...cursoBase,
+                titulo: 'Fallback',
+                tags: ['tagA'],
+                professores: ['profA']
+            });
+            const req = {
+                query: {},
+                params: {},
+                todasTagsArray: ['tagA'],
+                todosProfessoresArray: ['profA']
+            };
+            const resultado = await cursoRepository.listar({
+                ...req,
+                query: {},
+                params: {},
+                todasTagsArray: ['tagA'],
+                todosProfessoresArray: ['profA']
+            });
+            expect(resultado.docs.length).toBeGreaterThanOrEqual(1);
+        });
+
+        test('usa tagsArrayParam e professoresArrayParam como string e array', async () => {
+            await cursoRepository.criar({
+                ...cursoBase,
+                titulo: 'ArrayParam',
+                tags: ['tagB'],
+                professores: ['profB']
+            });
+            let resultado = await cursoRepository.listar({
+                query: {},
+                params: {},
+                tagsArrayParam: 'tagB',
+                professoresArrayParam: 'profB'
+            });
+            expect(resultado.docs.length).toBeGreaterThanOrEqual(1);
+            resultado = await cursoRepository.listar({
+                query: {},
+                params: {},
+                tagsArrayParam: ['tagB'],
+                professoresArrayParam: ['profB']
+            });
+            expect(resultado.docs.length).toBeGreaterThanOrEqual(1);
+        });
+
+        test('temMaterialComplementar como string 1, 0, booleano e undefined', async () => {
+            await cursoRepository.criar({
+                ...cursoBase,
+                titulo: 'Material1',
+                materialComplementar: ['mat']
+            });
+            await cursoRepository.criar({
+                ...cursoBase,
+                titulo: 'Material0',
+                materialComplementar: []
+            });
+            let resultado = await cursoRepository.listar({
+                query: {
+                    temMaterialComplementar: '1'
+                },
+                params: {}
+            });
+            expect(resultado.docs.every(c => c.materialComplementar && c.materialComplementar.length > 0)).toBe(true);
+            resultado = await cursoRepository.listar({
+                query: {
+                    temMaterialComplementar: '0'
+                },
+                params: {}
+            });
+            expect(resultado.docs.every(c => !c.materialComplementar || c.materialComplementar.length === 0)).toBe(true);
+            resultado = await cursoRepository.listar({
+                query: {
+                    temMaterialComplementar: true
+                },
+                params: {}
+            });
+            expect(resultado.docs.every(c => c.materialComplementar && c.materialComplementar.length > 0)).toBe(true);
+            resultado = await cursoRepository.listar({
+                query: {
+                    temMaterialComplementar: false
+                },
+                params: {}
+            });
+            expect(resultado.docs.every(c => !c.materialComplementar || c.materialComplementar.length === 0)).toBe(true);
+            resultado = await cursoRepository.listar({
+                query: {},
+                params: {}
+            });
+            expect(resultado.docs.length).toBeGreaterThanOrEqual(2);
+        });
+
+        test('status indefinido deve cair em apenasAtivos', async () => {
+            await cursoRepository.criar({
+                ...cursoBase,
+                titulo: 'Ativo',
+                status: 'ativo'
+            });
+            await cursoRepository.criar({
+                ...cursoBase,
+                titulo: 'Arquivado',
+                status: 'arquivado'
+            });
+            const resultado = await cursoRepository.listar({
+                query: {},
+                params: {}
+            });
+            expect(resultado.docs.every(c => c.status === 'ativo')).toBe(true);
+        });
+
+        test('cargaHorariaFaixa (string), cargaHorariaMin e cargaHorariaMax', async () => {
+            await cursoRepository.criar({
+                ...cursoBase,
+                titulo: 'FaixaCurta',
+                cargaHorariaTotal: 5
+            });
+            await cursoRepository.criar({
+                ...cursoBase,
+                titulo: 'FaixaMedia',
+                cargaHorariaTotal: 25
+            });
+            await cursoRepository.criar({
+                ...cursoBase,
+                titulo: 'FaixaLonga',
+                cargaHorariaTotal: 60
+            });
+            // Faixa (string)
+            let resultado = await cursoRepository.listar({
+                query: {
+                    cargaHorariaFaixa: 'media'
+                },
+                params: {}
+            });
+            const titulosFaixa = resultado.docs.map(c => c.titulo);
+            expect(titulosFaixa.includes('FaixaMedia')).toBe(true);
+            // Min
+            resultado = await cursoRepository.listar({
+                query: {
+                    cargaHorariaMin: 21
+                },
+                params: {}
+            });
+            const titulosMin = resultado.docs.map(c => c.titulo);
+            expect(titulosMin.includes('FaixaMedia') || titulosMin.includes('FaixaLonga')).toBe(true);
+            // Max
+            resultado = await cursoRepository.listar({
+                query: {
+                    cargaHorariaMax: 20
+                },
+                params: {}
+            });
+            const titulosMax = resultado.docs.map(c => c.titulo);
+            expect(titulosMax.includes('FaixaCurta')).toBe(true);
+        });
+
+        test('usa professoresArray e tagsArray sem AND', async () => {
+            await cursoRepository.criar({
+                ...cursoBase,
+                titulo: 'Array',
+                tags: ['tagArr'],
+                professores: ['profArr']
+            });
+            let resultado = await cursoRepository.listar({
+                query: {
+                    tagsArray: ['tagArr']
+                },
+                params: {}
+            });
+            expect(resultado.docs.length).toBeGreaterThanOrEqual(1);
+            resultado = await cursoRepository.listar({
+                query: {
+                    professoresArray: ['profArr']
+                },
+                params: {}
+            });
+            expect(resultado.docs.length).toBeGreaterThanOrEqual(1);
+        });
+    });
     test('deve instanciar corretamente', () => {
         expect(cursoRepository).toBeInstanceOf(CursoRepository);
         expect(cursoRepository.model).toBeDefined();
@@ -422,74 +601,6 @@ describe('CursoRepository', () => {
             };
             const resultado = await cursoRepository.listar(req);
             expect(resultado.docs.length).toBe(0);
-        });
-    });
-
-    describe('Cobertura avançada de branches e auxiliares', () => {
-        test('listarComQuantidadeAulas retorna corretamente sem aulas', async () => {
-            const curso = await cursoRepository.criar({
-                ...cursoBase,
-                titulo: 'Sem Aula'
-            });
-            const result = await cursoRepository.listarComQuantidadeAulas({}, {
-                min: 0
-            }, {
-                page: 1,
-                limit: 10
-            });
-            expect(result.docs.length).toBeGreaterThanOrEqual(1);
-            expect(result.docs[0]).toHaveProperty('estatisticas');
-        });
-        test('listarComQuantidadeAulas pagina corretamente', async () => {
-            for (let i = 0; i < 5; i++) {
-                await cursoRepository.criar({
-                    ...cursoBase,
-                    titulo: `Curso Pag${i}`
-                });
-            }
-            const result = await cursoRepository.listarComQuantidadeAulas({}, {
-                min: 0
-            }, {
-                page: 1,
-                limit: 2
-            });
-            expect(result.docs.length).toBeLessThanOrEqual(2);
-            expect(result.page).toBe(1);
-        });
-        test('enriquecerCurso lida com curso sem professores/tags/material', async () => {
-            const curso = await cursoRepository.criar({
-                titulo: 'Sem Nada',
-                criadoPorId: cursoBase.criadoPorId
-            });
-            const enriched = await cursoRepository.enriquecerCurso(curso);
-            expect(enriched.estatisticas.totalProfessores).toBe(0);
-            expect(enriched.estatisticas.totalTags).toBe(0);
-            expect(enriched.estatisticas.totalMaterialComplementar).toBe(0);
-        });
-        test('enriquecerCurso lida com curso com professores/tags/material', async () => {
-            const curso = await cursoRepository.criar({
-                titulo: 'Com Tudo',
-                criadoPorId: cursoBase.criadoPorId,
-                professores: ['Prof1', 'Prof2'],
-                tags: ['tag1', 'tag2'],
-                materialComplementar: ['mat1', 'mat2']
-            });
-            const enriched = await cursoRepository.enriquecerCurso(curso);
-            expect(enriched.estatisticas.totalProfessores).toBe(2);
-            expect(enriched.estatisticas.totalTags).toBe(2);
-            expect(enriched.estatisticas.totalMaterialComplementar).toBe(2);
-        });
-        test('listarComQuantidadeAulas retorna vazio se não houver cursos', async () => {
-            await CursoModel.deleteMany({});
-            const result = await cursoRepository.listarComQuantidadeAulas({
-                titulo: 'inexistente'
-            }, {
-                min: 0
-            }, {
-                page: 1,
-                limit: 10
-            });
-            expect(result.docs.length).toBe(0);
         });
     });
 

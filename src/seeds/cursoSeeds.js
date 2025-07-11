@@ -7,6 +7,7 @@ export default async function cursosSeed() {
     await Curso.deleteMany({});
 
     const cursos = [];
+    const titulosUsados = new Set();
 
     const tags = ['js', 'react', 'node', 'python', 'mongodb', 'vue', 'angular', 'css',
         'html', 'express', 'php', 'laravel', 'docker', 'aws', 'devops', 'data'
@@ -28,7 +29,11 @@ export default async function cursosSeed() {
         });
         const tagsEscolhidas = fakerbr.random.arrayElements(tags, numTags);
 
-        const titulo = `Curso de ${fakerbr.company.catchPhraseNoun()}`;
+        let titulo;
+        do {
+            titulo = `Curso de ${fakerbr.company.catchPhraseNoun()}`;
+        } while (titulosUsados.has(titulo));
+        titulosUsados.add(titulo);
 
         let status;
         if (i < 3) {

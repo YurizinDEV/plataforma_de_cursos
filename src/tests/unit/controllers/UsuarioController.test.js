@@ -164,9 +164,9 @@ describe('UsuarioController', () => {
                 toObject: () => ({
                     nome: 'Usuário',
                     email: 'a@a.com',
-                    ehAdmin: false,
                     ativo: false
-                })
+                }),
+                nomeGrupos: []
             });
             CommonResponse.created.mockImplementation((res, data) => data);
             const req = mockRequest();

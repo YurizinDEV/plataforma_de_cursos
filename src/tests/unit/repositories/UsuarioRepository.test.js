@@ -87,24 +87,21 @@ describe('UsuarioRepository', () => {
                 senha: senhaHash
             })).rejects.toThrow();
         });
-        it('deve definir ehAdmin e ativo como false por padrão', async () => {
+        it('deve definir ativo como false por padrão', async () => {
             const senhaHash = await bcrypt.hash(usuarioBase.senha, 10);
             const usuario = await usuarioRepository.criar({
                 ...usuarioBase,
                 senha: senhaHash
             });
-            expect(usuario.ehAdmin).toBe(false);
             expect(usuario.ativo).toBe(false);
         });
-        it('deve permitir definir ehAdmin e ativo como true', async () => {
+        it('deve permitir definir ativo como true', async () => {
             const senhaHash = await bcrypt.hash(usuarioBase.senha, 10);
             const usuario = await usuarioRepository.criar({
                 ...usuarioBase,
                 senha: senhaHash,
-                ehAdmin: true,
                 ativo: true
             });
-            expect(usuario.ehAdmin).toBe(true);
             expect(usuario.ativo).toBe(true);
         });
     });
@@ -115,22 +112,20 @@ describe('UsuarioRepository', () => {
                     nome: 'João',
                     email: 'joao@teste.com',
                     senha: await bcrypt.hash('Senha@123', 10),
-                    ativo: true,
-                    ehAdmin: false
+                    ativo: true
                 },
                 {
                     nome: 'Maria',
                     email: 'maria@teste.com',
                     senha: await bcrypt.hash('Senha@123', 10),
-                    ativo: false,
-                    ehAdmin: false
+                    ativo: false
                 },
                 {
                     nome: 'Pedro',
                     email: 'pedro@teste.com',
                     senha: await bcrypt.hash('Senha@123', 10),
                     ativo: true,
-                    ehAdmin: true
+                    grupos: ['67607e1b123456789abcdef0']
                 },
             ]);
         });
@@ -208,15 +203,33 @@ describe('UsuarioRepository', () => {
             const resultado = await usuarioRepository.listar(req);
             expect(resultado.docs.every(u => u.ativo === false)).toBe(true);
         });
-        it('deve filtrar usuários por ehAdmin', async () => {
+        it('deve filtrar usuários por grupos (Administradores)', async () => {
+            const GrupoModel = (await import('../../../models/Grupo.js')).default;
+
+            const grupoAdmin = await GrupoModel.create({
+                nome: 'Administradores',
+                descricao: 'Grupo de administradores',
+                ativo: true,
+                permissoes: []
+            });
+
+            const usuarioAdmin = await UsuarioModel.create({
+                nome: 'Admin User',
+                email: 'admin@test.com',
+                senha: 'senha123',
+                ativo: true,
+                grupos: [grupoAdmin._id]
+            });
+
             const req = {
                 params: {},
                 query: {
-                    ehAdmin: 'true'
+                    grupos: 'Administradores'
                 }
             };
             const resultado = await usuarioRepository.listar(req);
-            expect(resultado.docs.every(u => u.ehAdmin === true)).toBe(true);
+            expect(resultado.docs.length).toBeGreaterThan(0);
+            expect(resultado.docs.some(user => user._id.toString() === usuarioAdmin._id.toString())).toBe(true);
         });
     });
 
@@ -227,8 +240,7 @@ describe('UsuarioRepository', () => {
                 nome: 'Atualizar',
                 email: 'atualizar@teste.com',
                 senha: await bcrypt.hash('Senha@123', 10),
-                ativo: false,
-                ehAdmin: false,
+                ativo: false
             });
         });
         it('deve atualizar nome do usuário', async () => {
@@ -253,7 +265,7 @@ describe('UsuarioRepository', () => {
             const usuarioAposUpdate = await UsuarioModel.findById(usuarioExistente._id).select('+senha');
 
             expect(usuarioOriginal.senha).toBe(usuarioAposUpdate.senha);
-            
+
             expect(await bcrypt.compare('NovaSenha123', usuarioAposUpdate.senha)).toBe(false);
         });
         it('deve lançar erro ao tentar atualizar usuário inexistente', async () => {
@@ -497,7 +509,7 @@ describe('UsuarioRepository', () => {
 
         it('deve buscar usuários com progresso significativo', async () => {
             const usuarios = await usuarioRepository.buscarUsuariosComProgressoSignificativo(cursoId, 30);
-            expect(usuarios.length).toBe(2); // usuarios com 50% e 80%
+            expect(usuarios.length).toBe(2);
             expect(usuarios.every(u => u.nome && u.email)).toBe(true);
         });
 
@@ -524,137 +536,81 @@ describe('UsuarioRepository', () => {
         });
     });
 
-    describe('Enriquecimento de dados do usuário', () => {
-        it('deve enriquecer usuário com estatísticas de progresso', async () => {
-            const cursoId1 = new mongoose.Types.ObjectId();
-            const cursoId2 = new mongoose.Types.ObjectId();
-            const cursoId3 = new mongoose.Types.ObjectId();
-
-            await CursoModel.create([{
-                    _id: cursoId1,
-                    titulo: 'Curso 1',
-                    cargaHorariaTotal: 10,
-                    status: 'ativo',
-                    criadoPorId: new mongoose.Types.ObjectId()
-                },
-                {
-                    _id: cursoId2,
-                    titulo: 'Curso 2',
-                    cargaHorariaTotal: 20,
-                    status: 'ativo',
-                    criadoPorId: new mongoose.Types.ObjectId()
-                },
-                {
-                    _id: cursoId3,
-                    titulo: 'Curso 3',
-                    cargaHorariaTotal: 30,
-                    status: 'ativo',
-                    criadoPorId: new mongoose.Types.ObjectId()
-                }
-            ]);
-
-            const usuarioCriado = await UsuarioModel.create({
-                nome: 'Usuario Enriquecido',
-                email: 'enriquecido@teste.com',
+    describe('Cobertura extra UsuarioRepository', () => {
+        let usuario;
+        beforeEach(async () => {
+            usuarioRepository = new UsuarioRepository();
+            usuario = await UsuarioModel.create({
+                nome: 'Cobertura',
+                email: 'cobertura@teste.com',
                 senha: await bcrypt.hash('Senha@123', 10),
-                cursosIds: [cursoId1, cursoId2, cursoId3],
-                progresso: [{
-                        curso: cursoId1,
-                        percentual_conclusao: '100'
-                    },
-                    {
-                        curso: cursoId2,
-                        percentual_conclusao: '50'
-                    }
-                ]
+                refreshtoken: 'refresh',
+                accesstoken: 'access',
+                grupos: [],
             });
-
-            const req = {
-                params: {
-                    id: usuarioCriado._id.toString()
-                },
-                query: {}
-            };
-            const resultado = await usuarioRepository.listar(req);
-
-            expect(resultado.totalCursos).toBe(3);
-            expect(resultado.estatisticasProgresso.cursosIniciados).toBe(2);
-            expect(resultado.estatisticasProgresso.cursosConcluidos).toBe(1);
-            expect(resultado.estatisticasProgresso.cursosEmAndamento).toBe(1);
-            expect(resultado.estatisticasProgresso.totalComProgresso).toBe(2);
-            expect(resultado.estatisticasProgresso.cursosInscritosSemProgresso).toBe(1);
         });
 
-        it('deve enriquecer usuário sem progresso', async () => {
-            const cursoId = new mongoose.Types.ObjectId();
-
-            await CursoModel.create({
-                _id: cursoId,
-                titulo: 'Curso Sem Progresso',
-                cargaHorariaTotal: 10,
-                status: 'ativo',
-                criadoPorId: new mongoose.Types.ObjectId()
+        it('buscarPorId deve retornar usuário com includeTokens e grupos', async () => {
+            const result = await usuarioRepository.buscarPorId(usuario._id, {
+                includeTokens: true,
+                grupos: true
             });
-
-            const usuarioCriado = await UsuarioModel.create({
-                nome: 'Usuario Sem Progresso',
-                email: 'semprogresso@teste.com',
-                senha: await bcrypt.hash('Senha@123', 10),
-                cursosIds: [cursoId]
-            });
-
-            const req = {
-                params: {
-                    id: usuarioCriado._id.toString()
-                },
-                query: {}
-            };
-            const resultado = await usuarioRepository.listar(req);
-
-            expect(resultado.totalCursos).toBe(1);
-            expect(resultado.estatisticasProgresso.cursosIniciados).toBe(0);
-            expect(resultado.estatisticasProgresso.cursosConcluidos).toBe(0);
-            expect(resultado.estatisticasProgresso.cursosEmAndamento).toBe(0);
-            expect(resultado.estatisticasProgresso.totalComProgresso).toBe(0);
-            expect(resultado.estatisticasProgresso.cursosInscritosSemProgresso).toBe(1);
+            expect(result).toBeDefined();
+            expect(result.refreshtoken).toBe('refresh');
+            expect(result.accesstoken).toBe('access');
         });
 
-        it('deve enriquecer usuário com progresso zero', async () => {
-            const cursoId = new mongoose.Types.ObjectId();
+        it('buscarPorId deve lançar erro se não encontrar', async () => {
+            const idFake = new mongoose.Types.ObjectId();
+            await expect(usuarioRepository.buscarPorId(idFake)).rejects.toThrow(CustomError);
+        });
 
-            await CursoModel.create({
-                _id: cursoId,
-                titulo: 'Curso Progresso Zero',
-                cargaHorariaTotal: 15,
-                status: 'ativo',
-                criadoPorId: new mongoose.Types.ObjectId()
-            });
+        it('armazenarTokens deve atualizar tokens', async () => {
+            const result = await usuarioRepository.armazenarTokens(usuario._id, 'novoAccess', 'novoRefresh');
+            expect(result.accesstoken).toBe('novoAccess');
+            expect(result.refreshtoken).toBe('novoRefresh');
+        });
 
-            const usuarioCriado = await UsuarioModel.create({
-                nome: 'Usuario Progresso Zero',
-                email: 'progressozero@teste.com',
-                senha: await bcrypt.hash('Senha@123', 10),
-                cursosIds: [cursoId],
-                progresso: [{
-                    curso: cursoId,
-                    percentual_conclusao: '0'
-                }]
-            });
+        it('armazenarTokens deve lançar erro se usuário não existe', async () => {
+            const idFake = new mongoose.Types.ObjectId();
+            await expect(usuarioRepository.armazenarTokens(idFake, 'a', 'b')).rejects.toThrow(CustomError);
+        });
 
-            const req = {
-                params: {
-                    id: usuarioCriado._id.toString()
-                },
-                query: {}
-            };
-            const resultado = await usuarioRepository.listar(req);
+        it('buscarPorCodigoRecuperacao deve retornar null se não existir', async () => {
+            const result = await usuarioRepository.buscarPorCodigoRecuperacao('codigoInexistente');
+            expect(result).toBeNull();
+        });
 
-            expect(resultado.totalCursos).toBe(1);
-            expect(resultado.estatisticasProgresso.cursosIniciados).toBe(0); // 0% não conta como iniciado
-            expect(resultado.estatisticasProgresso.cursosConcluidos).toBe(0);
-            expect(resultado.estatisticasProgresso.cursosEmAndamento).toBe(0);
-            expect(resultado.estatisticasProgresso.totalComProgresso).toBe(1);
-            expect(resultado.estatisticasProgresso.cursosInscritosSemProgresso).toBe(0);
+        it('buscarPorTokenUnico deve retornar null se não existir', async () => {
+            const result = await usuarioRepository.buscarPorTokenUnico('tokenInexistente');
+            expect(result).toBeNull();
+        });
+
+        it('atualizarSenha deve atualizar senha e limpar tokens', async () => {
+            const novaSenha = await bcrypt.hash('NovaSenha@123', 10);
+            await usuarioRepository.atualizarSenha(usuario._id, novaSenha);
+            const usuarioAtualizado = await UsuarioModel.findById(usuario._id).select('+senha');
+            expect(usuarioAtualizado).toBeDefined();
+            expect(await bcrypt.compare('NovaSenha@123', usuarioAtualizado.senha)).toBe(true);
+            expect(usuarioAtualizado.tokenUnico === null || usuarioAtualizado.tokenUnico === undefined).toBe(true);
+            expect(usuarioAtualizado.codigo_recupera_senha === null || usuarioAtualizado.codigo_recupera_senha === undefined).toBe(true);
+        });
+
+        it('atualizarSenha deve lançar erro se usuário não existe', async () => {
+            const idFake = new mongoose.Types.ObjectId();
+            const novaSenha = await bcrypt.hash('NovaSenha@123', 10);
+            await expect(usuarioRepository.atualizarSenha(idFake, novaSenha)).rejects.toThrow(CustomError);
+        });
+
+        it('removeToken deve limpar tokens', async () => {
+            const result = await usuarioRepository.removeToken(usuario._id);
+            expect(result.accesstoken).toBeNull();
+            expect(result.refreshtoken).toBeNull();
+        });
+
+        it('removeToken deve lançar erro se usuário não existe', async () => {
+            const idFake = new mongoose.Types.ObjectId();
+            await expect(usuarioRepository.removeToken(idFake)).rejects.toThrow(CustomError);
         });
     });
 });

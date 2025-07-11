@@ -5,7 +5,7 @@ import bcrypt from "bcrypt";
 
 // DbConnect.conectar();
 
-const senhaPura = "123456";
+const senhaPura = "1234Teste@";
 
 function gerarSenha() {
     return bcrypt.hashSync(senhaPura, 12);
@@ -16,23 +16,55 @@ export default async function usuariosSeed() {
 
     const usuarios = [];
 
-    for (let i = 0; i < 20; i++) {
-        const isAdmin = i < 2;
-        const isAtivo = i < 15;
+    usuarios.push({
+        nome: "Administrador",
+        senha: bcrypt.hashSync("Admin@1234", 12),
+        email: "admin@gmail.com",
+        ativo: true,
+        progresso: [],
+        cursosIds: [],
+        grupos: []
+    });
+
+    for (let i = 0; i < 19; i++) {
+        const isAtivo = i < 14;
         usuarios.push({
             nome: fakerbr.name.firstName() + " " + fakerbr.name.lastName(),
             senha: gerarSenha(),
             email: fakerbr.internet.email(),
-            ehAdmin: isAdmin,
             ativo: isAtivo,
             progresso: [],
-            cursosIds: []
+            cursosIds: [],
+            grupos: []
         });
     }
 
-    await Usuario.insertMany(usuarios);
+    const usuariosCriados = await Usuario.insertMany(usuarios);
     console.log("Usuários gerados com sucesso");
-    // console.log(usuarios);
+
+    try {
+        const Grupo = (await import('../models/Grupo.js')).default;
+        const grupoAdmin = await Grupo.findOne({
+            nome: 'Administradores'
+        });
+
+        if (grupoAdmin) {
+            const adminId = usuariosCriados[0]._id;
+            await Usuario.updateOne({
+                _id: adminId
+            }, {
+                $push: {
+                    grupos: grupoAdmin._id
+                }
+            });
+            console.log("Usuário administrador fixo associado ao grupo");
+            console.log(`Admin criado: admin@example.com / admin123`);
+            console.log(`ID do admin: ${adminId}`);
+        }
+    } catch (error) {
+        console.log("Aviso: Não foi possível associar usuários ao grupo admin (execute as seeds de grupos primeiro)");
+        console.error(error);
+    }
 }
 
 // usuariosSeed();

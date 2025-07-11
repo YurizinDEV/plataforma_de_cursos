@@ -1,31 +1,51 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { CommonResponse, CustomError, HttpStatusCodes, errorHandler, messages, StatusService, asyncWrapper } from '../utils/helpers/index.js';
+import {
+    CommonResponse,
+    CustomError,
+    HttpStatusCodes,
+    errorHandler,
+    messages,
+    StatusService,
+    asyncWrapper
+} from '../utils/helpers/index.js';
 import tokenUtil from '../utils/TokenUtil.js';
-import { v4 as uuid } from 'uuid';
+import {
+    v4 as uuid
+} from 'uuid';
 import AuthHelper from '../utils/AuthHelper.js';
 
 import UsuarioRepository from '../repositories/UsuarioRepository.js';
 
 class AuthService {
-    constructor({ tokenUtil: injectedTokenUtil } = {}) {
+    constructor({
+        tokenUtil: injectedTokenUtil
+    } = {}) {
         this.TokenUtil = injectedTokenUtil || tokenUtil;
         this.repository = new UsuarioRepository();
     }
 
     async carregatokens(id, token) {
-        const data = await this.repository.buscarPorId(id, { includeTokens: true });
-        return { data };
+        const data = await this.repository.buscarPorId(id, {
+            includeTokens: true
+        });
+        return {
+            data
+        };
     }
 
     async revoke(id) {
         const data = await this.repository.removeToken(id);
-        return { data };
+        return {
+            data
+        };
     }
 
     async logout(id) {
         const data = await this.repository.removeToken(id);
-        return { data };
+        return {
+            data
+        };
     }
 
     async login(body) {
@@ -54,7 +74,9 @@ class AuthService {
 
         const accesstoken = await this.TokenUtil.generateAccessToken(userEncontrado._id);
 
-        const userComTokens = await this.repository.buscarPorId(userEncontrado._id, true);
+        const userComTokens = await this.repository.buscarPorId(userEncontrado._id, {
+            includeTokens: true
+        });
         let refreshtoken = userComTokens.refreshtoken;
 
         if (refreshtoken) {
@@ -83,7 +105,13 @@ class AuthService {
         delete userLogado.senha;
         const userObjeto = userLogado.toObject();
 
-        return { user: { accesstoken, refreshtoken, ...userObjeto } };
+        return {
+            user: {
+                accesstoken,
+                refreshtoken,
+                ...userObjeto
+            }
+        };
     }
 
     async recuperaSenha(body) {
@@ -100,10 +128,10 @@ class AuthService {
         }
 
         const generateCode = () => Math.random()
-            .toString(36)             
-            .replace(/[^a-z0-9]/gi, '') 
-            .slice(0, 4)              
-            .toUpperCase();           
+            .toString(36)
+            .replace(/[^a-z0-9]/gi, '')
+            .slice(0, 4)
+            .toUpperCase();
 
         let codigoRecuperaSenha = generateCode();
 
@@ -143,7 +171,7 @@ class AuthService {
             data: {
                 name: userEncontrado.nome,
                 resetUrl: resetUrl,
-                expirationMinutes: 60, 
+                expirationMinutes: 60,
                 year: new Date().getFullYear(),
                 company: process.env.COMPANY_NAME || 'Auth'
             }
@@ -152,7 +180,7 @@ class AuthService {
         const sendMail = async (emailData) => {
             const mailApiUrl = process.env.MAIL_API_URL || 'http://localhost:3001';
             const url = `${mailApiUrl}/emails/send?apiKey=${process.env.MAIL_API_KEY}`;
-            
+
             try {
                 const response = await fetch(url, {
                     method: 'POST',
@@ -161,7 +189,7 @@ class AuthService {
                     },
                     body: JSON.stringify(emailData)
                 });
-                
+
                 if (!response.ok) {
                     throw new Error(`Erro ao enviar e-mail: ${response.status} ${response.statusText}`);
                 }
@@ -180,8 +208,7 @@ class AuthService {
         await sendMail(emailData);
 
         return {
-            message:
-                'Solicitação de recuperação de senha recebida. Um e-mail foi enviado com instruções.'
+            message: 'Solicitação de recuperação de senha recebida. Um e-mail foi enviado com instruções.'
         };
     }
 
@@ -214,7 +241,9 @@ class AuthService {
             });
         }
 
-        return { message: 'Senha atualizada com sucesso.' };
+        return {
+            message: 'Senha atualizada com sucesso.'
+        };
     }
 
     async atualizarSenhaCodigo(codigoRecuperaSenha, senhaBody) {
@@ -255,12 +284,16 @@ class AuthService {
             });
         }
 
-        return { message: 'Senha atualizada com sucesso.' };
+        return {
+            message: 'Senha atualizada com sucesso.'
+        };
     }
 
 
     async refresh(id, token) {
-        const userEncontrado = await this.repository.buscarPorId(id, { includeTokens: true });
+        const userEncontrado = await this.repository.buscarPorId(id, {
+            includeTokens: true
+        });
 
         if (!userEncontrado) {
             throw new CustomError({
@@ -292,7 +325,9 @@ class AuthService {
 
         await this.repository.armazenarTokens(id, accesstoken, refreshtoken);
 
-        const userLogado = await this.repository.buscarPorId(id, { includeTokens: true });
+        const userLogado = await this.repository.buscarPorId(id, {
+            includeTokens: true
+        });
         delete userLogado.senha;
         const userObjeto = userLogado.toObject();
 
@@ -302,7 +337,9 @@ class AuthService {
             ...userObjeto
         };
 
-        return { user: userComTokens };
+        return {
+            user: userComTokens
+        };
     }
 }
 

@@ -24,12 +24,9 @@ export const UsuarioQuerySchema = z.object({
         .refine((value) => !value || value === "true" || value === "false", {
             message: "Ativo deve ser 'true' ou 'false'",
         }),
-    ehAdmin: z
+    grupos: z
         .string()
-        .optional()
-        .refine((value) => !value || value === "true" || value === "false", {
-            message: "ehAdmin deve ser 'true' ou 'false'",
-        }),
+        .optional(),
     dataInicio: z
         .string()
         .optional()

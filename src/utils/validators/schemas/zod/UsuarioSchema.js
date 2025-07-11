@@ -28,9 +28,9 @@ const UsuarioSchema = z.object({
     .string()
     .min(8, 'A senha deve ter pelo menos 8 caracteres.')
     .regex(senhaRegex, 'A senha deve conter pelo menos 1 letra maiúscula, 1 letra minúscula, 1 número e 1 caractere especial.'),
-  ehAdmin: z.boolean().optional().default(false),
   link_foto: z.string().optional(),
   ativo: z.boolean().default(false),
+  grupos: z.array(z.string()).optional().default([]),
 
 
   progresso: z.array(z.object({

@@ -28,7 +28,6 @@ const usuarioBase = {
     nome: 'Usuário Teste',
     email: 'teste@teste.com',
     senha: 'Senha@123',
-    ehAdmin: false,
     ativo: false,
     progresso: [],
     toObject: function () {
