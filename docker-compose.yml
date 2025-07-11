@@ -15,7 +15,7 @@ services:
     environment:
       - DB_URL=mongodb://mongo:27017/plataforma
     ports:
-      - "5011:5011"
+      - "5010:5010"
     volumes:
       - .:/app
       - /app/node_modules

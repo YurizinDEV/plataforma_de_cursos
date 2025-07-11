@@ -1,5 +1,7 @@
 import { jest } from '@jest/globals';
 
+process.env.NODE_ENV = 'test';
+
 beforeAll(() => {
     jest.spyOn(console, 'error').mockImplementation(() => { });
     jest.spyOn(console, 'log').mockImplementation(() => { });
