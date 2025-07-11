@@ -31,25 +31,28 @@ describe('UsuarioSchema', () => {
         expect(resultado.ativo).toBe(false);
     });
 
-    it('deve aplicar valor padrão para "ehAdmin" quando não fornecido', () => {
+    it('deve aplicar valores padrão para campos opcionais quando não fornecidos', () => {
         const dadosValidos = {
             nome: 'João',
             email: 'joao@email.com',
             senha: 'Senha@123',
         };
         const resultado = UsuarioSchema.parse(dadosValidos);
-        expect(resultado.ehAdmin).toBe(false);
+        expect(resultado.ativo).toBe(false);
+        expect(resultado.grupos).toEqual([]);
     });
 
-    it('deve permitir definir explicitamente o valor de "ehAdmin"', () => {
+    it('deve permitir definir explicitamente os valores opcionais', () => {
         const dadosValidos = {
             nome: 'João Admin',
             email: 'admin@email.com',
             senha: 'Senha@123',
-            ehAdmin: true,
+            ativo: true,
+            grupos: ['67607e1b123456789abcdef0']
         };
         const resultado = UsuarioSchema.parse(dadosValidos);
-        expect(resultado.ehAdmin).toBe(true);
+        expect(resultado.ativo).toBe(true);
+        expect(resultado.grupos).toEqual(['67607e1b123456789abcdef0']);
     });
 
     it('deve lançar erro quando "nome" está ausente', () => {
@@ -266,12 +269,12 @@ describe('UsuarioUpdateSchema', () => {
         expect(() => UsuarioUpdateSchema.parse(dadosInvalidos)).toThrow(/8 caracteres/);
     });
 
-    it('deve permitir atualizar apenas o campo "ehAdmin"', () => {
+    it('deve permitir atualizar apenas o campo "grupos"', () => {
         const dadosParciais = {
-            ehAdmin: true
+            grupos: ['67607e1b123456789abcdef0', '67607e1b123456789abcdef1']
         };
         const resultado = UsuarioUpdateSchema.parse(dadosParciais);
-        expect(resultado.ehAdmin).toBe(true);
+        expect(resultado.grupos).toEqual(['67607e1b123456789abcdef0', '67607e1b123456789abcdef1']);
         expect(resultado.nome).toBeUndefined();
     });
 

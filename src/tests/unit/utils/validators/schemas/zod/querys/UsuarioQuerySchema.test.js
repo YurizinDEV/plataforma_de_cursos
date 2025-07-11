@@ -77,46 +77,29 @@ describe('UsuarioQuerySchema', () => {
             });
         });
 
-        describe('Campo ehAdmin', () => {
-            it('deve validar ehAdmin="true" corretamente', async () => {
+        describe('Campo grupos', () => {
+            it('deve validar grupos com valor string', async () => {
                 const resultado = await UsuarioQuerySchema.parseAsync({
-                    ehAdmin: 'true'
+                    grupos: 'Administradores'
                 });
-                expect(resultado.ehAdmin).toBe('true');
+                expect(resultado.grupos).toBe('Administradores');
             });
 
-            it('deve validar ehAdmin="false" corretamente', async () => {
-                const resultado = await UsuarioQuerySchema.parseAsync({
-                    ehAdmin: 'false'
-                });
-                expect(resultado.ehAdmin).toBe('false');
-            });
-
-            it('deve aceitar ehAdmin undefined/vazio', async () => {
+            it('deve aceitar grupos undefined/vazio', async () => {
                 const resultado1 = await UsuarioQuerySchema.parseAsync({});
-                expect(resultado1.ehAdmin).toBeUndefined();
+                expect(resultado1.grupos).toBeUndefined();
 
                 const resultado2 = await UsuarioQuerySchema.parseAsync({
-                    ehAdmin: undefined
+                    grupos: undefined
                 });
-                expect(resultado2.ehAdmin).toBeUndefined();
+                expect(resultado2.grupos).toBeUndefined();
             });
 
-            it('deve rejeitar valores inválidos para ehAdmin', async () => {
-                await expect(UsuarioQuerySchema.parseAsync({
-                        ehAdmin: 'sim'
-                    }))
-                    .rejects.toThrow("ehAdmin deve ser 'true' ou 'false'");
-
-                await expect(UsuarioQuerySchema.parseAsync({
-                        ehAdmin: '1'
-                    }))
-                    .rejects.toThrow("ehAdmin deve ser 'true' ou 'false'");
-
-                await expect(UsuarioQuerySchema.parseAsync({
-                        ehAdmin: 'admin'
-                    }))
-                    .rejects.toThrow("ehAdmin deve ser 'true' ou 'false'");
+            it('deve aceitar qualquer string para grupos', async () => {
+                const resultado = await UsuarioQuerySchema.parseAsync({
+                    grupos: 'QualquerGrupo'
+                });
+                expect(resultado.grupos).toBe('QualquerGrupo');
             });
         });
 
@@ -381,7 +364,7 @@ describe('UsuarioQuerySchema', () => {
                 nome: 'João Silva',
                 email: 'joao.silva@example.com',
                 ativo: 'false',
-                ehAdmin: 'true',
+                grupos: 'Administradores',
                 dataInicio: '2023-01-01',
                 dataFim: '2023-12-31',
                 ordenarPor: 'nome',
@@ -397,7 +380,7 @@ describe('UsuarioQuerySchema', () => {
             expect(resultado.nome).toBe('João Silva');
             expect(resultado.email).toBe('joao.silva@example.com');
             expect(resultado.ativo).toBe('false');
-            expect(resultado.ehAdmin).toBe('true');
+            expect(resultado.grupos).toBe('Administradores');
             expect(resultado.dataInicio).toBe('2023-01-01');
             expect(resultado.dataFim).toBe('2023-12-31');
             expect(resultado.ordenarPor).toBe('nome');
@@ -421,16 +404,16 @@ describe('UsuarioQuerySchema', () => {
 
         it('deve rejeitar quando múltiplos campos são inválidos', async () => {
             const query = {
-                nome: '   ', 
-                email: 'email-invalido', 
-                ativo: 'sim', 
-                ehAdmin: 'maybe', 
-                dataInicio: 'data-invalida', 
+                nome: '   ',
+                email: 'email-invalido',
+                ativo: 'sim',
+                grupos: '',
+                dataInicio: 'data-invalida',
                 dataFim: 'outra-data-invalida',
-                ordenarPor: 'campo-inexistente', 
-                direcao: 'para-cima', 
+                ordenarPor: 'campo-inexistente',
+                direcao: 'para-cima',
                 page: '0',
-                limite: '150' 
+                limite: '150'
             };
 
             await expect(UsuarioQuerySchema.parseAsync(query))
@@ -464,11 +447,11 @@ describe('UsuarioQuerySchema', () => {
 
             const resultado = await UsuarioQuerySchema.parseAsync(query);
 
-            expect(resultado.nome).toBe('João Silva'); 
-            expect(resultado.grupo).toBe('Administradores'); 
-            expect(resultado.unidade).toBe('Unidade Principal'); 
-            expect(resultado.page).toBe(5); 
-            expect(resultado.limite).toBe(20); 
+            expect(resultado.nome).toBe('João Silva');
+            expect(resultado.grupo).toBe('Administradores');
+            expect(resultado.unidade).toBe('Unidade Principal');
+            expect(resultado.page).toBe(5);
+            expect(resultado.limite).toBe(20);
         });
     });
 
