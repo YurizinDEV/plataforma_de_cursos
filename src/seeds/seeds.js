@@ -5,11 +5,17 @@ import aulasSeed from "./aulaSeeds.js";
 import questionariosSeed from "./questionarioSeeds.js";
 import alternativasSeed from "./alternativaSeeds.js";
 import certificadosSeed from "./certificadoSeeds.js";
+import {
+    criarRotasSeeds,
+    criarGruposSeeds
+} from "./permissionSeeds.js";
 
 async function runSeeds() {
 
     DbConnect.conectar();
 
+    await criarRotasSeeds();
+    await criarGruposSeeds();
     await usuariosSeed();
     await cursosSeed();
     await aulasSeed();
@@ -19,6 +25,7 @@ async function runSeeds() {
     console.log("Seeds executados com sucesso");
 
     DbConnect.desconectar();
+    process.exit(1);
 }
 
 
