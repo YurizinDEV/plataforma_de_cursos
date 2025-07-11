@@ -10,6 +10,9 @@ import aulas from './aulaRoutes.js';
 import alternativas from './alternativaRoutes.js';
 import certificados from './certificadoRoutes.js';
 import questionarios from './questionarioRoutes.js';
+import grupos from './grupoRoutes.js';
+import rotas from './rotaRoutes.js';
+import permissoes from './permissionRoutes.js';
 
 
 import dotenv from "dotenv";
@@ -22,8 +25,7 @@ const routes = (app) => {
     }
     app.get("/", (req, res) => {
         res.redirect("/docs");
-    }
-    );
+    });
 
     // const swaggerDocs = swaggerJsDoc(getSwaggerOptions());
     // app.use(swaggerUI.serve);
@@ -33,16 +35,21 @@ const routes = (app) => {
 
     app.use(express.json(),
         auth,
+        permissoes,
         usuarios,
         cursos,
         aulas,
         alternativas,
         questionarios,
         certificados,
+        grupos,
+        rotas,
     );
 
     app.use((req, res) => {
-        res.status(404).json({ message: "Rota não encontrada" });
+        res.status(404).json({
+            message: "Rota não encontrada"
+        });
     });
 };
 
