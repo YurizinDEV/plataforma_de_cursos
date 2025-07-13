@@ -1,152 +1,283 @@
 # Documentação de Rotas - Plataforma de Cursos
 
 ## 1. Autenticação
-### 1.1 POST /auth/login
-**Caso de Uso:**  
-Permite que usuários autentiquem no sistema para acessar funcionalidades restritas.
 
-**Regras de Negócio:**  
-Validação de e-mail e senha.  
-Geração de token JWT para sessão.  
-Restrição de acesso para contas não verificadas.
+### 1.1 POST /login
 
-**Resultado Esperado:**  
-Token de autenticação válido.  
-Dados básicos do usuário logado.
+#### Caso de Uso
+- Realizar autenticação de usuário no sistema, permitindo o acesso às funcionalidades internas.
 
-## 2. Usuários
+#### Regras de Negócio Envolvidas
+- **Validação de Credenciais**: Verifica se o e-mail e a senha correspondem a um usuário cadastrado e ativo no banco de dados.
+- **Emissão de Token**: Gera um token de acesso (access token) e um de atualização (refresh token) em caso de sucesso na autenticação. Se um refresh token válido já existir, ele é reutilizado; caso contrário, um novo é gerado.
+
+#### Resultado Esperado
+- **200 OK**: Geração de tokens de autenticação para acesso ao sistema e retorno do objeto de usuário com os tokens gerados.
+- **401 Unauthorized**: Em caso de falha na autenticação (e-mail não encontrado ou senha incorreta), retorna uma mensagem de erro específica.
+
+### 1.2 POST /recover
+
+#### Caso de Uso
+- Inicia o processo de recuperação de senha para um usuário que esqueceu suas credenciais, através do e-mail cadastrado.
+
+#### Regras de Negócio Envolvidas
+- **Validação de E-mail**: Verifica se o e-mail fornecido existe na base de dados.
+- **Geração de Código/Token**: Cria um código de recuperação e um token único e temporário para a redefinição de senha.
+- **Envio de E-mail**: Dispara um e-mail para o usuário contendo as instruções e o link para a recuperação.
+
+#### Resultado Esperado
+- **200 OK**: Envio bem-sucedido das instruções de recuperação e retorno de uma mensagem de confirmação da solicitação.
+- **404 Not Found**: Em caso de e-mail não encontrado.
+
+### 1.3 POST /signup
+
+#### Caso de Uso
+- Realiza o cadastro de um novo usuário com senha no sistema.
+
+#### Regras de Negócio Envolvidas
+- **Validação de Dados**: Verifica se todos os campos obrigatórios (nome, e-mail, senha) foram preenchidos, conforme o `UsuarioSchema`.
+- **Unicidade de E-mail**: Garante que o e-mail não está em uso por outro usuário.
+- **Criptografia de Senha**: Aplica hash na senha antes do armazenamento.
+- **Regras de Senha**: Valida a complexidade da senha (mínimo de 8 caracteres, com letras maiúsculas, minúsculas, números e caracteres especiais).
+
+#### Resultado Esperado
+- **201 Created**: Usuário criado com sucesso. O corpo da resposta contém os dados do usuário (sem a senha).
+- **400 Bad Request**: Em caso de dados inválidos, como um e-mail em formato incorreto ou uma senha que não atende aos critérios de complexidade.
+- **409 Conflict**: Em caso de e-mail duplicado, o `errorHandler` retorna um erro de conflito.
+
+### 1.4 POST /logout
+
+#### Caso de Uso
+- Realiza o logout do usuário, invalidando sua sessão ativa ao remover seus tokens.
+
+#### Regras de Negócio Envolvidas
+- **Invalidação de Token**: Remove o `accesstoken` e o `refreshtoken` do registro do usuário no banco de dados.
+- **Validação de Token de Acesso**: O `AuthMiddleware` valida o token de acesso enviado no header da requisição.
+
+#### Resultado Esperado
+- **200 OK**: Logout realizado com sucesso, com retorno de uma mensagem de confirmação.
+- **401 Unauthorized**: Se o token de acesso for inválido ou expirado.
+
+### 1.5 POST /revoke
+
+#### Caso de Uso
+- Revoga os tokens de acesso de um usuário, impedindo seu uso futuro.
+
+#### Regras de Negócio Envolvidas
+- **Invalidação de Token**: Semelhante ao logout, remove os tokens do usuário do banco de dados, invalidando a sessão a partir do ID do usuário informado no corpo da requisição.
+
+#### Resultado Esperado
+- **200 OK**: Tokens revogados com sucesso, com retorno de uma mensagem de confirmação.
+
+### 1.6 POST /refresh
+
+#### Caso de Uso
+- Gera um novo token de acesso utilizando um refresh token válido.
+
+#### Regras de Negócio Envolvidas
+- **Validação de Refresh Token**: Verifica se o refresh token fornecido no corpo ou no header da requisição é válido e não expirou.
+- **Geração de Novo Token**: Cria um novo token de acesso com validade renovada.
+
+#### Resultado Esperado
+- **200 OK**: Novo token de acesso gerado com sucesso, retornando o novo `accesstoken` e o `refreshtoken`.
+- **400 Bad Request**: Se o refresh token não for informado.
+- **401 Unauthorized**: Em caso de refresh token inválido ou expirado.
+
+### 1.7 POST /introspect
+
+#### Caso de Uso
+- Verifica a validade e obtém informações detalhadas de um token de acesso.
+
+#### Regras de Negócio Envolvidas
+- **Validação de Token**: Verifica a assinatura e a data de expiração do token de acesso fornecido no corpo da requisição.
+
+#### Resultado Esperado
+- **200 OK**: Retorna um objeto com o status do token (`active: true` ou `false`) e informações como `client_id`, `exp`, `iat`.
+- **401 Unauthorized**: Em caso de token inválido ou expirado.
+
+## 2. Usuário
+
 ### 2.1 POST /usuarios
-**Caso de Uso:**  
-Cadastro de novos usuários na plataforma.
 
-**Regras de Negócio:**  
-E-mail único e válido.  
-Senha criptografada antes do armazenamento.  
-Primeiros 2 usuários cadastrados viram administradores automaticamente.
+#### Caso de Uso
+- Criar um novo usuário.
 
-**Resultado Esperado:**  
-Conta de usuário criada com sucesso.  
-Retorno dos dados cadastrados (exceto senha).
+#### Regras de Negócio
+- **Validação de Schema**: Os dados do corpo da requisição são validados contra o `UsuarioSchema`, que exige nome, e-mail e senha com complexidade específica.
+- **Unicidade de E-mail**: O serviço verifica se o e-mail já está em uso.
+- **Criptografia de Senha**: A senha é criptografada usando `bcrypt` antes de ser salva.
+- **Status Padrão**: O campo `ativo` é definido como `false` por padrão.
+- **Autorização**: A rota é protegida e requer permissão de acesso.
 
-### 2.2 GET /usuarios
-**Caso de Uso:**  
-Listar todos os usuários cadastrados.
+#### Resultado Esperado
+- **201 Created**: Usuário criado com sucesso. O corpo da resposta contém os dados do usuário, exceto o campo `senha`.
+- **400 Bad Request**: Se os dados de entrada forem inválidos.
+- **409 Conflict**: Se o e-mail já estiver em uso.
+- **401 Unauthorized / 403 Forbidden**: Se o usuário não estiver autenticado ou não tiver permissão.
 
-**Regras de Negócio:**  
-Acesso restrito a administradores.
+### 2.2 GET /usuarios e GET /usuarios/:id
 
-**Resultado Esperado:**  
-Lista de usuários registrados na plataforma.
+#### Caso de Uso
+- Listar usuários com filtros e paginação ou obter um usuário específico por ID.
 
-### 2.3 GET /usuarios/:id
-**Caso de Uso:**  
-Consulta ao perfil de um usuário específico.
+#### Regras de Negócio
+- **Validação de Parâmetros**: Valida o ID do usuário e os parâmetros de query conforme os schemas `UsuarioIdSchema` e `UsuarioQuerySchema`.
+- **Enriquecimento de Dados**: O repositório enriquece os dados do usuário com estatísticas de progresso, como total de cursos, cursos concluídos e em andamento.
+- **Segurança**: O campo `senha` nunca é retornado na resposta.
+- **Autorização**: Requer autenticação e permissão.
 
-**Regras de Negócio:**  
-Apenas o próprio usuário ou administradores podem acessar.  
-Apenas administradores podem remover ou tornar um usuário administrador.  
-Exibe progresso nos cursos matriculados por um usuário para os administradores.  
-Exibe progresso nos cursos matriculados para o usuário.
+#### Resultado Esperado
+- **200 OK**: Retorna uma lista paginada de usuários ou um único usuário com dados enriquecidos.
+- **404 Not Found**: Se um ID de usuário é fornecido e não é encontrado no banco de dados.
+- **400 Bad Request**: Se os parâmetros de query ou o ID forem inválidos.
 
-**Resultado Esperado:**  
-Dados completos do perfil solicitado.
+### 2.3 PUT/PATCH /usuarios/:id
 
-### 2.4 PATCH /usuarios/:id
-**Caso de Uso:**  
-Atualização de informações do usuário.
+#### Caso de Uso
+- Atualizar informações de um usuário existente, como nome e status de ativação.
 
-**Regras de Negócio:**  
-Acesso restrito ao usuário ou administradores.
+#### Regras de Negócio
+- **Validação**: Valida o ID e os dados do corpo da requisição com `UsuarioIdSchema` e `UsuarioUpdateSchema`.
+- **Campos Protegidos**: Os campos `email` e `senha` são explicitamente removidos da requisição de atualização para impedir alterações diretas.
+- **Autorização**: Requer autenticação e permissão.
 
-**Resultado Esperado:**  
-Confirmação da atualização bem-sucedida.
+#### Resultado Esperado
+- **200 OK**: Usuário atualizado com sucesso. Retorna os dados atualizados (sem a senha) e uma mensagem informativa.
+- **404 Not Found**: Se o usuário com o ID fornecido não for encontrado.
+- **400 Bad Request**: Se os dados de atualização forem inválidos.
 
-### 2.5 PUT /usuarios/:id
-**Caso de Uso:**  
-Substituição das informações do usuário.
+### 2.4 DELETE /usuarios/:id
 
-**Regras de Negócio:**  
-Acesso restrito ao usuário ou administradores.
+#### Caso de Uso
+- Desativa um usuário (soft delete).
 
-**Resultado Esperado:**  
-Confirmação da substituição das informações.
+#### Regras de Negócio
+- **Soft Delete**: Altera o campo `ativo` do usuário para `false`.
+- **Autorização**: Requer autenticação e permissão.
 
-### 2.6 DELETE /usuarios/:id
-**Caso de Uso:**  
-Remoção de um usuário da plataforma.
+#### Resultado Esperado
+- **200 OK**: Usuário desativado com sucesso, retornando os dados do usuário com o status `ativo: false`.
+- **404 Not Found**: Se o usuário com o ID fornecido não for encontrado.
 
-**Regras de Negócio:**  
-Acesso restrito a administradores.
+### 2.5 PATCH /usuarios/:id/restaurar
 
-**Resultado Esperado:**  
-Confirmação da remoção do usuário.
+#### Caso de Uso
+- Restaura um usuário que foi desativado (soft delete).
+
+#### Regras de Negócio
+- **Reativação**: Altera o campo `ativo` do usuário para `true`.
+- **Autorização**: Requer autenticação e permissão.
+
+#### Resultado Esperado
+- **200 OK**: Usuário restaurado com sucesso, retornando os dados do usuário com o status `ativo: true`.
+- **404 Not Found**: Se o usuário com o ID fornecido não for encontrado.
+
+### 2.6 DELETE /usuarios/:id/permanente
+
+#### Caso de Uso
+- Remove permanentemente um usuário e suas dependências do sistema.
+
+#### Regras de Negócio
+- **Verificação de Dependências**: O serviço impede a exclusão se o usuário for autor de cursos ou tiver progresso significativo (≥ 50%) em algum curso.
+- **Exclusão em Cascata**: Executa a exclusão do usuário e remove suas referências em outras coleções (certificados, cursos) dentro de uma transação para garantir a atomicidade.
+- **Autorização**: Requer autenticação e permissão.
+
+#### Resultado Esperado
+- **200 OK**: Usuário removido permanentemente, com um resumo das exclusões realizadas.
+- **404 Not Found**: Se o usuário não for encontrado.
+- **409 Conflict**: Se houver dependências que impeçam a exclusão.
 
 ## 3. Cursos
+
 ### 3.1 POST /cursos
-**Caso de Uso:**  
-Criação de novos cursos na plataforma.
 
-**Regras de Negócio:**  
-Acesso restrito a administradores.  
-Apenas usuários administradores podem cadastrar, atualizar, remover e incluir conteúdos extras aos cursos.  
-O sistema deve validar tamanho e formato de arquivos enviados antes de permitir a inserção (tal como PDF e menor que 15MB).  
-O sistema deve incorporar URL de vídeos "embeds" do YouTube.  
-Carga horária opcional.  
-Relacionamento obrigatório com usuário criador.
+#### Caso de Uso
+- Cria um novo curso na plataforma.
 
-**Resultado Esperado:**  
-Curso registrado no sistema.  
-Retorno dos dados do curso criado.
+#### Regras de Negócio Envolvidas
+- **Validação de Schema**: Os dados do corpo da requisição são validados pelo `CursoSchema`.
+- **Validação de Criador**: O `CursoService` verifica se o `criadoPorId` corresponde a um usuário existente.
+- **Validação de Título**: Garante que o título do curso seja único.
+- **Autorização**: Requer autenticação e permissão.
 
-### 3.2 GET /cursos
-**Caso de Uso:**  
-Listar todos os cursos disponíveis.
+#### Resultado Esperado
+- **201 Created**: Curso criado com sucesso, retornando os dados do curso.
+- **400 Bad Request**: Se os dados forem inválidos (ex: `criadoPorId` inexistente) ou o título já estiver em uso.
+- **401 Unauthorized / 403 Forbidden**: Se o usuário não estiver autenticado ou não tiver permissão.
 
-**Regras de Negócio:**  
-Acesso restrito a usuários autenticados.
+### 3.2 GET /cursos e GET /cursos/:id
 
-**Resultado Esperado:**  
-Lista de cursos registrados na plataforma.
+#### Caso de Uso
+- Lista todos os cursos com filtros e paginação ou obtém um curso específico pelo ID.
 
-### 3.3 GET /cursos/:id
-**Caso de Uso:**  
-Consulta a um curso específico.
+#### Regras de Negócio Envolvidas
+- **Validação de Parâmetros**: Valida o `id` e os parâmetros de `query` conforme os schemas `CursoIdSchema` e `CursoQuerySchema`.
+- **Enriquecimento de Dados**: O `CursoRepository` enriquece os dados do curso com estatísticas, como número total de aulas, questionários, alternativas, certificados e duração formatada.
+- **Filtro Padrão**: Por padrão, lista apenas cursos com status "ativo" se nenhum outro status for especificado.
+- **Autorização**: Requer autenticação e permissão.
 
-**Regras de Negócio:**  
-O curso deve existir.
+#### Resultado Esperado
+- **200 OK**: Retorna uma lista paginada de cursos ou um único curso com dados enriquecidos.
+- **404 Not Found**: Se o curso com o ID especificado não for encontrado, retorna uma lista vazia (o `listar` do repositório foi projetado para não lançar erro nesse caso).
 
-**Resultado Esperado:**  
-Dados completos do curso solicitado.
+### 3.3 PUT/PATCH /cursos/:id
 
-### 3.4 PUT /cursos/:id
-**Caso de Uso:**  
-Substituição das informações de um curso.
+#### Caso de Uso
+- Atualiza as informações de um curso existente.
 
-**Regras de Negócio:**  
-Acesso restrito a administradores.
+#### Regras de Negócio Envolvidas
+- **Validação**: Valida o ID e os dados do corpo com `CursoIdSchema` e `CursoUpdateSchema`.
+- **Verificação de Existência**: Garante que o curso existe antes de tentar a atualização.
+- **Validação de Título**: Se o título for alterado, verifica se o novo título já não está em uso por outro curso.
+- **Validação de Corpo Vazio**: Impede requisições de atualização com corpo vazio ou sem campos válidos para atualizar.
+- **Autorização**: Requer autenticação e permissão.
 
-**Resultado Esperado:**  
-Confirmação da substituição das informações do curso.
+#### Resultado Esperado
+- **200 OK**: Curso atualizado com sucesso, retornando os dados atualizados.
+- **404 Not Found**: Se o curso não for encontrado.
+- **400 Bad Request**: Se os dados de atualização forem inválidos ou se o corpo da requisição estiver vazio.
 
-### 3.5 PATCH /cursos/:id
-**Caso de Uso:**  
-Atualização das informações do curso.
+### 3.4 DELETE /cursos/:id
 
-**Regras de Negócio:**  
-Acesso restrito a administradores.
+#### Caso de Uso
+- Arquiva um curso (soft delete).
 
-**Resultado Esperado:**  
-Confirmação da atualização bem-sucedida.
+#### Regras de Negócio Envolvidas
+- **Soft Delete**: Altera o status do curso para "arquivado".
+- **Autorização**: Requer autenticação e permissão.
 
-### 3.6 DELETE /cursos/:id
-**Caso de Uso:**  
-Remoção de um curso da plataforma.
+#### Resultado Esperado
+- **200 OK**: Curso arquivado com sucesso, retornando os dados do curso com o novo status.
+- **404 Not Found**: Se o curso não for encontrado.
 
-**Regras de Negócio:**  
-Acesso restrito a administradores.
+### 3.5 PATCH /cursos/:id/restaurar
 
-**Resultado Esperado:**  
-Confirmação da remoção do curso.
+#### Caso de Uso
+- Restaura um curso que foi arquivado.
+
+#### Regras de Negócio Envolvidas
+- **Reativação**: Altera o status do curso para "ativo".
+- **Autorização**: Requer autenticação e permissão.
+
+#### Resultado Esperado
+- **200 OK**: Curso restaurado com sucesso, retornando os dados do curso com o status "ativo".
+- **404 Not Found**: Se o curso não for encontrado.
+
+### 3.6 DELETE /cursos/:id/permanente
+
+#### Caso de Uso
+- Remove permanentemente um curso e todas as suas dependências.
+
+#### Regras de Negócio Envolvidas
+- **Verificação de Dependências**: O serviço impede a exclusão se houver usuários com progresso significativo no curso.
+- **Exclusão em Cascata**: Remove aulas, questionários, alternativas e certificados associados ao curso, além de remover as referências do curso nos registros de usuários, tudo dentro de uma transação atômica.
+- **Autorização**: Requer autenticação e permissão.
+
+#### Resultado Esperado
+- **200 OK**: Curso e suas dependências removidos com sucesso. Retorna um objeto com estatísticas sobre os recursos excluídos.
+- **404 Not Found**: Se o curso não for encontrado.
+- **409 Conflict**: Se houver dependências que bloqueiam a exclusão.
+- **500 Internal Server Error**: Se ocorrer um erro durante a transação de exclusão.
 
 ## 4. Aulas
 ### 4.1 POST /aulas
