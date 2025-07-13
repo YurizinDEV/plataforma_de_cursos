@@ -1,7 +1,7 @@
 import express from "express";
-// import swaggerJsDoc from "swagger-jsdoc";
-// import swaggerUI from "swagger-ui-express";
-// import getSwaggerOptions from "../docs/config/head.js";
+import swaggerJsDoc from "swagger-jsdoc";
+import swaggerUI from "swagger-ui-express";
+import { getSwaggerOptions } from "../docs/config/head.js";
 import logRoutes from "../middlewares/LogRoutesMiddleware.js";
 import auth from './authRoutes.js';
 import usuarios from './usuarioRoutes.js';
@@ -27,11 +27,9 @@ const routes = (app) => {
         res.redirect("/docs");
     });
 
-    // const swaggerDocs = swaggerJsDoc(getSwaggerOptions());
-    // app.use(swaggerUI.serve);
-    // app.get("/docs", (req, res, next) => {
-    //     swaggerUI.setup(swaggerDocs)(req, res, next);
-    // });
+    const swaggerDocs = swaggerJsDoc(getSwaggerOptions());
+    app.use("/docs", swaggerUI.serve);
+    app.get("/docs", swaggerUI.setup(swaggerDocs));
 
     app.use(express.json(),
         auth,
