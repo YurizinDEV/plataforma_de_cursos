@@ -1,5 +1,3 @@
-// /src/seeds/globalFakeMapping.js
-
 import fakebr from 'faker-br';
 import mongoose from 'mongoose';
 import {
@@ -7,60 +5,56 @@ import {
 } from 'uuid';
 import TokenUtil from '../utils/TokenUtil.js';
 import loadModels from './loadModels.js';
+import bcrypt from 'bcrypt';
 
+function gerarSenha() {
+    return bcrypt.hashSync("1234Teste@", 12);
+}
 
-import Alternativa from '../models/Alternativa';
-import Curso from '../models/Curso';
-import Aula from '../models/Aula';
-import Certificado from '../models/Certificado';
-import Questionario from '../models/Questionario';
-import Usuario from '../models/Usuario';
-
-
-/**
- * Estrutura de mappings organizada por model.
- */
-const fakeMappings = {
+export const fakeMappings = {
     // Campos comuns a vários models
     common: {
-        titulo: () => fakerbr.lorem.words(3),
-        descricao: () => fakerbr.lorem.paragraph(),
-        criadoEm: () => fakerbr.date.past(),
-        thumbnail: () => fakerbr.image.imageUrl(640, 480, "education", true),
-        tags: () => fakerbr.random.arrayElements(["js", "node", "db", "ux", "devops"], 3),
+        titulo: () => fakebr.lorem.words(3),
+        descricao: () => fakebr.lorem.paragraph(),
+        criadoEm: () => fakebr.date.past(),
+        thumbnail: () => fakebr.image.imageUrl(640, 480, "education", true),
+        tags: () => fakebr.random.arrayElements(["js", "node", "db", "ux", "devops"], 3),
         materialComplementar: () => [],
+        ativo: () => fakebr.random.boolean(),
     },
 
     /* ---------- USUARIO ---------- */
     Usuario: {
-        nome: () => fakerbr.name.firstName() + " " + fakerbr.name.lastName(),
+        nome: () => fakebr.name.firstName() + " " + fakebr.name.lastName(),
         senha: () => gerarSenha(),
-        email: () => fakerbr.internet.email().toLowerCase(),
+        email: () => fakebr.internet.email().toLowerCase(),
         grupos: () => [],
-        cursosIds: () => [new mongoose.Types.ObjectId()],
-        progresso: () => [{
-            percentual_conclusao: fakerbr.datatype.number({
-                min: 0,
-                max: 100
-            }) + "%",
-            curso: new mongoose.Types.ObjectId(),
-        }, ],
+        cursosIds: () => [],
+        progresso: () => [],
+        ativo: () => fakebr.random.boolean(),
+        tokenUnico: () => TokenUtil.generateAccessToken(new mongoose.Types.ObjectId().toString()),
+        codigo_recupera_senha: () => fakebr.random.alphaNumeric(6),
+        exp_codigo_recupera_senha: () => fakebr.date.future(),
+        refreshtoken: () => TokenUtil.generateRefreshToken(new mongoose.Types.ObjectId().toString()),
+        accesstoken: () => TokenUtil.generateAccessToken(new mongoose.Types.ObjectId().toString()),
+        permissoes: () => [],
     },
 
     /* ---------- CURSO ---------- */
     Curso: {
-        cargaHorariaTotal: () => fakerbr.datatype.number({
+        cargaHorariaTotal: () => fakebr.random.number({
             min: 5,
             max: 40
         }),
-        professores: () => [fakerbr.name.findName()],
+        professores: () => [fakebr.name.findName()],
         criadoPorId: () => new mongoose.Types.ObjectId(),
+        status: () => fakebr.random.arrayElement(['ativo', 'inativo', 'rascunho', 'arquivado']),
     },
 
     /* ---------- AULA ---------- */
     Aula: {
-        conteudoURL: () => fakerbr.internet.url(),
-        cargaHoraria: () => fakerbr.datatype.number({
+        conteudoURL: () => fakebr.internet.url(),
+        cargaHoraria: () => fakebr.random.number({
             min: 1,
             max: 3
         }),
@@ -70,8 +64,8 @@ const fakeMappings = {
 
     /* ---------- QUESTIONARIO ---------- */
     Questionario: {
-        enunciado: () => fakerbr.lorem.sentence(),
-        numeroRespostaCorreta: () => fakerbr.datatype.number({
+        enunciado: () => fakebr.lorem.sentence(),
+        numeroRespostaCorreta: () => fakebr.random.number({
             min: 0,
             max: 3
         }),
@@ -81,8 +75,8 @@ const fakeMappings = {
 
     /* ---------- ALTERNATIVA ---------- */
     Alternativa: {
-        texto: () => fakerbr.lorem.words(3),
-        numeroResposta: () => fakerbr.datatype.number({
+        texto: () => fakebr.lorem.words(3),
+        numeroResposta: () => fakebr.random.number({
             min: 0,
             max: 3
         }),
@@ -91,12 +85,28 @@ const fakeMappings = {
 
     /* ---------- CERTIFICADO ---------- */
     Certificado: {
-        dataEmissao: () => fakerbr.date.past(),
+        dataEmissao: () => fakebr.date.past(),
         usuarioId: () => new mongoose.Types.ObjectId(),
         cursoId: () => new mongoose.Types.ObjectId(),
     },
-};
 
+    /* ---------- GRUPO ---------- */
+    Grupo: {
+        nome: () => fakebr.company.companyName(),
+        permissoes: () => [],
+    },
+
+    /* ---------- ROTA ---------- */
+    Rota: {
+        rota: () => fakebr.lorem.word(10),
+        dominio: () => fakebr.internet.url(),
+        buscar: () => fakebr.random.boolean(),
+        enviar: () => fakebr.random.boolean(),
+        substituir: () => fakebr.random.boolean(),
+        modificar: () => fakebr.random.boolean(),
+        excluir: () => fakebr.random.boolean(),
+    },
+};
 
 export async function getGlobalFakeMapping() {
     const models = await loadModels();
@@ -112,82 +122,43 @@ export async function getGlobalFakeMapping() {
                 ...globalMapping,
                 ...fakeMappings[name],
             };
-        }
+        };
     });
 
     return globalMapping;
-}
-
+};
 
 function getSchemaFieldNames(schema) {
     const fieldNames = new Set();
+
     Object.keys(schema.paths).forEach((key) => {
         if (['_id', '__v', 'createdAt', 'updatedAt'].includes(key)) return;
         const topLevel = key.split('.')[0];
         fieldNames.add(topLevel);
     });
+
     return Array.from(fieldNames);
-}
+};
 
 
 function validateModelMapping(model, modelName, mapping) {
     const fields = getSchemaFieldNames(model.schema);
     const missing = fields.filter((field) => !(field in mapping));
+
     if (missing.length > 0) {
         console.error(
             `Model ${modelName} está faltando mapeamento para os campos: ${missing.join(', ')}`
         );
     } else {
         console.log(`Model ${modelName} possui mapeamento para todos os campos.`);
-    }
-    return missing;
-}
-
-
-function getSchemaFieldNames(schema) {
-    const ignore = ["_id", "__v", "createdAt", "updatedAt"];
-    const set = new Set();
-    Object.keys(schema.paths).forEach((k) => {
-        if (ignore.includes(k)) return;
-        set.add(k.split(".")[0]);
-    });
-    return [...set];
-}
-
-function validateModelMapping(model, modelName, mapping) {
-    const fields = getSchemaFieldNames(model.schema);
-    const missing = fields.filter((f) => !(f in mapping));
-    if (missing.length)
-        console.error(
-            `Model ${modelName} sem mapping para: ${missing.join(", ")}`
-        );
-    else console.log(`Model ${modelName} coberto.`);
-    return missing;
-}
-
-
-export async function getGlobalFakeMapping() {
-    const models = await loadModels();
-    let global = {
-        ...fakeMappings.common
     };
 
-    models.forEach(({
-        name
-    }) => {
-        if (fakeMappings[name]) global = {
-            ...global,
-            ...fakeMappings[name]
-        };
-    });
+    return missing;
+};
 
-    return global;
-}
-
-
-(async () => {
+async function validateAllMappings() {
     const models = await loadModels();
-    let ok = true;
+    let totalMissing = {};
 
     models.forEach(({
         model,
@@ -195,18 +166,35 @@ export async function getGlobalFakeMapping() {
     }) => {
         const mapping = {
             ...fakeMappings.common,
-            ...(fakeMappings[name] || {})
+            ...(fakeMappings[name] || {}),
         };
         const missing = validateModelMapping(model, name, mapping);
-        if (missing.length) ok = false;
+        if (missing.length > 0) {
+            totalMissing[name] = missing;
+        };
     });
 
-    if (!ok) {
-        console.error("Corrija os mappings antes de prosseguir.");
-        process.exit(1);
+    if (Object.keys(totalMissing).length === 0) {
+        console.log('globalFakeMapping cobre todos os campos de todos os models.');
+        return true;
     } else {
-        console.log("globalFakeMapping pronto para uso.");
-    }
-})();
+        console.warn('Faltam mapeamentos para os seguintes models:', totalMissing);
+        return false;
+    };
+};
+
+
+validateAllMappings()
+    .then((valid) => {
+        if (valid) {
+            console.log('Podemos acessar globalFakeMapping com segurança.');
+        } else {
+            throw new Error('globalFakeMapping não possui todos os mapeamentos necessários.');
+        };
+    })
+    .catch((error) => {
+        console.error(error);
+        process.exit(1);
+    })
 
 export default getGlobalFakeMapping;

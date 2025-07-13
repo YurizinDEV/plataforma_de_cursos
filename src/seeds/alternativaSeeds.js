@@ -1,11 +1,10 @@
-import fakerbr from "faker-br";
+import {
+    fakeMappings
+} from "./globalFakeMapping.js";
 import Alternativa from "../models/Alternativa.js";
 import Questionario from "../models/Questionario.js";
-// import DbConnect from "../config/DbConnect.js";
 
 export default async function alternativasSeed() {
-    // await DbConnect.conectar();
-
     const questionarios = await Questionario.find({});
     await Alternativa.deleteMany({});
 
@@ -14,7 +13,7 @@ export default async function alternativasSeed() {
     for (const q of questionarios) {
         for (let i = 0; i < 4; i++) {
             const alt = {
-                texto: fakerbr.lorem.words(3),
+                texto: fakeMappings.Alternativa.texto.apply(),
                 numeroResposta: i,
                 questionarioId: q._id
             };

@@ -1,3 +1,6 @@
+import {
+    fakeMappings
+} from "./globalFakeMapping.js";
 import Rota from '../models/Rota.js';
 import Grupo from '../models/Grupo.js';
 
@@ -123,7 +126,7 @@ const criarRotasSeeds = async () => {
 
 const criarGruposSeeds = async () => {
     try {
-        console.log('🌱 Iniciando criação de grupos...');
+        console.log('Iniciando criação de grupos...');
 
         for (const grupoData of gruposSeeds) {
             const grupoExistente = await Grupo.findOne({
@@ -139,7 +142,7 @@ const criarGruposSeeds = async () => {
         }
 
         console.log('Grupos criados com sucesso!');
-        console.log('ℹUse as rotas /grupos e /rotas para configurar as permissões via API');
+        console.log('Use as rotas /grupos e /rotas para configurar as permissões via API');
     } catch (error) {
         console.error('Erro ao criar grupos:', error);
     }

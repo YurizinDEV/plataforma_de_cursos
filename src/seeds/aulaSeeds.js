@@ -1,12 +1,11 @@
-import fakerbr from "faker-br";
+import {
+    fakeMappings
+} from "./globalFakeMapping.js";
 import Aula from "../models/Aula.js";
 import Curso from "../models/Curso.js";
 import Usuario from "../models/Usuario.js";
-// import DbConnect from "../config/DbConnect.js";
 
 export default async function aulasSeed() {
-    // await DbConnect.conectar();
-
     const cursos = await Curso.find({});
     const usuarios = await Usuario.find({});
     await Aula.deleteMany({});
@@ -22,14 +21,11 @@ export default async function aulasSeed() {
         const autor = usuarios[Math.floor(Math.random() * usuarios.length)];
 
         aulas.push({
-            titulo: fakerbr.lorem.words(4),
-            descricao: fakerbr.lorem.paragraph(),
-            conteudoURL: fakerbr.internet.url(),
-            cargaHoraria: fakerbr.random.number({
-                min: 1,
-                max: 3
-            }),
-            materialComplementar: [],
+            titulo: fakeMappings.common.titulo.apply(),
+            descricao: fakeMappings.common.descricao.apply(),
+            conteudoURL: fakeMappings.Aula.conteudoURL.apply(),
+            cargaHoraria: fakeMappings.Aula.cargaHoraria.apply(),
+            materialComplementar: fakeMappings.common.materialComplementar.apply(),
             cursoId: curso._id,
             criadoPorId: autor._id
         });
@@ -37,7 +33,6 @@ export default async function aulasSeed() {
 
     await Aula.insertMany(aulas);
     console.log("Aulas geradas com sucesso!");
-    // console.log(aulas)
 }
 
 // aulasSeed();
