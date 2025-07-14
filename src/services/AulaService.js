@@ -26,11 +26,12 @@ class AulaService {
   const { id } = params;
   const aula = await this.repositoryAula.buscarPorId(id);
   if (!aula) {
-    throw new CustomError({
-      customMessage: 'Aula não encontrada',
-      statusCode: HttpStatusCodes.NOT_FOUND
-    });
-  }
+  throw new CustomError({
+    statusCode: HttpStatusCodes.NOT_FOUND.code,
+    errorType: 'resourceNotFound',
+    customMessage: 'Aula não encontrada'
+  });
+}
   return aula;
 }
 
