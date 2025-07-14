@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import DbConnect from "../config/DbConnect.js";
 import usuariosSeed from "./usuarioSeeds.js";
 import cursosSeed from "./cursoSeeds.js";
@@ -10,9 +11,10 @@ import {
     criarGruposSeeds
 } from "./permissionSeeds.js";
 
-async function runSeeds() {
+await DbConnect.conectar();
 
-    DbConnect.conectar();
+try {
+    console.log(`[${new Date().toLocaleString()}] - Iniciando criação das seeds...`);
 
     await criarRotasSeeds();
     await criarGruposSeeds();
@@ -22,11 +24,11 @@ async function runSeeds() {
     await questionariosSeed();
     await alternativasSeed();
     await certificadosSeed();
-    console.log("Seeds executados com sucesso");
 
-    DbConnect.desconectar();
-    process.exit(1);
-}
-
-
-await runSeeds();
+    console.log(`[${new Date().toLocaleString()}] - Seeds criadas com sucesso!`);
+} catch (error) {
+    console.error("Erro ao criar seeds:", error);
+} finally {
+    mongoose.connection.close();
+    process.exit(0);
+};

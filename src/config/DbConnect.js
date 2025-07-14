@@ -71,9 +71,9 @@ class DbConnect {
             logger.info('Conexão com o banco estabelecida!');
         } catch (error) {
             logger.error(`Erro na conexão com o banco de dados em ${new Date().toISOString()}: ${error.message}`);
-            if (process.env.NODE_ENV !== 'test') {
-                SendMail.enviaEmailErrorDbConnect(error, new URL(import.meta.url).pathname, new Date());
-            }
+            // if (process.env.NODE_ENV !== 'test') {
+            //     SendMail.enviaEmailErrorDbConnect(error, new URL(import.meta.url).pathname, new Date());
+            // }
             throw error; 
         }
     }

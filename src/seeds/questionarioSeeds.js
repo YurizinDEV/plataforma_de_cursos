@@ -1,11 +1,10 @@
-import fakerbr from "faker-br";
+import {
+    fakeMappings
+} from "./globalFakeMapping.js";
 import Questionario from "../models/Questionario.js";
 import Aula from "../models/Aula.js";
-// import DbConnect from "../config/DbConnect.js";
 
 export default async function questionariosSeed() {
-    // await DbConnect.conectar();
-
     const aulas = await Aula.find({});
     await Questionario.deleteMany({});
 
@@ -18,17 +17,11 @@ export default async function questionariosSeed() {
 
     for (let i = 0; i < 20; i++) {
         const aula = aulas[Math.floor(Math.random() * aulas.length)];
-        const alternativasTexto = fakerbr.random.arrayElements(
-            ["Verdadeiro", "Falso", "Talvez", "Nenhuma"], 4
-        );
 
         questionarios.push({
-            enunciado: fakerbr.lorem.sentence(),
-            numeroRespostaCorreta: fakerbr.random.number({
-                min: 0,
-                max: 3
-            }),
-            alternativas: [],
+            enunciado: fakeMappings.Questionario.enunciado.apply(),
+            numeroRespostaCorreta: fakeMappings.Questionario.numeroRespostaCorreta.apply(),
+            alternativas: fakeMappings.Questionario.alternativas.apply(),
             aulaId: aula._id
         });
     }

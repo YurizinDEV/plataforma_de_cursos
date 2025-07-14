@@ -1,4 +1,6 @@
-import fakerbr from "faker-br";
+import {
+    fakeMappings
+} from "./globalFakeMapping.js";
 import Curso from "../models/Curso.js";
 import Usuario from "../models/Usuario.js";
 
@@ -18,20 +20,15 @@ export default async function cursosSeed() {
         'Dra. Ana Souza', 'Prof. Carlos Pereira', 'Dra. Juliana Alves'
     ];
 
-    const statusOptions = ['ativo', 'inativo', 'rascunho', 'arquivado'];
-
     for (let i = 0; i < 20; i++) {
         const criador = usuarios[Math.floor(Math.random() * usuarios.length)];
 
-        const numTags = fakerbr.random.number({
-            min: 1,
-            max: 3
-        });
-        const tagsEscolhidas = fakerbr.random.arrayElements(tags, numTags);
+        const numTags = Math.floor(Math.random() * 3) + 1;
+        const tagsEscolhidas = tags.sort(() => 0.5 - Math.random()).slice(0, numTags);
 
         let titulo;
         do {
-            titulo = `Curso de ${fakerbr.company.catchPhraseNoun()}`;
+            titulo = fakeMappings.common.titulo.apply();
         } while (titulosUsados.has(titulo));
         titulosUsados.add(titulo);
 
@@ -39,25 +36,12 @@ export default async function cursosSeed() {
         if (i < 3) {
             status = null;
         } else {
-            const probabilidade = fakerbr.random.number({
-                min: 1,
-                max: 100
-            });
-            if (probabilidade <= 60) {
-                status = 'ativo';
-            } else {
-                status = fakerbr.random.arrayElement(['inativo', 'rascunho', 'arquivado']);
-            }
+            status = fakeMappings.Curso.status.apply();
         }
-
-        const cargaHoraria = fakerbr.random.number({
-            min: 10,
-            max: 480
-        });
 
         let materialComplementar;
         if (i % 3 === 0) {
-            materialComplementar = [];
+            materialComplementar = fakeMappings.common.materialComplementar.apply();
         } else if (i % 3 === 1) {
             materialComplementar = undefined;
         } else {
@@ -66,19 +50,16 @@ export default async function cursosSeed() {
             ];
         }
 
-        const thumbnail = i % 5 === 0 ? "" : fakerbr.image.imageUrl();
+        const thumbnail = i % 5 === 0 ? "" : fakeMappings.common.thumbnail.apply();
 
-        const numProfessores = fakerbr.random.number({
-            min: 1,
-            max: 2
-        });
-        const professoresEscolhidos = fakerbr.random.arrayElements(professores, numProfessores);
+        const numProfessores = Math.floor(Math.random() * 2) + 1;
+        const professoresEscolhidos = professores.sort(() => 0.5 - Math.random()).slice(0, numProfessores);
 
         const curso = {
             titulo,
-            descricao: fakerbr.lorem.paragraph(),
+            descricao: fakeMappings.common.descricao.apply(),
             thumbnail,
-            cargaHorariaTotal: cargaHoraria,
+            cargaHorariaTotal: fakeMappings.Curso.cargaHorariaTotal.apply(),
             professores: professoresEscolhidos,
             tags: tagsEscolhidas,
             criadoPorId: criador._id
@@ -97,24 +78,15 @@ export default async function cursosSeed() {
     const inserted = await Curso.insertMany(cursos);
 
     for (const usuario of usuarios) {
-        const numCursos = fakerbr.random.number({
-            min: 1,
-            max: 3
-        });
-        const cursosEscolhidos = fakerbr.random.arrayElements(inserted, numCursos);
+        const numCursos = Math.floor(Math.random() * 3) + 1;
+        const cursosEscolhidos = inserted.sort(() => 0.5 - Math.random()).slice(0, numCursos);
 
         for (const curso of cursosEscolhidos) {
             usuario.cursosIds.push(curso._id);
-            const temProgresso = fakerbr.random.number({
-                min: 1,
-                max: 100
-            }) <= 70;
+            const temProgresso = Math.floor(Math.random() * 100) + 1 <= 70;
             if (temProgresso) {
                 usuario.progresso.push({
-                    percentual_conclusao: fakerbr.random.number({
-                        min: 0,
-                        max: 100
-                    }).toString(),
+                    percentual_conclusao: (Math.floor(Math.random() * 101)).toString(),
                     curso: curso._id
                 });
             }

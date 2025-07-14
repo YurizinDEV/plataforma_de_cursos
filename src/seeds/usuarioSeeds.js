@@ -1,24 +1,18 @@
-import fakerbr from "faker-br";
+import {
+    fakeMappings
+} from "./globalFakeMapping.js";
 import Usuario from "../models/Usuario.js";
 import bcrypt from "bcrypt";
-// import DbConnect from "../config/DbConnect.js";
-
-// DbConnect.conectar();
-
-const senhaPura = "1234Teste@";
-
-function gerarSenha() {
-    return bcrypt.hashSync(senhaPura, 12);
-}
 
 export default async function usuariosSeed() {
     await Usuario.deleteMany({});
 
     const usuarios = [];
 
+    // Usuário administrador fixo
     usuarios.push({
         nome: "Administrador",
-        senha: bcrypt.hashSync("Admin@1234", 12),
+        senha: await bcrypt.hash("Admin@1234", 12),
         email: "admin@gmail.com",
         ativo: true,
         progresso: [],
@@ -29,13 +23,13 @@ export default async function usuariosSeed() {
     for (let i = 0; i < 19; i++) {
         const isAtivo = i < 14;
         usuarios.push({
-            nome: fakerbr.name.firstName() + " " + fakerbr.name.lastName(),
-            senha: gerarSenha(),
-            email: fakerbr.internet.email(),
+            nome: fakeMappings.Usuario.nome.apply(),
+            senha: fakeMappings.Usuario.senha.apply(),
+            email: fakeMappings.Usuario.email.apply(),
             ativo: isAtivo,
-            progresso: [],
-            cursosIds: [],
-            grupos: []
+            progresso: fakeMappings.Usuario.progresso.apply(),
+            cursosIds: fakeMappings.Usuario.cursosIds.apply(),
+            grupos: fakeMappings.Usuario.grupos.apply()
         });
     }
 
@@ -58,7 +52,7 @@ export default async function usuariosSeed() {
                 }
             });
             console.log("Usuário administrador fixo associado ao grupo");
-            console.log(`Admin criado: admin@example.com / admin123`);
+            console.log(`Admin criado: admin@gmail.com / Admin@1234`);
             console.log(`ID do admin: ${adminId}`);
         }
     } catch (error) {

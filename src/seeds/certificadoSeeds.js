@@ -1,12 +1,11 @@
-import fakerbr from "faker-br";
+import {
+    fakeMappings
+} from "./globalFakeMapping.js";
 import Certificado from "../models/Certificado.js";
 import Curso from "../models/Curso.js";
 import Usuario from "../models/Usuario.js";
-// import DbConnect from "../config/DbConnect.js";
 
 export default async function certificadosSeed() {
-    // await DbConnect.conectar();
-
     const usuarios = await Usuario.find({});
     const cursos = await Curso.find({});
     await Certificado.deleteMany({});
@@ -16,7 +15,7 @@ export default async function certificadosSeed() {
         const curso = cursos[Math.floor(Math.random() * cursos.length)];
 
         const certificado = {
-            dataEmissao: fakerbr.date.past(),
+            dataEmissao: fakeMappings.Certificado.dataEmissao.apply(),
             usuarioId: user._id,
             cursoId: curso._id
         };
