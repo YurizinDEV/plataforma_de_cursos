@@ -15,8 +15,8 @@ const cursosPaths = {
 
             + **Regras de Negócio**:
                 - Usuário deve ter permissão de administrador.
-                - Validação de campos obrigatórios (título, descrição, etc.).
-                - Verificação de unicidade para título do curso por criador.
+                - Validação de campos (título, descrição, etc.).
+                - Verificação de unicidade para título do curso.
                 - Status inicial: não publicado (publicado: false).
 
             + **Resultado Esperado**:
